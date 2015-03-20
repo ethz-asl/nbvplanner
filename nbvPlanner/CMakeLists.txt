@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(nbvPlanner)
 
+add_definitions(-std=c++11)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -9,9 +11,13 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   roslib
   geometry_msgs
+  message_generation
+  sensor_msgs
+  rotors_gazebo
 )
 find_package(cmake_modules REQUIRED)
 find_package(Eigen REQUIRED)
+find_package(octomap REQUIRED)
 
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -48,26 +54,11 @@ set(CMAKE_BUILD_TYPE Debug)
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
-## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
-
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
-
-## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+add_service_files(
+  FILES
+  nbvp_srv.srv
+)
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
@@ -86,9 +77,9 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include ${Eigen_INCLUDE_DIRS}
-#  LIBRARIES nbvPlanner
-#  CATKIN_DEPENDS other_catkin_pkg
+  INCLUDE_DIRS include ${Eigen_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS}
+  LIBRARIES nbvPlanner ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES}
+  CATKIN_DEPENDS message_runtime
 #  DEPENDS system_lib
 )
 
@@ -102,6 +93,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
+  ${OCTOMAP_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -111,6 +103,7 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(nbvPlanner src/plan.cpp src/nbvp.cpp)
+add_executable(exploration src/exploration.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -119,4 +112,9 @@ add_executable(nbvPlanner src/plan.cpp src/nbvp.cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(nbvPlanner
   ${catkin_LIBRARIES}
+  ${OCTOMAP_LIBRARIES}
 )
+target_link_libraries(exploration
+  ${catkin_LIBRARIES}
+)
+add_dependencies(exploration ${catkin_EXPORTED_TARGETS})
