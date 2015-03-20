@@ -4,10 +4,17 @@ The next best view planner is a real-time capable inspection path planner. From 
 
 # Planner execution
 
-To run the current version, compile the package nbvPlanner and run
+To run the current version, compile the package nbvPlanner, as well as additional required packages:
 
 ```sh
-rosrun nbvPlanner nbvPlanner
+git clone https://github.com/ethz-asl/rotors_simulator.git
+to be continued
+```
+
+Then run
+
+```sh
+roslaunch nbvPlanner firefly_exploration.launch
 ```
 
 This produces a random walk, as the growing of the expansion trees as well as the information gain are based on randomness. Meaningful functions need to be implemented.
