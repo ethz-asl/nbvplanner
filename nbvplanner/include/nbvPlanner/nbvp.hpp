@@ -90,7 +90,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
     direction.x() = extension[0];
     direction.y() = extension[1];
     direction.z() = extension[2];
-  }while(this->octomap->castRay(origin, direction, end, ignoreUnknownCells, d+1.0));
+  }while(this->octomap->castRay(origin, direction, end, ignoreUnknownCells, d*1.1+1.0));
   double wp = d/(VMAX*dt);
   for(int i = 0; i<wp; i++)
     ret.push_back(s+(1.0-(i+1.0)/wp)*extension);
