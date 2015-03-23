@@ -103,7 +103,7 @@ bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::R
   g_ID = 0;
   static const int depth = 1;
   static const int width = 16;
-  planner_t::vector_t path = planner->expand(*planner, depth, width, ro, &planner_t::sampleHolonomic, &planner_t::informationGainSimple);
+  planner_t::vector_t path = planner->expand(*planner, depth, width, ro, &planner_t::sampleHolonomic, &planner_t::informationGainCone);
   std::reverse(path.begin(), path.end());
   for(planner_t::vector_t::iterator it = path.begin(); it!=path.end(); it++)
   {

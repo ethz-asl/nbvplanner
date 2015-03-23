@@ -61,7 +61,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
       IG = IGtmp;
     }
   }
-  
+  ROS_INFO("Information Gain is: %2.2f", IG);
   return ret;
 }
 
@@ -94,6 +94,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
   double wp = d/(VMAX*dt);
   for(int i = 0; i<wp; i++)
     ret.push_back(s+(1.0-(i+1.0)/wp)*extension);
+  double IG = this->informationGainCone(s)/100;
   visualization_msgs::Marker p;
   p.header.stamp = ros::Time::now();
   p.header.seq = g_ID;
@@ -229,14 +230,6 @@ double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
   static const double maxX = 100.0;
   static const double maxY = 20.0;
   static const double maxZ = 50.0;
-  octomap::point3d min;
-  min.x() = s[0] - R;
-  min.y() = s[1] - R;
-  min.z() = s[2] - R;
-  octomap::point3d max;
-  min.x() = s[0] + R;
-  min.y() = s[1] + R;
-  min.z() = s[2] + R;
   double gain = 0.0;
   double disc = octomap->getResolution();
   octomath::Vector3 origin;
@@ -266,37 +259,66 @@ double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
   }
   gain*=pow(disc, 3.0);
   
+  ROS_INFO("gain is: %2.2f", gain);
   return gain;
 }
 
 template<typename stateVec>
 double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
 {
-  const double R = 100.0;
-  octomap::point3d min;
-  min.x() = s[0] - R;
-  min.y() = s[1] - R;
-  min.z() = s[2] - R;
-  octomap::point3d max;
-  min.x() = s[0] + R;
-  min.y() = s[1] + R;
-  min.z() = s[2] + R;
+  static const double R = 10.0;
+  static const double minX = -30.0;
+  static const double minY = -100.0;
+  static const double minZ = 0.0;
+  static const double maxX = 100.0;
+  static const double maxY = 30.0;
+  static const double maxZ = 50.0;
   double gain = 0.0;
-  for(octomap_t::leaf_iterator it = octomap->begin_leafs(), end = octomap->end_leafs(); it != end; it++)
+  double disc = octomap->getResolution();
+  octomath::Vector3 origin;
+  origin.x() = s[0]; origin.y() = s[1]; origin.z() = s[2];
+  bool ignoreUnknownCells = true;
+  octomath::Vector3 vec;
+  for(vec.x() = std::max(s[0] - R, minX); vec.x() < std::min(s[0] + R, maxX); vec.x() += disc)
   {
-    Vector3f dir(it.getX() - s[0], it.getY() - s[1], it.getZ() - s[2]);
-    for(typename std::vector<Vector3f>::iterator itCBN = camBoundNormals.begin(); itCBN!=camBoundNormals.end(); itCBN++)
+    for(vec.y() = std::max(s[0] - R, minY); vec.y() < std::min(s[0] + R, maxY); vec.y() += disc)
     {
-      Vector3f normal = AngleAxisf(s[3], Vector3f::UnitZ())*(*itCBN);
-      double val = dir.dot(normal);
-      if(val<SQRT2*it.getSize())
-        continue;
+      for(vec.z() = std::max(s[0] - R, minZ); vec.z() < std::min(s[0] + R, maxZ); vec.z() += disc)
+      {
+        double dsq = SQ(s[0] - vec.x())+SQ(s[1] - vec.y())+SQ(s[2] - vec.z());
+        if(dsq>pow(R,2.0))
+          continue;
+          
+        Vector3f dir(vec.x() - s[0], vec.y() - s[1], vec.z() - s[2]);
+        bool bbreak = false;
+        for(typename std::vector<Vector3f>::iterator itCBN = camBoundNormals.begin(); itCBN!=camBoundNormals.end(); itCBN++)
+        {
+          Vector3f normal = AngleAxisf(s[3], Vector3f::UnitZ())*(*itCBN);
+          double val = dir.dot(normal);
+          if(val<SQRT2*disc)
+          {
+            bbreak = true;
+            break;
+          }
+        }
+        if(bbreak)
+          continue;
+        
+        octomap::OcTreeNode* node = octomap->search(vec.x(), vec.y(), vec.z());
+        //ROS_INFO("node: %i", (int)(long)node);
+        if (node == NULL)
+        {
+          // Rayshooting to evaluate inspectability of cell
+          octomath::Vector3 end;
+          if(this->octomap->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
+            gain+=1.0;// /dsq;
+        }
+      }
     }
-    double dsq = SQ(s[0] - it.getX())+SQ(s[1] - it.getY())+SQ(s[2] - it.getZ());
-    if(dsq>0&&dsq<pow(R,2.0))
-      if(fabs(it->getOccupancy()-0.55)<=0.15)
-        gain+=pow(it.getSize(),3.0)/dsq;
   }
+  gain*=pow(disc, 3.0);
+  
+  ROS_INFO("gain is: %2.2f", gain);
   return gain;
 }
 
