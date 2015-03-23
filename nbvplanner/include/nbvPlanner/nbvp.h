@@ -4,10 +4,10 @@
 #include "octomap/octomap.h"
 #include "octomap/OcTreeNode.h"
 #include "octomap/OcTree.h"
-#define EXTENSION_RANGE 0.5
-#define VMAX 0.25
+#define EXTENSION_RANGE 10.0
+#define VMAX 0.5
 #define YAWMAX 0.5
-#define SQ(x) (x*x)
+#define SQ(x) ((x)*(x))
 #define PITCH 0.0
 #define CAM_HORIZONTAL 120.0
 #define CAM_VERTICAL 120.0

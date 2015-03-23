@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(nbvPlanner)
+project(nbvplanner)
 
 add_definitions(-std=c++11)
 
@@ -78,7 +78,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include ${Eigen_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS}
-  LIBRARIES nbvPlanner ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES}
+  LIBRARIES nbvplanner ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES}
   CATKIN_DEPENDS message_runtime
 #  DEPENDS system_lib
 )
@@ -97,8 +97,8 @@ include_directories(
 )
 
 ## Declare a cpp library
-# add_library(nbvPlanner
-#   src/${PROJECT_NAME}/nbvPlanner.cpp
+# add_library(nbvplanner
+#   src/${PROJECT_NAME}/nbvplanner.cpp
 # )
 
 ## Declare a cpp executable
@@ -107,7 +107,7 @@ add_executable(exploration src/exploration.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(nbvPlanner nbvPlanner_generate_messages_cpp)
+# add_dependencies(nbvPlanner nbvplanner_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(nbvPlanner

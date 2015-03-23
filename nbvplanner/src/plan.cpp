@@ -19,7 +19,7 @@
 using namespace Eigen;
 using namespace nbvInspection;
 
-typedef Matrix<float, 8,1> stateVec_t;
+typedef Matrix<float, 4,1> stateVec_t;
 typedef nbvplanner<stateVec_t> planner_t;
 typedef octomap_msgs::GetOctomap OctomapSrv;
 
@@ -38,7 +38,7 @@ void posCallback(const geometry_msgs::PoseStamped& pose)
     root = new stateVec_t;
   }
   ros::Duration dt = pose.header.stamp - g_timeOld;
-  if(dt.toSec()>0.0)
+  if(dt.toSec()>0.0 || root->size()<8)
   {
     (*root)[0] = pose.pose.position.x;
     (*root)[1] = pose.pose.position.y;
@@ -46,7 +46,7 @@ void posCallback(const geometry_msgs::PoseStamped& pose)
     tf::Pose poseTF;
     tf::poseMsgToTF(pose.pose, poseTF);
     (*root)[3] = tf::getYaw(poseTF.getRotation());
-    if(g_stateOld == NULL)
+    /*if(g_stateOld == NULL)
     {
       g_stateOld = new stateVec_t;
       (*root)[4] = 0.0;
@@ -60,10 +60,10 @@ void posCallback(const geometry_msgs::PoseStamped& pose)
       (*root)[5] = (pose.pose.position.y - (*g_stateOld)[1])/dt.toSec();
       (*root)[6] = (pose.pose.position.z - (*g_stateOld)[2])/dt.toSec();
       (*root)[7] = ((*root)[3] - (*g_stateOld)[3])/dt.toSec();
-    }
+    }*/
   }
-  *g_stateOld = *root;
-  g_timeOld = pose.header.stamp;
+  //*g_stateOld = *root;
+  //g_timeOld = pose.header.stamp;
 }
 
 bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::Response& res)
@@ -101,7 +101,9 @@ bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::R
     return true;
   std::vector<stateVec_t> ro; ro.push_back(*root);
   g_ID = 0;
-  planner_t::vector_t path = planner->expand(*planner, 2, 2, ro, &planner_t::sampleEuler, &planner_t::informationGainRand);
+  static const int depth = 1;
+  static const int width = 16;
+  planner_t::vector_t path = planner->expand(*planner, depth, width, ro, &planner_t::sampleHolonomic, &planner_t::informationGainSimple);
   std::reverse(path.begin(), path.end());
   for(planner_t::vector_t::iterator it = path.begin(); it!=path.end(); it++)
   {

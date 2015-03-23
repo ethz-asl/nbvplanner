@@ -17,13 +17,13 @@
   <node name="rviz" pkg="rviz" type="rviz" output="screen"/>
   <node name="octomap_server" pkg="octomap_server" type="octomap_server_node" output="screen">
     <param name="frame_id" type="string" value="world" />
-    <param name="resolution" type="double" value="0.25" />
-    <param name="sensor_model/max_range" type="double" value="50.0" />
+    <param name="resolution" type="double" value="1.0" />
+    <param name="sensor_model/max_range" type="double" value="10.0" />
     <param name="latch" type="bool" value="false" />
     <remap from="cloud_in" to="firefly/vi_sensor/camera_depth/depth/points"/>
     <remap from="tf_static" to="tf"/>
   </node>
-  <node name="nbvPlanner" pkg="nbvPlanner" type="nbvPlanner" output="screen">
+  <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
     <remap from="pose" to="firefly/odometry_sensor1/pose"/>
     <remap from="nbvplanner" to="firefly/nbvplanner"/>
   </node>
@@ -41,7 +41,7 @@
       <rosparam command="load" file="$(find rotors_gazebo)/resource/$(arg mav_name).yaml" />
       <remap from="odometry" to="odometry_sensor1/odometry" />
     </node>
-    <node name="exploration" pkg="nbvPlanner" type="exploration" output="screen"/>
+    <node name="exploration" pkg="nbvplanner" type="exploration" output="screen"/>
     
   </group>
   

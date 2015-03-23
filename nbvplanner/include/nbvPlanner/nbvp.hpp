@@ -69,6 +69,7 @@ template<typename stateVec>
 typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner<stateVec>::sampleHolonomic(stateVec s)
 {
   assert(s.size()==4);
+  static const double dt = 0.5;
   nbvInspection::nbvplanner<stateVec>::vector_t ret;
   stateVec extension;
   octomap::point3d origin;
@@ -89,9 +90,35 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
     direction.x() = extension[0];
     direction.y() = extension[1];
     direction.z() = extension[2];
-  }while(false);//this->octomap->castRay(origin, direction, end, ignoreUnknownCells, d));
-  for(int i = 0; i<10; i++)
-    ret.push_back((0.9 - ((double)i)/10.0)*s+((i+1.0)/10.0)*extension);
+  }while(this->octomap->castRay(origin, direction, end, ignoreUnknownCells, d+1.0));
+  double wp = d/(VMAX*dt);
+  for(int i = 0; i<wp; i++)
+    ret.push_back(s+(1.0-(i+1.0)/wp)*extension);
+  visualization_msgs::Marker p;
+  p.header.stamp = ros::Time::now();
+  p.header.seq = g_ID;
+  p.header.frame_id = "/world";
+  p.id = g_ID; g_ID++;
+  p.type = visualization_msgs::Marker::ARROW;
+  p.action = visualization_msgs::Marker::ADD;
+  p.pose.position.x = ret.front()[0];
+  p.pose.position.y = ret.front()[1];
+  p.pose.position.z = ret.front()[2];
+  tf::Quaternion quat; quat.setEuler(0.0, 0.0, ret.front()[3]);
+  p.pose.orientation.x = quat.x();
+  p.pose.orientation.y = quat.y();
+  p.pose.orientation.z = quat.z();
+  p.pose.orientation.w = quat.w();
+  p.scale.x = 1.0;
+  p.scale.y = 0.1;
+  p.scale.z = 0.1;
+  p.color.r = 167.0/255.0;
+  p.color.g = 167.0/255.0;
+  p.color.b = 0.0;
+  p.color.a = 1.0;
+  p.lifetime = ros::Duration(0.0);
+  p.frame_locked = false;
+  inspectionPath.publish(p);
   return ret;
 }
 
@@ -195,7 +222,13 @@ double nbvInspection::nbvplanner<stateVec>::informationGainRand(stateVec s)
 template<typename stateVec>
 double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
 {
-  const double R = 10.0;
+  static const double R = 10.0;
+  static const double minX = -10.0;
+  static const double minY = -100.0;
+  static const double minZ = 0.0;
+  static const double maxX = 100.0;
+  static const double maxY = 20.0;
+  static const double maxZ = 50.0;
   octomap::point3d min;
   min.x() = s[0] - R;
   min.y() = s[1] - R;
@@ -204,14 +237,35 @@ double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
   min.x() = s[0] + R;
   min.y() = s[1] + R;
   min.z() = s[2] + R;
-  double gain = pow(R, 3.0);
-  //for(octomap_t::leaf_bbx_iterator it = octomap->begin_leafs_bbx(min, max), end = octomap->end_leafs_bbx(); it != end; it++)
-  for(octomap_t::leaf_iterator it = octomap->begin_leafs(), end = octomap->end_leafs(); it != end; it++)
+  double gain = 0.0;
+  double disc = octomap->getResolution();
+  octomath::Vector3 origin;
+  origin.x() = s[0]; origin.y() = s[1]; origin.z() = s[2];
+  bool ignoreUnknownCells = true;
+  octomath::Vector3 vec;
+  for(vec.x() = std::max(s[0] - R, minX); vec.x() < std::min(s[0] + R, maxX); vec.x() += disc)
   {
-    double dsq = SQ(s[0] - it.getX())+SQ(s[1] - it.getY())+SQ(s[2] - it.getZ());
-    if(dsq>0&&dsq<pow(R,2.0))
-      gain-=pow(it.getSize(),3.0);
+    for(vec.y() = std::max(s[0] - R, minY); vec.y() < std::min(s[0] + R, maxY); vec.y() += disc)
+    {
+      for(vec.z() = std::max(s[0] - R, minZ); vec.z() < std::min(s[0] + R, maxZ); vec.z() += disc)
+      {
+        double dsq = SQ(s[0] - vec.x())+SQ(s[1] - vec.y())+SQ(s[2] - vec.z());
+        if(dsq>pow(R,2.0))// || !octomap->inBBX(vec))
+          continue;
+        octomap::OcTreeNode* node = octomap->search(vec.x(), vec.y(), vec.z());
+        //ROS_INFO("node: %i", (int)(long)node);
+        if (node == NULL)
+        {
+          // Rayshooting to evaluate inspectability of cell
+          octomath::Vector3 end;
+          if(this->octomap->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
+            gain+=1.0/dsq;
+        }
+      }
+    }
   }
+  gain*=pow(disc, 3.0);
+  
   return gain;
 }
 

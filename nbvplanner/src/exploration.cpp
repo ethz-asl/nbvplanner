@@ -26,6 +26,7 @@
 #include <std_srvs/Empty.h>
 #include <mav_msgs/CommandTrajectory.h>
 #include "nbvPlanner/nbvp_srv.h"
+#include "tf/tf.h"
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "hovering_example");
@@ -63,27 +64,33 @@ int main(int argc, char** argv){
   nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
   nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
   nh.param<double>("wp_z", trajectory_msg.position.z, 5.0);
+  trajectory_msg.yaw = 0.0;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(5.0).sleep();
   while (ros::ok()) {
-    ros::Duration(0.5).sleep();
     ROS_INFO("Initiating replanning");
     nbvPlanner::nbvp_srv planSrv;
     if(ros::service::call("nbvplanner",planSrv))
     {
       for(int i = 0; i<10&&i<planSrv.response.path.size(); i++)
       {
+        tf::Pose pose;
+        tf::poseMsgToTF(planSrv.response.path[i], pose);
+        double yaw = tf::getYaw(pose.getRotation());
         nh.param<double>("wp_x", trajectory_msg.position.x, planSrv.response.path[i].position.x);
         nh.param<double>("wp_y", trajectory_msg.position.y, planSrv.response.path[i].position.y);
         nh.param<double>("wp_z", trajectory_msg.position.z, planSrv.response.path[i].position.z);
-        ROS_INFO("Publishing waypoint on namespace %s: [%f, %f, %f].",
+        nh.param<double>("wp_yaw", trajectory_msg.yaw, yaw);
+        ROS_INFO("Publishing waypoint on namespace %s: [%f, %f, %f] [%f].",
                  nh.getNamespace().c_str(),
                  trajectory_msg.position.x,
                  trajectory_msg.position.y,
-                 trajectory_msg.position.z);
+                 trajectory_msg.position.z,
+                 trajectory_msg.yaw);
         trajectory_msg.header.stamp = ros::Time::now();
         trajectory_pub.publish(trajectory_msg);
+        ros::Duration(0.5).sleep();
       }
     }
     else
