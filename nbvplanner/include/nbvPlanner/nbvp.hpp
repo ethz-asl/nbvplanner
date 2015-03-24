@@ -1,6 +1,7 @@
 #include "nbvPlanner/nbvp.h"
 #include <cfloat>
 #include <cstdlib>
+#include <sstream>
 #include "tf/transform_datatypes.h"
 #include "visualization_msgs/Marker.h"
 
@@ -92,14 +93,16 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
     direction.z() = extension[2];
   }while(this->octomap->castRay(origin, direction, end, ignoreUnknownCells, d*1.1+1.0));
   double wp = d/(VMAX*dt);
-  for(int i = 0; i<wp; i++)
-    ret.push_back(s+(1.0-(i+1.0)/wp)*extension);
-  double IG = this->informationGainCone(s)/100;
+  for(double i = 0.0; i<wp; i+=1.0)
+    ret.push_back(s+(1.0-i/wp)*extension);
+  double IG = this->informationGainCone(s+extension);
+  ROS_INFO("IG %2.2f", IG);
   visualization_msgs::Marker p;
   p.header.stamp = ros::Time::now();
   p.header.seq = g_ID;
   p.header.frame_id = "/world";
   p.id = g_ID; g_ID++;
+  p.ns="vp_tree";
   p.type = visualization_msgs::Marker::ARROW;
   p.action = visualization_msgs::Marker::ADD;
   p.pose.position.x = ret.front()[0];
@@ -110,7 +113,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
   p.pose.orientation.y = quat.y();
   p.pose.orientation.z = quat.z();
   p.pose.orientation.w = quat.w();
-  p.scale.x = 1.0;
+  p.scale.x = std::max(IG/100.0, 0.05);
   p.scale.y = 0.1;
   p.scale.z = 0.1;
   p.color.r = 167.0/255.0;
@@ -259,7 +262,6 @@ double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
   }
   gain*=pow(disc, 3.0);
   
-  ROS_INFO("gain is: %2.2f", gain);
   return gain;
 }
 
@@ -310,7 +312,7 @@ double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
         {
           // Rayshooting to evaluate inspectability of cell
           octomath::Vector3 end;
-          if(this->octomap->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
+          if(!this->octomap->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
             gain+=1.0;// /dsq;
         }
       }
@@ -318,7 +320,6 @@ double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
   }
   gain*=pow(disc, 3.0);
   
-  ROS_INFO("gain is: %2.2f", gain);
   return gain;
 }
 
