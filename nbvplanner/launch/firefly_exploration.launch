@@ -17,8 +17,8 @@
   <node name="rviz" pkg="rviz" type="rviz" output="screen"/>
   <node name="octomap_server" pkg="octomap_server" type="octomap_server_node" output="screen">
     <param name="frame_id" type="string" value="world" />
-    <param name="resolution" type="double" value="1.0" />
-    <param name="sensor_model/max_range" type="double" value="20.0" />
+    <param name="resolution" type="double" value="5.0" />
+    <param name="sensor_model/max_range" type="double" value="50.0" />
     <param name="latch" type="bool" value="false" />
     <remap from="cloud_in" to="firefly/vi_sensor/camera_depth/depth/points"/>
     <remap from="tf_static" to="tf"/>

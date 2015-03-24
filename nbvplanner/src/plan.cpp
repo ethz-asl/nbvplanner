@@ -102,8 +102,12 @@ bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::R
   std::vector<stateVec_t> ro; ro.push_back(*root);
   g_ID = 0;
   static const int depth = 3;
-  static const int width = 3;
-  planner_t::vector_t path = planner->expand(*planner, depth, width, ro, &planner_t::sampleHolonomic, &planner_t::informationGainCone);
+  static const int width = 6;
+  double IG = 0.0;
+  ros::Time start = ros::Time::now();
+  planner_t::vector_t path = planner->expand(*planner, depth, width, ro, IG, &planner_t::sampleHolonomic, &planner_t::informationGainCone);
+  ros::Duration duration = ros::Time::now() - start;
+  ROS_INFO("Replanning lasted %2.2fs and has a Gain of %2.2f", duration.toSec(), IG);
   std::reverse(path.begin(), path.end());
   for(planner_t::vector_t::iterator it = path.begin(); it!=path.end(); it++)
   {
@@ -120,7 +124,7 @@ bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::R
     p.pose.orientation.z = quat.z();
     p.pose.orientation.w = quat.w();
     res.path.push_back(p.pose);
-    ROS_INFO("(%2.2f,%2.2f,%2.2f,%2.2f)", (*it)[0], (*it)[1], (*it)[2], (*it)[3]);
+    //ROS_INFO("(%2.2f,%2.2f,%2.2f,%2.2f)", (*it)[0], (*it)[1], (*it)[2], (*it)[3]);
   }
   return true;
 }

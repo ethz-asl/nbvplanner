@@ -63,7 +63,35 @@ int main(int argc, char** argv){
   ROS_INFO("Starting the planner");
   nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
   nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 5.0);
+  nh.param<double>("wp_z", trajectory_msg.position.z, 7.0);
+  trajectory_msg.yaw = 0.0;
+  trajectory_msg.header.stamp = ros::Time::now();
+  trajectory_pub.publish(trajectory_msg);
+  ros::Duration(3.0).sleep();
+  nh.param<double>("wp_x", trajectory_msg.position.x, -5.0);
+  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
+  nh.param<double>("wp_z", trajectory_msg.position.z, 7.0);
+  trajectory_msg.yaw = 0.0;
+  trajectory_msg.header.stamp = ros::Time::now();
+  trajectory_pub.publish(trajectory_msg);
+  ros::Duration(2.0).sleep();
+  nh.param<double>("wp_x", trajectory_msg.position.x, -10.0);
+  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
+  nh.param<double>("wp_z", trajectory_msg.position.z, 7.0);
+  trajectory_msg.yaw = 0.0;
+  trajectory_msg.header.stamp = ros::Time::now();
+  trajectory_pub.publish(trajectory_msg);
+  ros::Duration(2.0).sleep();
+  nh.param<double>("wp_x", trajectory_msg.position.x, -15.0);
+  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
+  nh.param<double>("wp_z", trajectory_msg.position.z, 7.0);
+  trajectory_msg.yaw = 0.0;
+  trajectory_msg.header.stamp = ros::Time::now();
+  trajectory_pub.publish(trajectory_msg);
+  ros::Duration(3.0).sleep();
+  nh.param<double>("wp_x", trajectory_msg.position.x, -10.0);
+  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
+  nh.param<double>("wp_z", trajectory_msg.position.z, 7.0);
   trajectory_msg.yaw = 0.0;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
@@ -82,12 +110,12 @@ int main(int argc, char** argv){
         nh.param<double>("wp_y", trajectory_msg.position.y, planSrv.response.path[i].position.y);
         nh.param<double>("wp_z", trajectory_msg.position.z, planSrv.response.path[i].position.z);
         nh.param<double>("wp_yaw", trajectory_msg.yaw, yaw);
-        ROS_INFO("Publishing waypoint on namespace %s: [%f, %f, %f] [%f].",
+        /*ROS_INFO("Publishing waypoint on namespace %s: [%f, %f, %f] [%f].",
                  nh.getNamespace().c_str(),
                  trajectory_msg.position.x,
                  trajectory_msg.position.y,
                  trajectory_msg.position.z,
-                 trajectory_msg.yaw);
+                 trajectory_msg.yaw);*/
         trajectory_msg.header.stamp = ros::Time::now();
         trajectory_pub.publish(trajectory_msg);
         ros::Duration(0.5).sleep();

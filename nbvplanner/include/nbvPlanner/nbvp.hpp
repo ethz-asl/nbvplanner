@@ -41,28 +41,29 @@ nbvInspection::nbvplanner<stateVec>::~nbvplanner()
 }
 
 template<typename stateVec>
-typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner<stateVec>::expand(nbvplanner<stateVec>& instance, int N, int M, nbvInspection::nbvplanner<stateVec>::vector_t s, nbvInspection::nbvplanner<stateVec>::vector_t (nbvInspection::nbvplanner<stateVec>::*sample)(stateVec), double (nbvInspection::nbvplanner<stateVec>::*informationGain)(stateVec))
+typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner<stateVec>::expand(nbvplanner<stateVec>& instance, int N, int M, nbvInspection::nbvplanner<stateVec>::vector_t s, double& IGout, nbvInspection::nbvplanner<stateVec>::vector_t (nbvInspection::nbvplanner<stateVec>::*sample)(stateVec), double (nbvInspection::nbvplanner<stateVec>::*informationGain)(stateVec))
 {
   double IG = (instance.*informationGain)(s.front());
+  double IGnew = 0.0;
   nbvInspection::nbvplanner<stateVec>::vector_t path;
   nbvInspection::nbvplanner<stateVec>::vector_t ret;
   ret = s;
+  IGout = 0.0;
   
   if(N<=0)
     return ret;
     
   for(int m = 0; m<M; m++)
   {
-    path = instance.expand(instance, N-1, M, (instance.*sample)(s.front()), sample, informationGain);
-    double IGtmp = (instance.*informationGain)(path.front());
-    if(IGtmp>IG)
+    path = instance.expand(instance, N-1, M, (instance.*sample)(s.front()), IGnew, sample, informationGain);
+    if(IG+IGnew>IGout)
     {
       path.insert(path.end(),s.begin(),s.end());
       ret = path;
-      IG = IGtmp;
+      IGout = IG+IGnew;
     }
   }
-  ROS_INFO("Information Gain is: %2.2f", IG);
+  ROS_INFO("Information Gain is: %2.2f", IGout);
   return ret;
 }
 
@@ -79,8 +80,9 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
   origin.z() = s[2];
   octomap::point3d direction;
   octomap::point3d end;
-  bool ignoreUnknownCells = true;
+  bool ignoreUnknownCells = false;
   double d = DBL_MAX;
+  int iter = 0;
   do
   {
     for(int i = 0; i<extension.size()-1; i++)
@@ -91,12 +93,17 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
     direction.x() = extension[0];
     direction.y() = extension[1];
     direction.z() = extension[2];
-  }while(this->octomap->castRay(origin, direction, end, ignoreUnknownCells, d*1.1+1.0));
+  }while(this->octomap->castRay(origin, direction, end, ignoreUnknownCells, d*1.1+octomap->getResolution()) && (iter++) < 100);
+  if(iter>=100)
+  {
+    ROS_WARN("No connection found to extend tree");
+    ret.push_back(s);
+    return ret;
+  }
   double wp = d/(VMAX*dt);
   for(double i = 0.0; i<wp; i+=1.0)
     ret.push_back(s+(1.0-i/wp)*extension);
   double IG = this->informationGainCone(s+extension);
-  ROS_INFO("IG %2.2f", IG);
   visualization_msgs::Marker p;
   p.header.stamp = ros::Time::now();
   p.header.seq = g_ID;
@@ -113,7 +120,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
   p.pose.orientation.y = quat.y();
   p.pose.orientation.z = quat.z();
   p.pose.orientation.w = quat.w();
-  p.scale.x = std::max(IG/100.0, 0.05);
+  p.scale.x = std::max(IG/500.0, 0.05);
   p.scale.y = 0.1;
   p.scale.z = 0.1;
   p.color.r = 167.0/255.0;
@@ -176,7 +183,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
       direction.x() = ds[0];
       direction.y() = ds[1];
       direction.z() = ds[2];
-    }while(false);//this->octomap->castRay(origin, direction, end, ignoreUnknownCells, d));
+    }while(false);//this->octomap->castRay(origin, direction, end, ignoreUnknownCells, d*1.1+octomap->getResolution()));
     s[0] += dt*(s[4]+ds[0])/2.0;
     s[1] += dt*(s[5]+ds[1])/2.0;
     s[2] += dt*(s[6]+ds[2])/2.0;
@@ -227,7 +234,7 @@ template<typename stateVec>
 double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
 {
   static const double R = 10.0;
-  static const double minX = -10.0;
+  static const double minX = -20.0;
   static const double minY = -100.0;
   static const double minZ = 0.0;
   static const double maxX = 100.0;
@@ -268,8 +275,8 @@ double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
 template<typename stateVec>
 double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
 {
-  static const double R = 10.0;
-  static const double minX = -10.0;
+  static const double R = 25.0;
+  static const double minX = -20.0;
   static const double minY = -100.0;
   static const double minZ = 0.0;
   static const double maxX = 100.0;
@@ -279,7 +286,7 @@ double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
   double disc = octomap->getResolution();
   octomath::Vector3 origin;
   origin.x() = s[0]; origin.y() = s[1]; origin.z() = s[2];
-  bool ignoreUnknownCells = false;
+  bool ignoreUnknownCells = true;
   octomath::Vector3 vec;
   for(vec.x() = std::max(s[0] - R, minX); vec.x() < std::min(s[0] + R, maxX); vec.x() += disc)
   {
@@ -319,6 +326,33 @@ double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
     }
   }
   gain*=pow(disc, 3.0);
+  
+  visualization_msgs::Marker p;
+  p.header.stamp = ros::Time::now();
+  p.header.seq = g_ID;
+  p.header.frame_id = "/world";
+  p.id = 0;
+  p.ns="workspace";
+  p.type = visualization_msgs::Marker::CUBE;
+  p.action = visualization_msgs::Marker::ADD;
+  p.pose.position.x = (minX+maxX)/2.0;
+  p.pose.position.y = (minY+maxY)/2.0;
+  p.pose.position.z = (minZ+maxZ)/2.0;
+  tf::Quaternion quat; quat.setEuler(0.0, 0.0, 0.0);
+  p.pose.orientation.x = quat.x();
+  p.pose.orientation.y = quat.y();
+  p.pose.orientation.z = quat.z();
+  p.pose.orientation.w = quat.w();
+  p.scale.x = maxX-minX;
+  p.scale.y = maxY-minY;
+  p.scale.z = maxZ-minZ;
+  p.color.r = 200.0/255.0;
+  p.color.g = 100.0/255.0;
+  p.color.b = 0.0;
+  p.color.a = 0.1;
+  p.lifetime = ros::Duration(0.0);
+  p.frame_locked = false;
+  inspectionPath.publish(p);
   
   return gain;
 }
