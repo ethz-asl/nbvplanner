@@ -82,7 +82,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
   origin.z() = s[2];
   octomap::point3d direction;
   octomap::point3d end;
-  bool ignoreUnknownCells = false;
+  bool ignoreUnknownCells = true;
   double d = DBL_MAX;
   int iter = 0;
   do
@@ -170,7 +170,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
       
   octomap::point3d direction;
   octomap::point3d end;
-  bool ignoreUnknownCells = false;
+  bool ignoreUnknownCells = true;
   double d = DBL_MAX;
   for(int i = 0; i < 10; i++)
   {
@@ -262,13 +262,13 @@ double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
   double disc = octomap->getResolution();
   octomath::Vector3 origin;
   origin.x() = s[0]; origin.y() = s[1]; origin.z() = s[2];
-  bool ignoreUnknownCells = true;
+  bool ignoreUnknownCells = false;
   octomath::Vector3 vec;
   for(vec.x() = std::max(s[0] - R, minX); vec.x() < std::min(s[0] + R, maxX); vec.x() += disc)
   {
-    for(vec.y() = std::max(s[0] - R, minY); vec.y() < std::min(s[0] + R, maxY); vec.y() += disc)
+    for(vec.y() = std::max(s[1] - R, minY); vec.y() < std::min(s[1] + R, maxY); vec.y() += disc)
     {
-      for(vec.z() = std::max(s[0] - R, minZ); vec.z() < std::min(s[0] + R, maxZ); vec.z() += disc)
+      for(vec.z() = std::max(s[2] - R, minZ); vec.z() < std::min(s[2] + R, maxZ); vec.z() += disc)
       {
         double dsq = SQ(s[0] - vec.x())+SQ(s[1] - vec.y())+SQ(s[2] - vec.z());
         if(dsq>pow(R,2.0))// || !octomap->inBBX(vec))
@@ -304,13 +304,13 @@ double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
   double disc = octomap->getResolution();
   octomath::Vector3 origin;
   origin.x() = s[0]; origin.y() = s[1]; origin.z() = s[2];
-  bool ignoreUnknownCells = true;
+  bool ignoreUnknownCells = false;
   octomath::Vector3 vec;
   for(vec.x() = std::max(s[0] - R, minX); vec.x() < std::min(s[0] + R, maxX); vec.x() += disc)
   {
-    for(vec.y() = std::max(s[0] - R, minY); vec.y() < std::min(s[0] + R, maxY); vec.y() += disc)
+    for(vec.y() = std::max(s[1] - R, minY); vec.y() < std::min(s[1] + R, maxY); vec.y() += disc)
     {
-      for(vec.z() = std::max(s[0] - R, minZ); vec.z() < std::min(s[0] + R, maxZ); vec.z() += disc)
+      for(vec.z() = std::max(s[2] - R, minZ); vec.z() < std::min(s[2] + R, maxZ); vec.z() += disc)
       {
         double dsq = SQ(s[0] - vec.x())+SQ(s[1] - vec.y())+SQ(s[2] - vec.z());
         if(dsq>pow(R,2.0))
