@@ -4,7 +4,7 @@
 #include "octomap/octomap.h"
 #include "octomap/OcTreeNode.h"
 #include "octomap/OcTree.h"
-#define EXTENSION_RANGE 15.0
+#define EXTENSION_RANGE 25.0
 #define VMAX 1.0
 #define YAWMAX 0.5
 #define SQ(x) ((x)*(x))
@@ -12,6 +12,7 @@
 #define CAM_HORIZONTAL 120.0
 #define CAM_VERTICAL 120.0
 #define SQRT2 0.70711
+#define DEGRESSIVE_COEFF 0.5
 
 namespace nbvInspection
 {

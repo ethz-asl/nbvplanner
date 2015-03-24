@@ -1,11 +1,11 @@
 #include "ros/ros.h"
 #include <eigen3/Eigen/Dense>
 #include "geometry_msgs/PoseStamped.h"
+#include "geometry_msgs/PolygonStamped.h"
 #include "visualization_msgs/Marker.h"
 #include "nbvPlanner/nbvp.hpp"
 #include "nbvPlanner/nbvp_srv.h"
 #include "tf/transform_datatypes.h"
-#include <octomap_msgs/Octomap.h>
 
 #include <octomap/octomap.h>
 #include <octomap/OcTreeKey.h>
@@ -27,6 +27,7 @@ planner_t * planner;
 stateVec_t * root;
 stateVec_t * g_stateOld;
 ros::Publisher inspectionPath;
+ros::Publisher treePub;
 ros::ServiceClient octomapClient;
 ros::Time g_timeOld;
 int g_ID;
@@ -101,8 +102,8 @@ bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::R
     return true;
   std::vector<stateVec_t> ro; ro.push_back(*root);
   g_ID = 0;
-  static const int depth = 3;
-  static const int width = 6;
+  static const int depth = 2;
+  static const int width = 16;
   double IG = 0.0;
   ros::Time start = ros::Time::now();
   planner_t::vector_t path = planner->expand(*planner, depth, width, ro, IG, &planner_t::sampleHolonomic, &planner_t::informationGainCone);
@@ -138,6 +139,7 @@ int main(int argc, char **argv)
   root = NULL;
   g_stateOld = NULL;
   inspectionPath = n.advertise<visualization_msgs::Marker>("inspectionPath", 1000);
+  treePub = n.advertise<geometry_msgs::PolygonStamped>("treePol", 1000);
   ros::ServiceServer plannerService = n.advertiseService("nbvplanner", plannerCallback);
   ros::Subscriber pos = n.subscribe("pose", 10, posCallback);
   octomapClient = n.serviceClient<OctomapSrv>("octomap_full");

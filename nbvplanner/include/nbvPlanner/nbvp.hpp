@@ -4,11 +4,13 @@
 #include <sstream>
 #include "tf/transform_datatypes.h"
 #include "visualization_msgs/Marker.h"
+#include "geometry_msgs/PolygonStamped.h"
 
 using namespace Eigen;
 
 extern int g_ID;
 extern ros::Publisher inspectionPath;
+extern ros::Publisher treePub;
 
 template<typename stateVec>
 nbvInspection::nbvplanner<stateVec>::nbvplanner()
@@ -56,14 +58,14 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
   for(int m = 0; m<M; m++)
   {
     path = instance.expand(instance, N-1, M, (instance.*sample)(s.front()), IGnew, sample, informationGain);
-    if(IG+IGnew>IGout)
+    if(IG+DEGRESSIVE_COEFF*IGnew>IGout)
     {
       path.insert(path.end(),s.begin(),s.end());
       ret = path;
-      IGout = IG+IGnew;
+      IGout = IG+DEGRESSIVE_COEFF*IGnew;
     }
   }
-  ROS_INFO("Information Gain is: %2.2f", IGout);
+  //ROS_INFO("Information Gain is: %2.2f", IGout);
   return ret;
 }
 
@@ -96,7 +98,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
   }while(this->octomap->castRay(origin, direction, end, ignoreUnknownCells, d*1.1+octomap->getResolution()) && (iter++) < 100);
   if(iter>=100)
   {
-    ROS_WARN("No connection found to extend tree");
+    //ROS_WARN("No connection found to extend tree");
     ret.push_back(s);
     return ret;
   }
@@ -130,6 +132,22 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
   p.lifetime = ros::Duration(0.0);
   p.frame_locked = false;
   inspectionPath.publish(p);
+  
+  geometry_msgs::PolygonStamped pol;
+  pol.header.seq = g_ID; g_ID++;
+  pol.header.stamp = ros::Time::now();
+  pol.header.frame_id = "/world";
+  geometry_msgs::Point32 point;
+  point.x = s[0];
+  point.y = s[1];
+  point.z = s[2];
+  pol.polygon.points.push_back(point);
+  point.x += extension[0];
+  point.y += extension[1];
+  point.z += extension[2];
+  pol.polygon.points.push_back(point);
+  treePub.publish(pol);
+  
   return ret;
 }
 
@@ -239,7 +257,7 @@ double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
   static const double minZ = 0.0;
   static const double maxX = 100.0;
   static const double maxY = 10.0;
-  static const double maxZ = 40.0;
+  static const double maxZ = 55.0;
   double gain = 0.0;
   double disc = octomap->getResolution();
   octomath::Vector3 origin;
@@ -281,7 +299,7 @@ double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
   static const double minZ = 0.0;
   static const double maxX = 100.0;
   static const double maxY = 10.0;
-  static const double maxZ = 40.0;
+  static const double maxZ = 55.0;
   double gain = 0.0;
   double disc = octomap->getResolution();
   octomath::Vector3 origin;
