@@ -5,7 +5,7 @@
 #include "octomap/OcTreeNode.h"
 #include "octomap/OcTree.h"
 #define EXTENSION_RANGE 10.0
-#define VMAX 0.5
+#define VMAX 1.0
 #define YAWMAX 0.5
 #define SQ(x) ((x)*(x))
 #define PITCH 0.0

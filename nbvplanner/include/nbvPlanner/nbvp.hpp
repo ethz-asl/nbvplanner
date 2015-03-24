@@ -79,7 +79,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
   origin.z() = s[2];
   octomap::point3d direction;
   octomap::point3d end;
-  bool ignoreUnknownCells = false;
+  bool ignoreUnknownCells = true;
   double d = DBL_MAX;
   do
   {
@@ -231,8 +231,8 @@ double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
   static const double minY = -100.0;
   static const double minZ = 0.0;
   static const double maxX = 100.0;
-  static const double maxY = 20.0;
-  static const double maxZ = 50.0;
+  static const double maxY = 10.0;
+  static const double maxZ = 40.0;
   double gain = 0.0;
   double disc = octomap->getResolution();
   octomath::Vector3 origin;
@@ -269,17 +269,17 @@ template<typename stateVec>
 double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
 {
   static const double R = 10.0;
-  static const double minX = -30.0;
+  static const double minX = -10.0;
   static const double minY = -100.0;
   static const double minZ = 0.0;
   static const double maxX = 100.0;
-  static const double maxY = 30.0;
-  static const double maxZ = 50.0;
+  static const double maxY = 10.0;
+  static const double maxZ = 40.0;
   double gain = 0.0;
   double disc = octomap->getResolution();
   octomath::Vector3 origin;
   origin.x() = s[0]; origin.y() = s[1]; origin.z() = s[2];
-  bool ignoreUnknownCells = true;
+  bool ignoreUnknownCells = false;
   octomath::Vector3 vec;
   for(vec.x() = std::max(s[0] - R, minX); vec.x() < std::min(s[0] + R, maxX); vec.x() += disc)
   {
