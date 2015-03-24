@@ -23,6 +23,16 @@
     <remap from="cloud_in" to="firefly/vi_sensor/camera_depth/depth/points"/>
     <remap from="tf_static" to="tf"/>
   </node>
+  <group ns="analysis">
+    <node name="octomap_server_highres" pkg="octomap_server" type="octomap_server_node" output="screen">
+      <param name="frame_id" type="string" value="world" />
+      <param name="resolution" type="double" value="0.25" />
+      <param name="sensor_model/max_range" type="double" value="100.0" />
+      <param name="latch" type="bool" value="true" />
+      <remap from="cloud_in" to="/firefly/vi_sensor/camera_depth/depth/points"/>
+      <remap from="tf_static" to="/tf"/>
+    </node>
+  </group>
   <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
     <remap from="pose" to="firefly/odometry_sensor1/pose"/>
     <remap from="nbvplanner" to="firefly/nbvplanner"/>

@@ -122,7 +122,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
   p.pose.orientation.y = quat.y();
   p.pose.orientation.z = quat.z();
   p.pose.orientation.w = quat.w();
-  p.scale.x = std::max(IG/500.0, 0.05);
+  p.scale.x = std::max(IG/1000.0, 0.05);
   p.scale.y = 0.1;
   p.scale.z = 0.1;
   p.color.r = 167.0/255.0;
@@ -257,7 +257,7 @@ double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
   static const double minZ = 0.0;
   static const double maxX = 100.0;
   static const double maxY = 10.0;
-  static const double maxZ = 55.0;
+  static const double maxZ = 40.0;
   double gain = 0.0;
   double disc = octomap->getResolution();
   octomath::Vector3 origin;
@@ -299,7 +299,7 @@ double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
   static const double minZ = 0.0;
   static const double maxX = 100.0;
   static const double maxY = 10.0;
-  static const double maxZ = 55.0;
+  static const double maxZ = 40.0;
   double gain = 0.0;
   double disc = octomap->getResolution();
   octomath::Vector3 origin;

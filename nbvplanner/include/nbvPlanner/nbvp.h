@@ -8,9 +8,9 @@
 #define VMAX 1.0
 #define YAWMAX 1.5
 #define SQ(x) ((x)*(x))
-#define PITCH 0.0
-#define CAM_HORIZONTAL 120.0
-#define CAM_VERTICAL 120.0
+#define PITCH 15.0
+#define CAM_HORIZONTAL 90.0
+#define CAM_VERTICAL 60.0
 #define SQRT2 0.70711
 #define DEGRESSIVE_COEFF 0.5
 
