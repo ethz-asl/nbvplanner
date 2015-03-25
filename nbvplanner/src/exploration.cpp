@@ -101,7 +101,7 @@ int main(int argc, char** argv){
   
   std::string pkgPath = ros::package::getPath("nbvplanner");
   std::fstream file;
-  file.open((pkgPath+"/data/path.m").c_str(), std::ios::app | std::ios::out);
+  file.open((pkgPath+"/data/path.m").c_str(), std::ios::out);
   if(!file.is_open())
     ROS_WARN("could not open path file");
   while (ros::ok()) {

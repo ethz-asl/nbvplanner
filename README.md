@@ -31,8 +31,6 @@ Then run
 roslaunch nbvplanner firefly_exploration.launch
 ```
 
-This produces a random walk, as the growing of the expansion trees as well as the information gain are based on randomness. Meaningful functions need to be implemented.
-
 # Visualization in rviz
 
 - Add a display 'Marker' on the topic 'inspectionPath'. This displays the pose tree of the planning.
