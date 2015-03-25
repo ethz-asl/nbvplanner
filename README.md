@@ -15,21 +15,26 @@ The next best view planner is a real-time capable inspection path planner. From 
 
 # Planner execution
 
-To run the current version, compile the package nbvPlanner, as well as additionally required packages. To get these:
+To run the current version, compile the package nbvplanner, as well as additionally required packages. To get these:
 
 ```sh
 git clone https://github.com/ethz-asl/rotors_simulator.git
-to be continued
+git clone https://github.com/ethz-asl/mav_comm.git
+git clone https://github.com/ethz-asl/glog_catkin.git
+apt-get install ros-<distro>-octomap-*
 ```
+Please leave a note if you find that something is missing.
 
 Then run
 
 ```sh
-roslaunch nbvPlanner firefly_exploration.launch
+roslaunch nbvplanner firefly_exploration.launch
 ```
 
 This produces a random walk, as the growing of the expansion trees as well as the information gain are based on randomness. Meaningful functions need to be implemented.
 
 # Visualization in rviz
 
-Add a display 'Marker' on the topic 'inspectionPath'. This displays the pose tree of the planning. To visualize the octomap add a display 'MarkerArray' on the topic '/occupied_cells_vis_array'
+- Add a display 'Marker' on the topic 'inspectionPath'. This displays the pose tree of the planning.
+- To visualize the octomap used for planning, add a display 'MarkerArray' on the topic '/occupied_cells_vis_array'.
+- For a high resolution octomap of the mapped areas add a display 'MarkerArray' on the topic '/analysis/occupied_cells_vis_array'.
