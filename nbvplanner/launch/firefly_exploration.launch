@@ -8,7 +8,7 @@
     <arg name="world_name" value="$(find rotors_gazebo)/worlds/powerplant.world" />
     <!-- <arg name="debug" value="true"/> -->
     <arg name="paused" value="true"/>
-    <arg name="gui" value="false"/>
+    <arg name="gui" value="true"/>
   </include>
   
   <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 firefly/vi_sensor/ground_truth/firefly/vi_sensor/ground_truth/odometry_sensor_link fcu 1" />
@@ -26,9 +26,9 @@
   <group ns="analysis">
     <node name="octomap_server_highres" pkg="octomap_server" type="octomap_server_node" output="screen">
       <param name="frame_id" type="string" value="world" />
-      <param name="resolution" type="double" value="0.25" />
+      <param name="resolution" type="double" value="0.50" />
       <param name="sensor_model/max_range" type="double" value="100.0" />
-      <param name="latch" type="bool" value="true" />
+      <param name="latch" type="bool" value="false" />
       <remap from="cloud_in" to="/firefly/vi_sensor/camera_depth/depth/points"/>
       <remap from="tf_static" to="/tf"/>
     </node>

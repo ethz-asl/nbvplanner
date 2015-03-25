@@ -2,10 +2,16 @@
 
 The next best view planner is a real-time capable inspection path planner. From the current pose it expands a tree to find a next pose that gives a high information gain. This information gain reflects the exploration of space that is not yet (sufficiently) known. As the vehicle proceeds on the path, the tree is recomputed, taking in account the new information from the sensor.
 
-# Issues
-*OcTree collision avoidance: While tracking the collision free path the rotorcraft flies into an occupied cell or while flying finds that the current position's cell is partially occupied. Consequently no obstacle free path to continue can be found.
-*OcTree bounding box iterator does not work. It should be used to reduce the number of leaf cells to traverse in the IG computation. For some reason substitution of the normal iterator with bbx-iterator results in no leafs to iterate.
-*Search of unmapped area tends to draw the system towards unknown interiors of structure, which can not be inspected. Also the unmapped outside area of the bounded scenario attracts the system. REMADY: Raycasting to unmapped voxel center. BUT: How to do this, as the OcTree does not allocate the unmapped nodes???
+# TODO
+
+- Check for bounding box of octomap. Areas outside remain unmapped
+- Extend tree nodes for the distance covered by the system in one step
+- OcTree collision avoidance: Multiple rays to secure approximated tube and not just a line
+- IG account for occupied voxels as well
+- Compute global information gain (ratio of explored area to total area)
+- Structured tree expansion (e.g. RRT)
+- Strategies to account for zero IG detection (e.g. go back along the path, increase size of sampling space, among others)
+- Complete list of required packages
 
 # Planner execution
 

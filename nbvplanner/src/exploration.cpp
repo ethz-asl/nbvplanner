@@ -21,8 +21,10 @@
 
 #include <thread>
 #include <chrono>
+#include <fstream>
 
 #include <ros/ros.h>
+#include <ros/package.h>
 #include <std_srvs/Empty.h>
 #include <mav_msgs/CommandTrajectory.h>
 #include "nbvPlanner/nbvp_srv.h"
@@ -96,6 +98,12 @@ int main(int argc, char** argv){
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(5.0).sleep();
+  
+  std::string pkgPath = ros::package::getPath("nbvplanner");
+  std::fstream file;
+  file.open((pkgPath+"/data/path.m").c_str(), std::ios::app | std::ios::out);
+  if(!file.is_open())
+    ROS_WARN("could not open path file");
   while (ros::ok()) {
     ROS_INFO("Initiating replanning");
     nbvPlanner::nbvp_srv planSrv;
@@ -118,10 +126,12 @@ int main(int argc, char** argv){
                  trajectory_msg.yaw);*/
         trajectory_msg.header.stamp = ros::Time::now();
         trajectory_pub.publish(trajectory_msg);
+        file << planSrv.response.path[i].position.x<<", "<<planSrv.response.path[i].position.y<<", "<<planSrv.response.path[i].position.z<<", "<<yaw<<"\n";
         ros::Duration(0.5).sleep();
       }
     }
     else
       ROS_WARN("Planner not reachable");
   }
+  file.close();
 }

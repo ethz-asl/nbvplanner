@@ -15,7 +15,6 @@
 #include <octomap_msgs/Octomap.h>
 #include <planning_msgs/Octomap.h>
 #include <octomap_ros/conversions.h>
-#include <iostream>
 using namespace Eigen;
 using namespace nbvInspection;
 
