@@ -33,6 +33,11 @@ int g_ID;
 
 void posCallback(const geometry_msgs::PoseStamped& pose)
 {
+  delete planner->rootNode;
+  planner->rootNode = NULL;
+  nbvInspection::Node<stateVec_t>::bestNode = NULL;
+  nbvInspection::Node<stateVec_t>::bestInformationGain = nbvInspection::Node<stateVec_t>::ZERO_INFORMATION_GAIN;
+  
   if(root == NULL)
   {
     root = new stateVec_t;
@@ -105,7 +110,8 @@ bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::R
   static const int width = 16;
   double IG = 0.0;
   ros::Time start = ros::Time::now();
-  planner_t::vector_t path = planner->expand(*planner, depth, width, ro, IG, &planner_t::sampleHolonomic, &planner_t::informationGainCone);
+  planner_t::vector_t path = planner->expandStructured(*planner, 100, *root, IG, &planner_t::informationGainCone);
+  //planner_t::vector_t path = planner->expand(*planner, depth, width, ro, IG, &planner_t::sampleHolonomic, &planner_t::informationGainCone);
   ros::Duration duration = ros::Time::now() - start;
   ROS_INFO("Replanning lasted %2.2fs and has a Gain of %2.2f", duration.toSec(), IG);
   std::reverse(path.begin(), path.end());

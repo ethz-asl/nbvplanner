@@ -109,7 +109,7 @@ int main(int argc, char** argv){
     nbvPlanner::nbvp_srv planSrv;
     if(ros::service::call("nbvplanner",planSrv))
     {
-      for(int i = 0; i<10&&i<planSrv.response.path.size(); i++)
+      for(int i = 0; i<100&&i<planSrv.response.path.size(); i++)
       {
         tf::Pose pose;
         tf::poseMsgToTF(planSrv.response.path[i], pose);

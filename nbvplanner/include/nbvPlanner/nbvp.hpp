@@ -13,6 +13,58 @@ extern ros::Publisher inspectionPath;
 extern ros::Publisher treePub;
 
 template<typename stateVec>
+nbvInspection::Node<stateVec>::Node()
+{
+  parent = NULL;
+  informationGain = 0.0;
+  counter++;
+}
+    
+template<typename stateVec>
+nbvInspection::Node<stateVec>::~Node()
+{
+  for(typename std::vector<Node<stateVec>*>::iterator it = children.begin(); it != children.end(); it++)
+  {
+    delete (*it);
+    (*it) = NULL;
+  }
+  counter--;
+}
+    
+template<typename stateVec>
+nbvInspection::Node<stateVec>* nbvInspection::Node<stateVec>::minDist(stateVec s)
+{
+  double bestDist = sqrt(SQ(s[0] - this->state[0]) + SQ(s[1] - this->state[1]) + SQ(s[2] - this->state[2]));
+  nbvInspection::Node<stateVec>* ret = this;
+  for(typename std::vector<nbvInspection::Node<stateVec>*>::iterator it = this->children.begin(); it != this->children.end(); it++)
+  {
+    nbvInspection::Node<stateVec>* tmp = (*it)->minDist(s);
+    double tmpDist = sqrt(SQ(s[0] - tmp->state[0]) + SQ(s[1] - tmp->state[1]) + SQ(s[2] - tmp->state[2]));
+    if(tmpDist<bestDist)
+    {
+      ret = tmp;
+      bestDist = tmpDist;
+    }
+  }
+  return ret;
+}
+
+template<typename stateVec>
+int nbvInspection::Node<stateVec>::getCounter() const
+{
+  return nbvInspection::Node<stateVec>::counter;
+}
+
+template<typename stateVec>
+const double nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN = 0.0;
+template<typename stateVec>
+double nbvInspection::Node<stateVec>::bestInformationGain = nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN;
+template<typename stateVec>
+nbvInspection::Node<stateVec>* nbvInspection::Node<stateVec>::bestNode = NULL;
+template<typename stateVec>
+int nbvInspection::Node<stateVec>::counter = 0;
+
+template<typename stateVec>
 nbvInspection::nbvplanner<stateVec>::nbvplanner()
 {
   double pitch = M_PI*PITCH/180.0;
@@ -33,13 +85,17 @@ nbvInspection::nbvplanner<stateVec>::nbvplanner()
   camBoundNormals.push_back(rightR);
   camBoundNormals.push_back(leftR);
   
+  rootNode = NULL;
   octomap = NULL;
 }
 
 template<typename stateVec>
 nbvInspection::nbvplanner<stateVec>::~nbvplanner()
 {
-
+  delete rootNode;
+  rootNode = NULL;
+  delete octomap;
+  octomap = NULL;
 }
 
 template<typename stateVec>
@@ -66,6 +122,148 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
     }
   }
   //ROS_INFO("Information Gain is: %2.2f", IGout);
+  return ret;
+}
+
+
+template<typename stateVec>
+typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner<stateVec>::expandStructured(nbvInspection::nbvplanner<stateVec>& instance, int I, stateVec s, double& IGout, double (nbvInspection::nbvplanner<stateVec>::*informationGain)(stateVec))
+{
+  assert(s.size() == 4);
+  nbvInspection::nbvplanner<stateVec>::vector_t ret;
+  if(!this->rootNode)
+  {
+    this->rootNode = new nbvInspection::Node<stateVec>;
+    this->rootNode->state = s;
+  }
+  // iterate as long as no information is found
+  while(nbvInspection::Node<stateVec>::bestInformationGain <= nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN || nbvInspection::Node<stateVec>::counter < I)
+  {
+    // set up boundaries: increase size as number of iterations grows
+    double radius = 5.0 + 5.0*log((double)nbvInspection::Node<stateVec>::counter);
+    // sample position of new state
+    stateVec newState;
+    double dsq = 0.0;
+    do
+    {
+      for(int i = 0; i<3; i++)
+        newState[i] = 2.0*radius*(((double)rand())/((double)RAND_MAX)-0.5);
+      dsq = SQ(newState[0]) + SQ(newState[1]) + SQ(newState[2]);
+    } while(dsq > pow(radius, 2.0));
+    // offset new state by root
+    newState += s;
+    nbvInspection::Node<stateVec>* newParent = this->rootNode->minDist(newState);
+    
+    // check for collision
+    octomap::point3d origin;
+    origin.x() = newParent->state[0];
+    origin.y() = newParent->state[1];
+    origin.z() = newParent->state[2];
+    octomap::point3d direction;
+    origin.x() = newState[0];
+    origin.y() = newState[1];
+    origin.z() = newState[2];
+    direction -= origin;
+    octomap::point3d end;
+    double d = sqrt(SQ(newState[0] - newParent->state[0]) + SQ(newState[1] - newParent->state[1]) + SQ(newState[2] - newParent->state[2]));
+    bool ignoreUnknownCells = true;
+    if(!this->octomap->castRay(origin, direction, end, ignoreUnknownCells, d*1.1+octomap->getResolution()))
+    {
+      // sample the new orientation from the set of possible orientations
+      newState[3] = newParent->state[3] + 2.0*(((double)rand())/((double)RAND_MAX)-0.5)*d*YAWMAX/VMAX;
+      // create new node and inser into tree
+      nbvInspection::Node<stateVec>* newNode = new nbvInspection::Node<stateVec>;
+      newNode->state = newState;
+      newNode->parent = newParent;
+      newParent->children.push_back(newNode);
+      newNode->informationGain = newParent->informationGain + (instance.*informationGain)(newNode->state);
+      // display new node
+      
+      visualization_msgs::Marker p;
+      p.header.stamp = ros::Time::now();
+      p.header.seq = g_ID;
+      p.header.frame_id = "/world";
+      p.id = g_ID; g_ID++;
+      p.ns="vp_tree";
+      p.type = visualization_msgs::Marker::ARROW;
+      p.action = visualization_msgs::Marker::ADD;
+      p.pose.position.x = newNode->state[0];
+      p.pose.position.y = newNode->state[1];
+      p.pose.position.z = newNode->state[2];
+      tf::Quaternion quat; quat.setEuler(0.0, 0.0, newNode->state[3]);
+      p.pose.orientation.x = quat.x();
+      p.pose.orientation.y = quat.y();
+      p.pose.orientation.z = quat.z();
+      p.pose.orientation.w = quat.w();
+      p.scale.x = std::max(newNode->informationGain/2000.0, 0.05);
+      p.scale.y = 0.1;
+      p.scale.z = 0.1;
+      p.color.r = 167.0/255.0;
+      p.color.g = 167.0/255.0;
+      p.color.b = 0.0;
+      p.color.a = 1.0;
+      p.lifetime = ros::Duration(0.0);
+      p.frame_locked = false;
+      inspectionPath.publish(p);
+      
+      p.id = g_ID; g_ID++;
+      p.ns="vp_branches";
+      p.type = visualization_msgs::Marker::ARROW;
+      p.action = visualization_msgs::Marker::ADD;
+      p.pose.position.x = newNode->parent->state[0];
+      p.pose.position.y = newNode->parent->state[1];
+      p.pose.position.z = newNode->parent->state[2];
+      Eigen::Quaternion<float> q;
+      Eigen::Vector3f init(1.0, 0.0, 0.0);
+      Eigen::Vector3f dir(newNode->state[0] - newNode->parent->state[0], newNode->state[1] - newNode->parent->state[1], newNode->state[2] - newNode->parent->state[2]);
+      q.setFromTwoVectors(init , dir);
+      q.normalize();
+      p.pose.orientation.x = q.x();
+      p.pose.orientation.y = q.y();
+      p.pose.orientation.z = q.z();
+      p.pose.orientation.w = q.w();
+      p.scale.x = d;
+      p.scale.y = 0.03;
+      p.scale.z = 0.03;
+      p.color.r = 100.0/255.0;
+      p.color.g = 100.0/255.0;
+      p.color.b = 0.7;
+      p.color.a = 1.0;
+      p.lifetime = ros::Duration(0.0);
+      p.frame_locked = false;
+      inspectionPath.publish(p);
+      
+      // update best IG and node if applicable
+      if(newNode->informationGain > nbvInspection::Node<stateVec>::bestInformationGain)
+      {
+        nbvInspection::Node<stateVec>::bestInformationGain = newNode->informationGain;
+        nbvInspection::Node<stateVec>::bestNode = newNode;
+        
+      }
+    }
+    
+  }
+  // extract best path
+  nbvInspection::Node<stateVec>* curr = nbvInspection::Node<stateVec>::bestNode;
+  if(curr->parent != NULL)
+  {
+    while(curr->parent != this->rootNode && curr->parent != NULL)
+    {
+      curr = curr->parent;
+    }
+    
+    double d = SQ(curr->state[0] - curr->parent->state[0]) + SQ(curr->state[1] - curr->parent->state[1]) + SQ(curr->state[2] - curr->parent->state[2]);
+    d = sqrt(d);
+    double disc = D_TIME*VMAX/d;
+    for(double it = 0.0; it < 1.0; it += disc)
+    {
+      ret.push_back((1.0-it)*curr->state + it*curr->parent->state);
+    }
+  }
+  else
+    ret.push_back(curr->state);
+  IGout = nbvInspection::Node<stateVec>::bestInformationGain;
+  
   return ret;
 }
 
@@ -253,7 +451,7 @@ double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
 {
   static const double R = 25.0;
   double minX = -20.0;
-  double minY = -70.0;
+  double minY = -65.0;
   double minZ = 0.0;
   double maxX = 85.0;
   double maxY = 10.0;
@@ -304,7 +502,7 @@ double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
 {
   static const double R = 25.0;
   double minX = -20.0;
-  double minY = -70.0;
+  double minY = -65.0;
   double minZ = 0.0;
   double maxX = 85.0;
   double maxY = 10.0;
