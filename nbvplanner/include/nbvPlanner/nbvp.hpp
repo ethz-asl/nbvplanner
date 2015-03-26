@@ -69,6 +69,14 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
   return ret;
 }
 
+
+template<typename stateVec>
+typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner<stateVec>::expandStructured(nbvInspection::nbvplanner<stateVec>& instance, int I, vector_t s, double& IGout, double (nbvInspection::nbvplanner<stateVec>::*informationGain)(stateVec))
+{
+  nbvInspection::nbvplanner<stateVec>::vector_t ret;
+  return ret;
+}
+
 template<typename stateVec>
 typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner<stateVec>::sampleHolonomic(stateVec s)
 {

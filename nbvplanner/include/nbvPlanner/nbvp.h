@@ -4,7 +4,7 @@
 #include "octomap/octomap.h"
 #include "octomap/OcTreeNode.h"
 #include "octomap/OcTree.h"
-#define EXTENSION_RANGE 25.0
+#define EXTENSION_RANGE 5.0
 #define VMAX 1.2
 #define YAWMAX 0.75
 #define SQ(x) ((x)*(x))
@@ -26,6 +26,7 @@ namespace nbvInspection
     nbvplanner();
     ~nbvplanner();
     vector_t expand(nbvplanner<stateVec>& instance, int N, int M, vector_t s, double& IGout, vector_t (nbvplanner<stateVec>::*sample)(stateVec), double (nbvplanner<stateVec>::*informationGain)(stateVec));
+    vector_t expandStructured(nbvplanner<stateVec>& instance, int I, vector_t s, double& IGout, double (nbvplanner<stateVec>::*informationGain)(stateVec));
     vector_t sampleHolonomic(stateVec s);
     vector_t sampleEuler(stateVec s);
     double informationGainRand(stateVec s);
