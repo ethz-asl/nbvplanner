@@ -8,7 +8,7 @@
     <arg name="world_name" value="$(find rotors_gazebo)/worlds/powerplant.world" />
     <!-- <arg name="debug" value="true"/> -->
     <arg name="paused" value="true"/>
-    <arg name="gui" value="true"/>
+    <arg name="gui" value="false"/>
   </include>
   
   <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 firefly/vi_sensor/ground_truth/firefly/vi_sensor/ground_truth/odometry_sensor_link fcu 1" />

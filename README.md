@@ -25,6 +25,8 @@ apt-get install ros-<distro>-octomap-*
 ```
 Please leave a note if you find that something is missing.
 
+Note: some of the required packages are under development and therefore constant change. Seamless interaction with the latest version can not be guaranteed but the interfaces are updated every now and then. (Last update Wednesday, 18.3.2015)
+
 Then run
 
 ```sh

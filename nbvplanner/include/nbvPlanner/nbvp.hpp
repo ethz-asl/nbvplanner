@@ -251,13 +251,22 @@ double nbvInspection::nbvplanner<stateVec>::informationGainRand(stateVec s)
 template<typename stateVec>
 double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
 {
-  static const double R = 10.0;
-  static const double minX = -20.0;
-  static const double minY = -100.0;
-  static const double minZ = 0.0;
-  static const double maxX = 100.0;
-  static const double maxY = 10.0;
-  static const double maxZ = 40.0;
+  static const double R = 25.0;
+  double minX = -20.0;
+  double minY = -70.0;
+  double minZ = 0.0;
+  double maxX = 85.0;
+  double maxY = 10.0;
+  double maxZ = 40.0;
+  /*octomap->getMetricMin(minX, minY, minZ);
+  octomap->getMetricMax(maxX, maxY, maxZ);
+  minX = std::max(minX, -20.0);
+  minY = std::max(minY, -70.0);
+  minZ = std::max(minZ, 0.0);
+  maxX = std::min(maxX, 85.0);
+  maxY = std::min(maxY, 10.0);
+  maxZ = std::min(maxZ, 40.0);*/
+  
   double gain = 0.0;
   double disc = octomap->getResolution();
   octomath::Vector3 origin;
@@ -294,12 +303,21 @@ template<typename stateVec>
 double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
 {
   static const double R = 25.0;
-  static const double minX = -20.0;
-  static const double minY = -100.0;
-  static const double minZ = 0.0;
-  static const double maxX = 100.0;
-  static const double maxY = 10.0;
-  static const double maxZ = 40.0;
+  double minX = -20.0;
+  double minY = -70.0;
+  double minZ = 0.0;
+  double maxX = 85.0;
+  double maxY = 10.0;
+  double maxZ = 40.0;
+  /*octomap->getMetricMin(minX, minY, minZ);
+  octomap->getMetricMax(maxX, maxY, maxZ);
+  minX = std::max(minX, -20.0);
+  minY = std::max(minY, -70.0);
+  minZ = std::max(minZ, 0.0);
+  maxX = std::min(maxX, 85.0);
+  maxY = std::min(maxY, 10.0);
+  maxZ = std::min(maxZ, 40.0);*/
+  
   double gain = 0.0;
   double disc = octomap->getResolution();
   octomath::Vector3 origin;
