@@ -4,14 +4,10 @@ The next best view planner is a real-time capable inspection path planner. From 
 
 # TODO
 
-- Check for bounding box of octomap. Areas outside remain unmapped
-- Extend tree nodes for the distance covered by the system in one step
 - OcTree collision avoidance: Multiple rays to secure approximated tube and not just a line
 - IG account for occupied voxels as well
 - Compute global information gain (ratio of explored area to total area)
-- Structured tree expansion (e.g. RRT)
 - Strategies to account for zero IG detection (e.g. go back along the path, increase size of sampling space, among others)
-- Complete list of required packages
 
 # Planner execution
 
