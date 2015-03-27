@@ -144,6 +144,26 @@ bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::R
   //planner_t::vector_t path = planner->expand(*planner, depth, width, ro, IG, &planner_t::sampleHolonomic, &planner_t::informationGainCone);
   ros::Duration duration = ros::Time::now() - start;
   
+  // calculate ratio of explored space
+  size_t total = planner->octomap->memoryFullGrid();
+  size_t mapped = planner->octomap->memoryUsage();
+  size_t sizeNode = planner->octomap->memoryUsageNode();
+  ROS_INFO("Memory usage: %li/%li (%2.2f), one node: %li", mapped, total, ((double)mapped)/((double)total), sizeNode);
+  double x, y, z, x2, y2, z2;
+  planner->octomap->getMetricMax(x,y,z);
+  planner->octomap->getMetricMin(x2,y2,z2);
+  int total2 = (int)(x-x2)*(y-y2)*(z-z2)/pow(planner->octomap->getResolution(), 3.0);
+  int mappedFree2 = 0;
+  int mappedOccupied2 = 0;
+  for(typename octomap::OcTree::leaf_iterator it = planner->octomap->begin_leafs(), end = planner->octomap->end_leafs(); it != end; it++)
+  {
+    if(it->getOccupancy())
+      mappedOccupied2++;
+    else
+      mappedFree2++;
+  }
+  ROS_INFO("Cells mapped, free/occupied: %i/%i of (%i). Ratio: %2.2f", mappedFree2, mappedOccupied2, total2, ((double)(mappedFree2+mappedOccupied2))/((double)total2));
+  
   // write planning information to file for postprocessing
   std::fstream tree;
   tree.open((pkgPath+"/data/tree.m").c_str(), std::ios::out | std::ios::app);

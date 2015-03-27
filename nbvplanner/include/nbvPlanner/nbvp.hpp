@@ -182,14 +182,14 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
     origin.y() = newParent->state[1];
     origin.z() = newParent->state[2];
     octomap::point3d direction;
-    origin.x() = newState[0];
-    origin.y() = newState[1];
-    origin.z() = newState[2];
+    direction.x() = newState[0];
+    direction.y() = newState[1];
+    direction.z() = newState[2];
     direction -= origin;
     octomap::point3d end;
     double d = sqrt(SQ(newState[0] - newParent->state[0]) + SQ(newState[1] - newParent->state[1]) + SQ(newState[2] - newParent->state[2]));
-    bool ignoreUnknownCells = true;
-    if(!this->octomap->castRay(origin, direction, end, ignoreUnknownCells, d*1.1+octomap->getResolution()))
+    bool ignoreUnknownCells = true; // TODO: shoud be false, but free cells are not mapped at this time
+    if(!this->castRay(origin, direction, end, ignoreUnknownCells, d))
     {
       // sample the new orientation from the set of possible orientations
       newState[3] = newParent->state[3] + 2.0*(((double)rand())/((double)RAND_MAX)-0.5)*d*YAWMAX/VMAX;
@@ -302,7 +302,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
   origin.z() = s[2];
   octomap::point3d direction;
   octomap::point3d end;
-  bool ignoreUnknownCells = true;
+  bool ignoreUnknownCells = true; // TODO: shoud be false, but free cells are not mapped at this time
   double d = DBL_MAX;
   int iter = 0;
   do
@@ -315,7 +315,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
     direction.x() = extension[0];
     direction.y() = extension[1];
     direction.z() = extension[2];
-  }while(this->octomap->castRay(origin, direction, end, ignoreUnknownCells, d*1.1+octomap->getResolution()) && (iter++) < 100);
+  }while(this->octomap->castRay(origin, direction, end, ignoreUnknownCells, d*1.1+this->octomap->getResolution()) && (iter++) < 100);
   if(iter>=100)
   {
     //ROS_WARN("No connection found to extend tree");
@@ -390,7 +390,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
       
   octomap::point3d direction;
   octomap::point3d end;
-  bool ignoreUnknownCells = true;
+  bool ignoreUnknownCells = true; // TODO: shoud be false, but free cells are not mapped at this time
   double d = DBL_MAX;
   for(int i = 0; i < 10; i++)
   {
@@ -491,7 +491,7 @@ double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
   double disc = octomap->getResolution();
   octomath::Vector3 origin;
   origin.x() = s[0]; origin.y() = s[1]; origin.z() = s[2];
-  bool ignoreUnknownCells = false;
+  bool ignoreUnknownCells = true;
   octomath::Vector3 vec;
   for(vec.x() = std::max(s[0] - R, minX); vec.x() < std::min(s[0] + R, maxX); vec.x() += disc)
   {
@@ -542,7 +542,7 @@ double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
   double disc = octomap->getResolution();
   octomath::Vector3 origin;
   origin.x() = s[0]; origin.y() = s[1]; origin.z() = s[2];
-  bool ignoreUnknownCells = false;
+  bool ignoreUnknownCells = true;
   octomath::Vector3 vec;
   for(vec.x() = std::max(s[0] - R, minX); vec.x() < std::min(s[0] + R, maxX); vec.x() += disc)
   {
@@ -611,5 +611,35 @@ double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
   inspectionPath.publish(p);
   
   return gain;
+}
+
+template<typename stateVec>
+bool nbvInspection::nbvplanner<stateVec>::castRay(octomath::Vector3 origin, octomath::Vector3 direction, octomath::Vector3& end, bool ignoreUnknownCells, double d)
+{
+  static const double Radius = 1.5;
+  if(this->octomap->castRay(origin, direction, end, ignoreUnknownCells, d+Radius+this->octomap->getResolution()))
+    return true;
+  Eigen::Vector3f q(1.0, 1.0, 1.0);
+  if(direction.x() != 0.0)
+    q[0] = -(direction.y()+direction.z())/direction.x();
+  else if(direction.y() != 0.0)
+    q[1] = -(direction.x()+direction.z())/direction.y();
+  else
+    q[2] = -(direction.y()+direction.x())/direction.z();
+  q.normalize();
+  Eigen::Vector3f dir(direction.x(),direction.y(),direction.z());
+  dir.normalize();
+  for(double i = 0; i<2*M_PI; i+=M_PI/6.0)
+  {
+    AngleAxisf rot = AngleAxisf(i, dir);
+    Eigen::Vector3f qi = rot*q;
+    octomath::Vector3 origini = origin;
+    origini.x()+=qi[0]*Radius;
+    origini.y()+=qi[1]*Radius;
+    origini.z()+=qi[2]*Radius;
+    if(this->octomap->castRay(origini, direction, end, ignoreUnknownCells, d+Radius+this->octomap->getResolution()))
+      return true;
+  }
+  return false;
 }
 

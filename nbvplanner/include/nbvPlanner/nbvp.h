@@ -56,6 +56,7 @@ namespace nbvInspection
     double informationGainRand(stateVec s);
     double informationGainSimple(stateVec s);
     double informationGainCone(stateVec s);
+    bool castRay(octomath::Vector3 origin, octomath::Vector3 direction, octomath::Vector3& end, bool ignoreUnknownCells, double d);
     octomap_t * octomap;
     std::vector<Eigen::Vector3f> camBoundNormals;
     Node<stateVec> * rootNode;
