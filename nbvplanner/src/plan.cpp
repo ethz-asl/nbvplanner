@@ -1,4 +1,5 @@
-#include "ros/ros.h"
+#include <ros/ros.h>
+#include <ros/package.h>
 #include <eigen3/Eigen/Dense>
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/PolygonStamped.h"
@@ -27,9 +28,14 @@ stateVec_t * root;
 stateVec_t * g_stateOld;
 ros::Publisher inspectionPath;
 ros::Publisher treePub;
+ros::Publisher octomapLog;
 ros::ServiceClient octomapClient;
 ros::Time g_timeOld;
+ros::Time g_timeSinceLog;
+ros::Time g_timeSinceLogOctomap;
 int g_ID;
+std::string pkgPath;
+int iteration;
 
 void posCallback(const geometry_msgs::PoseStamped& pose)
 {
@@ -68,7 +74,31 @@ void posCallback(const geometry_msgs::PoseStamped& pose)
     }*/
   }
   //*g_stateOld = *root;
-  //g_timeOld = pose.header.stamp;
+  g_timeOld = pose.header.stamp;
+  // logging of position
+  if((pose.header.stamp-g_timeSinceLog).toSec()>1.0)
+  {
+    std::fstream traj;
+    traj.open((pkgPath+"/data/traj.m").c_str(), std::ios::out | std::ios::app);
+    if(!traj.is_open())
+      ROS_WARN("could not open path file");
+    traj<<pose.pose.position.x<<", ";
+    traj<<pose.pose.position.y<<", ";
+    traj<<pose.pose.position.z<<", ";
+    traj<<(*root)[3]<<", ";
+    traj<<pose.header.stamp.toSec()<<";\n";
+    traj.close();
+    g_timeSinceLog = pose.header.stamp;
+  }
+  if((pose.header.stamp-g_timeSinceLogOctomap).toSec()>30.0)
+  {
+    OctomapSrv srv;
+    if(octomapClient.call(srv))
+    {
+      octomapLog.publish(srv.response.map);
+    }
+    g_timeSinceLogOctomap = pose.header.stamp;
+  }
 }
 
 bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::Response& res)
@@ -110,9 +140,22 @@ bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::R
   static const int width = 16;
   double IG = 0.0;
   ros::Time start = ros::Time::now();
-  planner_t::vector_t path = planner->expandStructured(*planner, 100, *root, IG, &planner_t::informationGainCone);
+  planner_t::vector_t path = planner->expandStructured(*planner, 25, *root, IG, &planner_t::informationGainCone);
   //planner_t::vector_t path = planner->expand(*planner, depth, width, ro, IG, &planner_t::sampleHolonomic, &planner_t::informationGainCone);
   ros::Duration duration = ros::Time::now() - start;
+  
+  // write planning information to file for postprocessing
+  std::fstream tree;
+  tree.open((pkgPath+"/data/tree.m").c_str(), std::ios::out | std::ios::app);
+  if(!tree.is_open())
+    ROS_WARN("could not open path file");
+  tree<<"stamp{"<<iteration<<"}="<<start.toSec()<<";\n";
+  tree<<"duration{"<<iteration<<"}="<<duration.toSec()<<";\n";
+  tree<<"IG{"<<iteration<<"}="<<IG<<";\n";
+  tree<<"tree{"<<iteration<<"}=[";
+  planner->rootNode->printToFile(tree);
+  tree<<"];\n";
+  tree.close();
   ROS_INFO("Replanning lasted %2.2fs and has a Gain of %2.2f", duration.toSec(), IG);
   std::reverse(path.begin(), path.end());
   for(planner_t::vector_t::iterator it = path.begin(); it!=path.end(); it++)
@@ -132,6 +175,7 @@ bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::R
     res.path.push_back(p.pose);
     //ROS_INFO("(%2.2f,%2.2f,%2.2f,%2.2f)", (*it)[0], (*it)[1], (*it)[2], (*it)[3]);
   }
+  iteration++;
   return true;
 }
 
@@ -139,16 +183,46 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "nbvPlanner");
   ros::NodeHandle n;
+  
+  // prepare log files for postprocessing
+  pkgPath = ros::package::getPath("nbvplanner");
+  std::fstream traj;
+  traj.open((pkgPath+"/data/traj.m").c_str(), std::ios::out);
+  if(!traj.is_open())
+    ROS_WARN("could not open path file");
+  traj<<"trajMatrix = [";
+  traj.close();
+  
+  std::fstream tree;
+  tree.open((pkgPath+"/data/tree.m").c_str(), std::ios::out);
+  if(!tree.is_open())
+    ROS_WARN("could not open path file");
+  tree<<"% tree file\n";
+  tree.close();
+  
+  // initialize global variables
   g_timeOld = ros::Time::now();
+  g_timeSinceLog = ros::Time::now();
+  g_timeSinceLogOctomap = ros::Time::now();
   planner = new planner_t;
   root = NULL;
   g_stateOld = NULL;
+  iteration = 1;
+  
+  // set up the topics and services
   inspectionPath = n.advertise<visualization_msgs::Marker>("inspectionPath", 1000);
   treePub = n.advertise<geometry_msgs::PolygonStamped>("treePol", 1000);
+  octomapLog = n.advertise<octomap_msgs::Octomap>("octomapLog", 1000);
   ros::ServiceServer plannerService = n.advertiseService("nbvplanner", plannerCallback);
   ros::Subscriber pos = n.subscribe("pose", 10, posCallback);
   octomapClient = n.serviceClient<OctomapSrv>("octomap_full");
   ros::spin();
+  
+  traj.open((pkgPath+"/data/traj.m").c_str(), std::ios::out | std::ios::app);
+  if(!traj.is_open())
+    ROS_WARN("could not open path file");
+  traj<<"];";
+  traj.close();
   return 0;
 }
 

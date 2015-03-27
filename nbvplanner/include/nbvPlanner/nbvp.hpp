@@ -50,9 +50,26 @@ nbvInspection::Node<stateVec>* nbvInspection::Node<stateVec>::minDist(stateVec s
 }
 
 template<typename stateVec>
-int nbvInspection::Node<stateVec>::getCounter() const
+int nbvInspection::Node<stateVec>::getCounter()
 {
   return nbvInspection::Node<stateVec>::counter;
+}
+
+template<typename stateVec>
+void nbvInspection::Node<stateVec>::printToFile(std::fstream& file)
+{
+  if(this->parent)
+  {
+    for(int i = 0; i<this->state.size(); i++)
+      file<<this->state[i]<<", ";
+    for(int i = 0; i<this->parent->state.size()-1; i++)
+      file<<this->parent->state[i]<<", ";
+    file<<this->parent->state[this->parent->state.size()-1]<<";\n";
+  }
+  for(typename std::vector<nbvInspection::Node<stateVec>*>::iterator it = this->children.begin(); it != this->children.end(); it++)
+  {
+    (*it)->printToFile(file);
+  }
 }
 
 template<typename stateVec>
@@ -137,10 +154,15 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
     this->rootNode->state = s;
   }
   // iterate as long as no information is found
-  while(nbvInspection::Node<stateVec>::bestInformationGain <= nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN || nbvInspection::Node<stateVec>::counter < I)
+  while(nbvInspection::Node<stateVec>::bestInformationGain <= nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN || nbvInspection::Node<stateVec>::getCounter() < I)
   {
+    if(nbvInspection::Node<stateVec>::getCounter()>10000)
+    {
+      ros::shutdown();
+      return ret;
+    }
     // set up boundaries: increase size as number of iterations grows
-    double radius = 5.0 + 5.0*log((double)nbvInspection::Node<stateVec>::counter);
+    double radius = 5.0*log(1.0+(double)nbvInspection::Node<stateVec>::getCounter());
     // sample position of new state
     stateVec newState;
     double dsq = 0.0;

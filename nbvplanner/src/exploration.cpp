@@ -104,6 +104,7 @@ int main(int argc, char** argv){
   file.open((pkgPath+"/data/path.m").c_str(), std::ios::out);
   if(!file.is_open())
     ROS_WARN("could not open path file");
+  file<<"pathMatrix = [";
   while (ros::ok()) {
     ROS_INFO("Initiating replanning");
     nbvPlanner::nbvp_srv planSrv;
@@ -126,12 +127,13 @@ int main(int argc, char** argv){
                  trajectory_msg.yaw);*/
         trajectory_msg.header.stamp = ros::Time::now();
         trajectory_pub.publish(trajectory_msg);
-        file << planSrv.response.path[i].position.x<<", "<<planSrv.response.path[i].position.y<<", "<<planSrv.response.path[i].position.z<<", "<<yaw<<"\n";
+        file << planSrv.response.path[i].position.x<<", "<<planSrv.response.path[i].position.y<<", "<<planSrv.response.path[i].position.z<<", "<<yaw<<", "<<trajectory_msg.header.stamp.toSec()<<";\n";
         ros::Duration(0.5).sleep();
       }
     }
     else
       ROS_WARN("Planner not reachable");
   }
+  file<<"];";
   file.close();
 }

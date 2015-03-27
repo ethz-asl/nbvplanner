@@ -1,6 +1,8 @@
 #include <vector>
+#include <fstream>
 #include <eigen3/Eigen/Dense>
-#include "ros/ros.h"
+#include <ros/ros.h>
+#include <ros/package.h>
 #include "octomap/octomap.h"
 #include "octomap/OcTreeNode.h"
 #include "octomap/OcTree.h"
@@ -21,17 +23,18 @@ namespace nbvInspection
   template<typename stateVec>
   class Node
   {
+    static int counter;
   public:
     Node();
     ~Node();
     Node* minDist(stateVec);
-    int getCounter() const;
+    static int getCounter();
+    void printToFile(std::fstream& file);
 
     stateVec state;
     Node * parent;
     std::vector<Node*> children;
     double informationGain;
-    static int counter;
     static double bestInformationGain;
     static Node * bestNode;
     static const double ZERO_INFORMATION_GAIN;
