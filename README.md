@@ -4,9 +4,8 @@ The next best view planner is a real-time capable inspection path planner. From 
 
 # TODO
 
-- OcTree collision avoidance: Multiple rays to secure approximated tube and not just a line
 - IG account for occupied voxels as well
-- Compute global information gain (ratio of explored area to total area)
+- Find way to map free cells, not only occupied
 - Strategies to account for zero IG detection (e.g. go back along the path, increase size of sampling space, among others)
 
 # Planner execution
