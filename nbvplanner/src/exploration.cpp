@@ -31,7 +31,7 @@
 #include "tf/tf.h"
 
 int main(int argc, char** argv){
-  ros::init(argc, argv, "hovering_example");
+  ros::init(argc, argv, "exploration");
   ros::NodeHandle nh;
   ros::Publisher trajectory_pub = nh.advertise<mav_msgs::CommandTrajectory>("command/trajectory", 10);
   ros::ServiceClient pathPlanner = nh.serviceClient<nbvPlanner::nbvp_srv>("pathplanning/nbvplanner",10);
@@ -55,6 +55,14 @@ int main(int argc, char** argv){
   }
   else {
     ROS_INFO("Unpaused the Gazebo simulation.");
+  }
+  
+  double dt = 1.0;
+  std::string ns = ros::this_node::getName();
+  if(!ros::param::get(ns+"/nbvp/dt", dt))
+  {
+    ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", (ns+"/nbvp/dt").c_str());
+    return -1;
   }
 
   // Wait for 5 seconds to let the Gazebo GUI show up.
@@ -128,7 +136,7 @@ int main(int argc, char** argv){
         trajectory_msg.header.stamp = ros::Time::now();
         trajectory_pub.publish(trajectory_msg);
         file << planSrv.response.path[i].position.x<<", "<<planSrv.response.path[i].position.y<<", "<<planSrv.response.path[i].position.z<<", "<<yaw<<", "<<trajectory_msg.header.stamp.toSec()<<";\n";
-        ros::Duration(0.5).sleep();
+        ros::Duration(dt).sleep();
       }
     }
     else

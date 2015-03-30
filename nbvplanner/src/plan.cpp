@@ -104,6 +104,11 @@ void posCallback(const geometry_msgs::PoseStamped& pose)
 bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::Response& res)
 {
   ROS_INFO("Starting NBV Planner");
+  if(!planner_t::setParams())
+  {
+    ROS_ERROR("Could not start the planner. Parameters missing!");
+    return true;
+  }
   ros::Rate r(10);
   OctomapSrv srv;
   //if(octomapClient.waitForExistence())
@@ -140,8 +145,26 @@ bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::R
   static const int width = 16;
   double IG = 0.0;
   ros::Time start = ros::Time::now();
-  planner_t::vector_t path = planner->expandStructured(*planner, 25, *root, IG, &planner_t::informationGainCone);
-  //planner_t::vector_t path = planner->expand(*planner, depth, width, ro, IG, &planner_t::sampleHolonomic, &planner_t::informationGainCone);
+  planner_t::vector_t path;
+  if(nbvInspection::nbvplanner<stateVec_t>::getRRTextension())
+  {
+    int initIter = nbvInspection::nbvplanner<stateVec_t>::getInitIterations();
+    if(initIter == 0)
+    {
+      ROS_ERROR("Planning aborted. Parameter initial iterations is either missing or zero");
+      return true;
+    }
+    path = planner->expandStructured(*planner, initIter, *root, IG, &planner_t::informationGainCone);
+  }
+  else
+  {
+    if(!nbvInspection::nbvplanner<stateVec_t>::extensionRangeSet())
+    {
+      ROS_ERROR("Planning aborted. Parameter extension range is either missing or zero");
+      return true;
+    }
+    path = planner->expand(*planner, depth, width, ro, IG, &planner_t::sampleHolonomic, &planner_t::informationGainCone);
+  }
   ros::Duration duration = ros::Time::now() - start;
   
   // calculate ratio of explored space

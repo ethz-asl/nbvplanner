@@ -36,6 +36,7 @@
   <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
     <remap from="pose" to="firefly/odometry_sensor1/pose"/>
     <remap from="nbvplanner" to="firefly/nbvplanner"/>
+    <rosparam command="load" file="$(find nbvplanner)/resource/param.yaml" />
   </node>
 
   <group ns="$(arg mav_name)">
@@ -51,7 +52,9 @@
       <rosparam command="load" file="$(find rotors_gazebo)/resource/$(arg mav_name).yaml" />
       <remap from="odometry" to="odometry_sensor1/odometry" />
     </node>
-    <node name="exploration" pkg="nbvplanner" type="exploration" output="screen"/>
+    <node name="exploration" pkg="nbvplanner" type="exploration" output="screen">
+      <rosparam command="load" file="$(find nbvplanner)/resource/param.yaml" />
+    </node>
     
   </group>
   
