@@ -23,7 +23,7 @@ nbvInspection::Node<stateVec>::Node()
 template<typename stateVec>
 nbvInspection::Node<stateVec>::~Node()
 {
-  for(typename std::vector<Node<stateVec>*>::iterator it = children.begin(); it != children.end(); it++)
+  for(typename std::vector<Node<stateVec> *>::iterator it = children.begin(); it != children.end(); it++)
   {
     delete (*it);
     (*it) = NULL;
@@ -32,13 +32,13 @@ nbvInspection::Node<stateVec>::~Node()
 }
     
 template<typename stateVec>
-nbvInspection::Node<stateVec>* nbvInspection::Node<stateVec>::minDist(stateVec s)
+nbvInspection::Node<stateVec> * nbvInspection::Node<stateVec>::minDist(stateVec s)
 {
   double bestDist = sqrt(SQ(s[0] - this->state[0]) + SQ(s[1] - this->state[1]) + SQ(s[2] - this->state[2]));
-  nbvInspection::Node<stateVec>* ret = this;
-  for(typename std::vector<nbvInspection::Node<stateVec>*>::iterator it = this->children.begin(); it != this->children.end(); it++)
+  nbvInspection::Node<stateVec> * ret = this;
+  for(typename std::vector<nbvInspection::Node<stateVec> *>::iterator it = this->children.begin(); it != this->children.end(); it++)
   {
-    nbvInspection::Node<stateVec>* tmp = (*it)->minDist(s);
+    nbvInspection::Node<stateVec> * tmp = (*it)->minDist(s);
     double tmpDist = sqrt(SQ(s[0] - tmp->state[0]) + SQ(s[1] - tmp->state[1]) + SQ(s[2] - tmp->state[2]));
     if(tmpDist<bestDist)
     {
@@ -66,7 +66,7 @@ void nbvInspection::Node<stateVec>::printToFile(std::fstream& file)
       file<<this->parent->state[i]<<", ";
     file<<this->parent->state[this->parent->state.size()-1]<<";\n";
   }
-  for(typename std::vector<nbvInspection::Node<stateVec>*>::iterator it = this->children.begin(); it != this->children.end(); it++)
+  for(typename std::vector<nbvInspection::Node<stateVec> *>::iterator it = this->children.begin(); it != this->children.end(); it++)
   {
     (*it)->printToFile(file);
   }
@@ -77,7 +77,7 @@ const double nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN = 0.0;
 template<typename stateVec>
 double nbvInspection::Node<stateVec>::bestInformationGain = nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN;
 template<typename stateVec>
-nbvInspection::Node<stateVec>* nbvInspection::Node<stateVec>::bestNode = NULL;
+nbvInspection::Node<stateVec> * nbvInspection::Node<stateVec>::bestNode = NULL;
 template<typename stateVec>
 int nbvInspection::Node<stateVec>::counter = 0;
 
@@ -194,7 +194,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
       // sample the new orientation from the set of possible orientations
       newState[3] = newParent->state[3] + 2.0 * (((double)rand())/((double)RAND_MAX)-0.5) * d * nbvInspection::nbvplanner<stateVec>::dyaw_max / nbvInspection::nbvplanner<stateVec>::v_max;
       // create new node and inser into tree
-      nbvInspection::Node<stateVec>* newNode = new nbvInspection::Node<stateVec>;
+      nbvInspection::Node<stateVec> * newNode = new nbvInspection::Node<stateVec>;
       newNode->state = newState;
       newNode->parent = newParent;
       newParent->children.push_back(newNode);
@@ -266,7 +266,7 @@ typename nbvInspection::nbvplanner<stateVec>::vector_t nbvInspection::nbvplanner
     
   }
   // extract best path
-  nbvInspection::Node<stateVec>* curr = nbvInspection::Node<stateVec>::bestNode;
+  nbvInspection::Node<stateVec> * curr = nbvInspection::Node<stateVec>::bestNode;
   if(curr->parent != NULL)
   {
     while(curr->parent != this->rootNode && curr->parent != NULL)
@@ -495,7 +495,7 @@ double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
         double dsq = SQ(s[0] - vec.x())+SQ(s[1] - vec.y())+SQ(s[2] - vec.z());
         if(dsq>pow(R,2.0))// || !octomap->inBBX(vec))
           continue;
-        octomap::OcTreeNode* node = octomap->search(vec.x(), vec.y(), vec.z());
+        octomap::OcTreeNode * node = octomap->search(vec.x(), vec.y(), vec.z());
         //ROS_INFO("node: %i", (int)(long)node);
         if (node == NULL)
         {
@@ -524,7 +524,7 @@ double nbvInspection::nbvplanner<stateVec>::informationGainSimple(stateVec s)
       }
     }
   }
-  gain*=pow(disc, 3.0);
+  gain *= pow(disc, 3.0);
   
   return gain;
 }
@@ -567,7 +567,7 @@ double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
         if(bbreak)
           continue;
         
-        octomap::OcTreeNode* node = octomap->search(vec.x(), vec.y(), vec.z());
+        octomap::OcTreeNode * node = octomap->search(vec.x(), vec.y(), vec.z());
         //ROS_INFO("node: %i", (int)(long)node);
         if (node == NULL)
         {
@@ -596,7 +596,7 @@ double nbvInspection::nbvplanner<stateVec>::informationGainCone(stateVec s)
       }
     }
   }
-  gain*=pow(disc, 3.0);
+  gain *= pow(disc, 3.0);
   
   visualization_msgs::Marker p;
   p.header.stamp = ros::Time::now();

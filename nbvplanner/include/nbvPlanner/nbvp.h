@@ -7,22 +7,6 @@
 #include "octomap/OcTreeNode.h"
 #include "octomap/OcTree.h"
 
-/*#define EXTENSION_RANGE 5.0
-#define D_TIME 0.5
-#define VMAX 1.2
-#define YAWMAX 0.75
-#define SQ(x) ((x)*(x))
-#define PITCH 0.0
-#define CAM_HORIZONTAL 90.0
-#define CAM_VERTICAL 60.0
-#define SQRT2 0.70711
-#define DEGRESSIVE_COEFF 1.0
-
-#define GAIN_FREE 0.0
-#define GAIN_OCCUPIED 0.0
-#define GAIN_UNMAPPED 1.0*/
-
-
 #define SQ(x) ((x)*(x))
 #define SQRT2 0.70711
 
@@ -36,7 +20,7 @@ namespace nbvInspection
   public:
     Node();
     ~Node();
-    Node* minDist(stateVec);
+    Node * minDist(stateVec);
     static int getCounter();
     void printToFile(std::fstream& file);
 
