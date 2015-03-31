@@ -17,7 +17,7 @@ nbvp/RRT/initial_iterations: 25
 nbvp/dt: 0.5
 nbvp/RRT_extension: true
 
-# bounding box necessary to limit the simulation 
+# bounding box: necessary to limit the simulation 
 # scenario (smaller than actual gazebo scenario)
 bbx/minX: -20.0
 bbx/minY: -65.0

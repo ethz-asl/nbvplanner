@@ -35,6 +35,7 @@ roslaunch nbvplanner firefly_exploration.launch
 - For a high resolution octomap of the mapped areas add a display 'MarkerArray' on the topic '/analysis/occupied_cells_vis_array'.
 
 # Parameters
+
 - system/v_max: Maximal translational speed
 - system/dyaw_max: Maximal yaw-rate
 - system/dv_max: Maximal translational acceleration (only enforced with euler integration tree extension)
