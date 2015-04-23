@@ -28,7 +28,7 @@
 #include <eigen3/Eigen/Dense>
 #include <std_srvs/Empty.h>
 #include <mav_msgs/CommandTrajectoryPositionYaw.h>
-#include "nbvPlanner/nbvp_srv.h"
+#include "nbvplanner/nbvp_srv.h"
 #include "tf/tf.h"
 
 /* record:
@@ -39,7 +39,7 @@ int main(int argc, char** argv){
   ros::init(argc, argv, "wpFollower");
   ros::NodeHandle nh;
   ros::Publisher trajectory_pub = nh.advertise<mav_msgs::CommandTrajectoryPositionYaw>("command/trajectory_position_yaw", 10);
-  ros::ServiceClient pathPlanner = nh.serviceClient<nbvPlanner::nbvp_srv>("pathplanning/nbvplanner",10);
+  ros::ServiceClient pathPlanner = nh.serviceClient<nbvplanner::nbvp_srv>("pathplanning/nbvplanner",10);
   ROS_INFO("Started hovering example.");
 
   std_srvs::Empty srv;

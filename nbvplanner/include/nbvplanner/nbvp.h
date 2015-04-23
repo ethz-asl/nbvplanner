@@ -34,7 +34,7 @@ namespace nbvInspection
   };
 
   template<typename stateVec>
-  class nbvplanner
+  class nbvPlanner
   {
     static double v_max;
     static double dyaw_max;
@@ -64,10 +64,10 @@ namespace nbvInspection
     typedef std::vector<stateVec> vector_t;
     typedef octomap::OcTree octomap_t;
     
-    nbvplanner();
-    ~nbvplanner();
-    vector_t expand(nbvplanner<stateVec>& instance, int N, int M, vector_t s, double& IGout, vector_t (nbvplanner<stateVec>::*sample)(stateVec), double (nbvplanner<stateVec>::*informationGain)(stateVec));
-    vector_t expandStructured(nbvplanner<stateVec>& instance, int I, stateVec s, double& IGout, double (nbvplanner<stateVec>::*informationGain)(stateVec));
+    nbvPlanner();
+    ~nbvPlanner();
+    vector_t expand(nbvPlanner<stateVec>& instance, int N, int M, vector_t s, double& IGout, vector_t (nbvPlanner<stateVec>::*sample)(stateVec), double (nbvPlanner<stateVec>::*informationGain)(stateVec));
+    vector_t expandStructured(nbvPlanner<stateVec>& instance, int I, stateVec s, double& IGout, double (nbvPlanner<stateVec>::*informationGain)(stateVec));
     vector_t sampleHolonomic(stateVec s);
     vector_t sampleEuler(stateVec s);
     double informationGainRand(stateVec s);

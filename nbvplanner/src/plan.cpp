@@ -4,8 +4,8 @@
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/PolygonStamped.h"
 #include "visualization_msgs/Marker.h"
-#include "nbvPlanner/nbvp.hpp"
-#include "nbvPlanner/nbvp_srv.h"
+#include "nbvplanner/nbvp.hpp"
+#include "nbvplanner/nbvp_srv.h"
 #include "tf/transform_datatypes.h"
 
 #include <octomap/octomap.h>
@@ -20,7 +20,7 @@ using namespace Eigen;
 using namespace nbvInspection;
 
 typedef Matrix<float, 4,1> stateVec_t;
-typedef nbvplanner<stateVec_t> planner_t;
+typedef nbvPlanner<stateVec_t> planner_t;
 typedef octomap_msgs::GetOctomap OctomapSrv;
 
 planner_t * planner;
@@ -101,7 +101,7 @@ void posCallback(const geometry_msgs::PoseStamped& pose)
   }
 }
 
-bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::Response& res)
+bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::Response& res)
 {
   ROS_INFO("Starting NBV Planner");
   if(!planner_t::setParams())
@@ -146,9 +146,9 @@ bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::R
   double IG = 0.0;
   ros::Time start = ros::Time::now();
   planner_t::vector_t path;
-  if(nbvInspection::nbvplanner<stateVec_t>::getRRTextension())
+  if(nbvInspection::nbvPlanner<stateVec_t>::getRRTextension())
   {
-    int initIter = nbvInspection::nbvplanner<stateVec_t>::getInitIterations();
+    int initIter = nbvInspection::nbvPlanner<stateVec_t>::getInitIterations();
     if(initIter == 0)
     {
       ROS_ERROR("Planning aborted. Parameter initial iterations is either missing or zero");
@@ -158,7 +158,7 @@ bool plannerCallback(nbvPlanner::nbvp_srv::Request& req, nbvPlanner::nbvp_srv::R
   }
   else
   {
-    if(!nbvInspection::nbvplanner<stateVec_t>::extensionRangeSet())
+    if(!nbvInspection::nbvPlanner<stateVec_t>::extensionRangeSet())
     {
       ROS_ERROR("Planning aborted. Parameter extension range is either missing or zero");
       return true;

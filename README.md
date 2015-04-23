@@ -14,8 +14,9 @@ To run the current version, compile the package nbvplanner, as well as additiona
 
 ```sh
 git clone https://github.com/ethz-asl/rotors_simulator.git
-git clone https://github.com/ethz-asl/mav_comm.git
 git clone https://github.com/ethz-asl/glog_catkin.git
+git clone https://github.com/ethz-asl/catkin_simple.git
+git clone https://github.com/ethz-asl/mav_comm_devel.git
 apt-get install ros-<distro>-octomap-*
 ```
 Please leave a note if you find that something is missing.
