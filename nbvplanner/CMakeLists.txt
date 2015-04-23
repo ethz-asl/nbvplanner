@@ -104,6 +104,7 @@ include_directories(
 ## Declare a cpp executable
 add_executable(nbvPlanner src/plan.cpp src/nbvp.cpp)
 add_executable(exploration src/exploration.cpp)
+add_executable(wpFollower src/wpFollower.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -117,4 +118,8 @@ target_link_libraries(nbvPlanner
 target_link_libraries(exploration
   ${catkin_LIBRARIES}
 )
+target_link_libraries(wpFollower
+  ${catkin_LIBRARIES}
+)
 add_dependencies(exploration ${catkin_EXPORTED_TARGETS})
+add_dependencies(wpFollower ${catkin_EXPORTED_TARGETS})
