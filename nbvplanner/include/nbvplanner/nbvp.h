@@ -16,7 +16,7 @@ namespace nbvInspection
   template<typename stateVec>
   class Node
   {
-    static int counter;
+    static int counter_;
   public:
     Node();
     ~Node();
@@ -24,42 +24,43 @@ namespace nbvInspection
     static int getCounter();
     void printToFile(std::fstream& file);
 
-    stateVec state;
-    Node * parent;
-    std::vector<Node*> children;
-    double informationGain;
-    static double bestInformationGain;
-    static Node * bestNode;
-    static const double ZERO_INFORMATION_GAIN;
+    stateVec state_;
+    Node * parent_;
+    std::vector<Node*> children_;
+    double informationGain_;
+    static double bestInformationGain_;
+    static Node * bestNode_;
+    static const double ZERO_INFORMATION_GAIN_;
   };
 
   template<typename stateVec>
   class nbvPlanner
   {
-    static double v_max;
-    static double dyaw_max;
-    static double dv_max;
-    static double ddyaw_max;
-    static double camPitch;
-    static double camHorizontal;
-    static double camVertical;
+    static double v_max_;
+    static double dyaw_max_;
+    static double dv_max_;
+    static double ddyaw_max_;
+    static double camPitch_;
+    static double camHorizontal_;
+    static double camVertical_;
     
-    static double igFree;
-    static double igOccupied;
-    static double igUnmapped;
-    static double informationGainRange;
-    static double degressiveCoeff;
-    static double extensionRange;
-    static int initIterations;
-    static double dt;
-    static bool RRTextension;
+    static double igFree_;
+    static double igOccupied_;
+    static double igUnmapped_;
+    static double informationGainRange_;
+    static double degressiveCoeff_;
+    static double extensionRange_;
+    static int initIterations_;
+    static double dt_;
+    static bool RRTextension_;
     
-    static double minX;
-    static double minY;
-    static double minZ;
-    static double maxX;
-    static double maxY;
-    static double maxZ;
+    static double minX_;
+    static double minY_;
+    static double minZ_;
+    static double maxX_;
+    static double maxY_;
+    static double maxZ_;
+    std::stack<stateVec> history_;
   public:
     typedef std::vector<stateVec> vector_t;
     typedef octomap::OcTree octomap_t;
@@ -78,8 +79,8 @@ namespace nbvInspection
     static bool getRRTextension();
     static int getInitIterations();
     static bool extensionRangeSet();
-    octomap_t * octomap;
-    std::vector<Eigen::Vector3f> camBoundNormals;
-    Node<stateVec> * rootNode;
+    octomap_t * octomap_;
+    std::vector<Eigen::Vector3f> camBoundNormals_;
+    Node<stateVec> * rootNode_;
   };
 }

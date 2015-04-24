@@ -5,38 +5,39 @@
   <arg name="log_file" default="$(arg mav_name)" />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find rotors_gazebo)/worlds/bridge.world" />
+    <arg name="world_name" value="$(find rotors_gazebo)/worlds/powerplant.world" />
     <!-- <arg name="debug" value="true"/> -->
     <arg name="paused" value="true"/>
     <arg name="gui" value="false"/>
   </include>
   
-  <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 firefly/vi_sensor/ground_truth/firefly/vi_sensor/ground_truth/odometry_sensor_link fcu 1" />
-  <node pkg="tf" type="static_transform_publisher" name="link2_broadcaster" args="0 0 0 -1.57 0 -1.57 fcu firefly/vi_sensor/camera_depth_optical_center_link 1" />
-  <node pkg="tf" type="static_transform_publisher" name="link3_broadcaster" args="0 0.055 0 -1.57 0 -1.57 fcu firefly/vi_sensor/camera_left_link 1" />
-  <node pkg="tf" type="static_transform_publisher" name="link4_broadcaster" args="0 -0.055 0 -1.57 0 -1.57 fcu firefly/vi_sensor/camera_right_link 1" />
-  
-  <group ns="stereo">
-    <node pkg="stereo_image_proc" name="stereo_image_proc" type="stereo_image_proc" output="screen">
-      <remap from="left/image_raw" to="/firefly/vi_sensor/camera_left/image_raw" />
-      <remap from="left/camera_info" to="/firefly/vi_sensor/camera_left/camera_info" />
-      <remap from="right/image_raw" to="/firefly/vi_sensor/camera_right/image_raw" />
-      <remap from="right/camera_info" to="/firefly/vi_sensor/camera_right/camera_info" />
-      <param name="approximate_sync" type="bool" value="true" />
-      <param name="queue_size" type="int" value="5" />
-    </node>
-  </group>
+  <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 firefly/vi_sensor/ground_truth fcu 1" />
+  <node pkg="tf" type="static_transform_publisher" name="link2_broadcaster" args="0.015 0.055 0.0065 -1.57 0.1 -1.57 fcu firefly/vi_sensor/camera_depth_optical_center_link 1" />
+  <node pkg="tf" type="static_transform_publisher" name="link3_broadcaster" args="0.015 0.055 0.0065 -1.57 0.1 -1.57 fcu firefly/vi_sensor/camera_left_link 1" />
+  <node pkg="tf" type="static_transform_publisher" name="link4_broadcaster" args="0.015 -0.055 0.0065 -1.57 0.1 -1.57 fcu firefly/vi_sensor/camera_right_link 1" />
   
   <node name="rviz" pkg="rviz" type="rviz" output="screen"/>
   
   <node name="octomap_manager" pkg="octomap_world" type="octomap_manager" output="screen">
     <param name="tf_frame" type="string" value="world" />
     <param name="resolution" type="double" value="5.0" />
-    <param name="sensor_max_range" type="double" value="25.0" />
-    <remap from="cam0/camera_info" to="/firefly/vi_sensor/camera_left/camera_info"/>
-    <remap from="cam1/camera_info" to="/firefly/vi_sensor/camera_right/camera_info"/>
-    <remap from="disparity" to="/stereo/disparity"/>
+    <param name="sensor_max_range" type="double" value="100.0" />
+    <remap from="cam0/camera_info" to="/firefly/vi_sensor/left/camera_info"/>
+    <remap from="cam1/camera_info" to="/firefly/vi_sensor/right/camera_info"/>
+    <remap from="pointcloud" to="/firefly/vi_sensor/camera_depth/depth/points"/>
+    <remap from="octomap_full" to="/octomap_manager/get_map"/>
   </node>
+
+	<node name="octomap_server" pkg="octomap_server" type="octomap_server_node" output="screen">
+    <param name="frame_id" type="string" value="world" />
+    <param name="resolution" type="double" value="1.0" />
+    <param name="sensor_model/max_range" type="double" value="100.0" />
+    <param name="latch" type="bool" value="false" />
+    <remap from="tf_static" to="/tf"/>
+    <remap from="cloud_in" to="/firefly/vi_sensor/camera_depth/depth/points"/>
+  </node>
+
+	
   
   <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
     <remap from="pose" to="firefly/odometry_sensor1/pose"/>

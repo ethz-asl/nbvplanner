@@ -17,6 +17,17 @@ git clone https://github.com/ethz-asl/rotors_simulator.git
 git clone https://github.com/ethz-asl/glog_catkin.git
 git clone https://github.com/ethz-asl/catkin_simple.git
 git clone https://github.com/ethz-asl/mav_comm_devel.git
+git clone https://github.com/ethz-asl/volumetric_mapping.git
+git clone https://github.com/ethz-asl/eigen_catkin.git
+cd eigen_catkin
+git checkout fix/gtsam_eigen
+cd ..
+git clone https://github.com/ethz-asl/gflags_catkin.git
+git clone https://github.com/ethz-asl/minkindr.git
+git clone https://github.com/ethz-asl/gtsam_catkin.git
+git clone https://github.com/ethz-asl/eigen_checks.git
+git clone https://github.com/ethz-asl/minkindr_ros.git
+
 apt-get install ros-<distro>-octomap-*
 ```
 Please leave a note if you find that something is missing.

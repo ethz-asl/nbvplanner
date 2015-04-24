@@ -1,13 +1,10 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <eigen3/Eigen/Dense>
-#include "geometry_msgs/PoseStamped.h"
-#include "geometry_msgs/PolygonStamped.h"
-#include "visualization_msgs/Marker.h"
-#include "nbvplanner/nbvp.hpp"
-#include "nbvplanner/nbvp_srv.h"
-#include "tf/transform_datatypes.h"
-
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PolygonStamped.h>
+#include <visualization_msgs/Marker.h>
+#include <std_srvs/Empty.h>
 #include <octomap/octomap.h>
 #include <octomap/OcTreeKey.h>
 #include <octomap_msgs/BoundingBoxQuery.h>
@@ -16,6 +13,11 @@
 #include <octomap_msgs/Octomap.h>
 #include <planning_msgs/Octomap.h>
 #include <octomap_ros/conversions.h>
+#include <tf/transform_datatypes.h>
+
+#include "nbvplanner/nbvp.hpp"
+#include "nbvplanner/nbvp_srv.h"
+
 using namespace Eigen;
 using namespace nbvInspection;
 
@@ -39,10 +41,10 @@ int iteration;
 
 void posCallback(const geometry_msgs::PoseStamped& pose)
 {
-  delete planner->rootNode;
-  planner->rootNode = NULL;
-  nbvInspection::Node<stateVec_t>::bestNode = NULL;
-  nbvInspection::Node<stateVec_t>::bestInformationGain = nbvInspection::Node<stateVec_t>::ZERO_INFORMATION_GAIN;
+  delete planner->rootNode_;
+  planner->rootNode_ = NULL;
+  nbvInspection::Node<stateVec_t>::bestNode_ = NULL;
+  nbvInspection::Node<stateVec_t>::bestInformationGain_ = nbvInspection::Node<stateVec_t>::ZERO_INFORMATION_GAIN_;
   
   if(root == NULL)
   {
@@ -111,33 +113,33 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   }
   ros::Rate r(10);
   OctomapSrv srv;
-  //if(octomapClient.waitForExistence())
-  //  ROS_WARN("Octomap service exists");
-  //else
-  //  ROS_WARN("Octomap service does not exist");
   if(!octomapClient.call(srv))
   {
     ROS_WARN("No octomap available");
     return true;
   }
-  if(planner->octomap)
+  if(planner->octomap_)
   {
-    delete planner->octomap;
-    planner->octomap = NULL;
+    delete planner->octomap_;
+    planner->octomap_ = NULL;
   }
   if(srv.response.map.binary)
   {
-    planner->octomap = octomap_msgs::binaryMsgToMap(srv.response.map);
+		ROS_WARN("Loading binary octomap");
+    planner->octomap_ = octomap_msgs::binaryMsgToMap(srv.response.map);
   }
   else
   {
+		ROS_WARN("Loading full octomap");
     octomap::AbstractOcTree* tree = octomap_msgs::fullMsgToMap(srv.response.map);
-    planner->octomap = dynamic_cast<octomap::OcTree*>(tree);
+    planner->octomap_ = dynamic_cast<octomap::OcTree*>(tree);
   }
+  std_srvs::Empty emptyMsg;
+  ros::service::call("/octomap_manager/publish_all", emptyMsg);
     
   
   int k = 0;
-  if(planner == NULL || planner->octomap == NULL || root == NULL)
+  if(planner == NULL || planner->octomap_ == NULL || root == NULL)
     return true;
   std::vector<stateVec_t> ro; ro.push_back(*root);
   g_ID = 0;
@@ -168,19 +170,19 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   ros::Duration duration = ros::Time::now() - start;
   
   // calculate ratio of explored space
-  size_t total = planner->octomap->memoryFullGrid();
-  size_t mapped = planner->octomap->memoryUsage();
-  size_t sizeNode = planner->octomap->memoryUsageNode();
+  size_t mapped = planner->octomap_->memoryUsage();
+  size_t total = planner->octomap_->memoryFullGrid();
+  size_t sizeNode = planner->octomap_->memoryUsageNode();
   ROS_INFO("Memory usage: %li/%li (%2.2f), one node: %li", mapped, total, ((double)mapped)/((double)total), sizeNode);
   double x, y, z, x2, y2, z2;
-  planner->octomap->getMetricMax(x,y,z);
-  planner->octomap->getMetricMin(x2,y2,z2);
-  int total2 = (int)(x-x2)*(y-y2)*(z-z2)/pow(planner->octomap->getResolution(), 3.0);
+  planner->octomap_->getMetricMax(x,y,z);
+  planner->octomap_->getMetricMin(x2,y2,z2);
+  int total2 = (int)(x-x2)*(y-y2)*(z-z2)/pow(planner->octomap_->getResolution(), 3.0);
   int mappedFree2 = 0;
   int mappedOccupied2 = 0;
-  for(typename octomap::OcTree::leaf_iterator it = planner->octomap->begin_leafs(), end = planner->octomap->end_leafs(); it != end; it++)
+  for(typename octomap::OcTree::leaf_iterator it = planner->octomap_->begin_leafs(), end = planner->octomap_->end_leafs(); it != end; it++)
   {
-    if(it->getOccupancy())
+    if(planner->octomap_->isNodeOccupied(*it))
       mappedOccupied2++;
     else
       mappedFree2++;
@@ -196,7 +198,7 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   tree<<"duration{"<<iteration<<"}="<<duration.toSec()<<";\n";
   tree<<"IG{"<<iteration<<"}="<<IG<<";\n";
   tree<<"tree{"<<iteration<<"}=[";
-  planner->rootNode->printToFile(tree);
+  planner->rootNode_->printToFile(tree);
   tree<<"];\n";
   tree.close();
   ROS_INFO("Replanning lasted %2.2fs and has a Gain of %2.2f", duration.toSec(), IG);
