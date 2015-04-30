@@ -44,6 +44,7 @@ namespace nbvInspection
     static double camHorizontal_;
     static double camVertical_;
     
+    static double igProbabilistic_;
     static double igFree_;
     static double igOccupied_;
     static double igUnmapped_;

@@ -42,9 +42,9 @@ roslaunch nbvplanner firefly_exploration.launch
 
 # Visualization in rviz
 
-- Add a display 'Marker' on the topic 'inspectionPath'. This displays the pose tree of the planning.
-- To visualize the octomap used for planning, add a display 'MarkerArray' on the topic '/occupied_cells_vis_array'.
-- For a high resolution octomap of the mapped areas add a display 'MarkerArray' on the topic '/analysis/occupied_cells_vis_array'.
+- Add a display 'Marker' on the topic 'inspectionPath'. This displays the pose tree of the planning with the viewpoint size depicting the information gain.
+- To visualize the octomap used for planning, add a display 'MarkerArray' on the topic '/octomap_manager/octomap_occupied'.
+- For a high resolution octomap of the mapped areas add a display 'MarkerArray' on the topic '/occupied_cells_vis_array'.
 
 # Parameters
 
@@ -56,6 +56,7 @@ roslaunch nbvplanner firefly_exploration.launch
 - system/camera/horizontal: Horizontal opening of the field of view of the camera sensor
 - system/camera/vertical: Vertical  opening of the field of view of the camera sensor
 
+- nbvp/information_gain/probabilistic: Information gain for mapped volume, scaled by the prabability to be occupied
 - nbvp/information_gain/free: Information gain for visible free volumes
 - nbvp/information_gain/occupied: Information gain for visible occupied volumes
 - nbvp/information_gain/unmapped: Information gain for visible unmapped volumes

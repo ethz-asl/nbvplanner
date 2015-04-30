@@ -520,7 +520,6 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s)
         if(dsq>pow(R,2.0))// || !octomap->inBBX(vec))
           continue;
         octomap::OcTreeNode * node = octomap_->search(vec.x(), vec.y(), vec.z());
-        //ROS_INFO("node: %i", (int)(long)node);
         if (node == NULL)
         {
           // Rayshooting to evaluate inspectability of cell
@@ -535,14 +534,22 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s)
             // Rayshooting to evaluate inspectability of cell
             octomath::Vector3 end;
             if(!this->octomap_->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
-              gain+=nbvInspection::nbvPlanner<stateVec>::igOccupied_;
+            {
+              gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
+              // Add probabilistic gain
+              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * node->getOccupancy();
+            }
           }
           else
           { 
             // Rayshooting to evaluate inspectability of cell
             octomath::Vector3 end;
             if(!this->octomap_->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
-              gain+=nbvInspection::nbvPlanner<stateVec>::igFree_;
+            {
+              gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
+              // Add probabilistic gain
+              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * node->getOccupancy();
+            }
           }
         }
       }
@@ -598,7 +605,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s)
           // Rayshooting to evaluate inspectability of cell
           octomath::Vector3 end;
           if(!this->octomap_->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
-            gain+=nbvInspection::nbvPlanner<stateVec>::igUnmapped_;
+            gain += nbvInspection::nbvPlanner<stateVec>::igUnmapped_;
         }
         else
         {
@@ -607,14 +614,22 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s)
             // Rayshooting to evaluate inspectability of cell
             octomath::Vector3 end;
             if(!this->octomap_->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
-              gain+=nbvInspection::nbvPlanner<stateVec>::igOccupied_;
+            {
+              gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
+              // Add probabilistic gain
+              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * node->getOccupancy();
+            }
           }
           else
           { 
             // Rayshooting to evaluate inspectability of cell
             octomath::Vector3 end;
             if(!this->octomap_->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
-              gain+=nbvInspection::nbvPlanner<stateVec>::igFree_;
+            {
+              gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
+              // Add probabilistic gain
+              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * node->getOccupancy();
+            }
           }
         }
       }
@@ -732,6 +747,12 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
     ret = false;
   }
   
+  if(!ros::param::get(ns+"/nbvp/information_gain/probabilistic", igProbabilistic_))
+  {
+    ROS_WARN("No information gain for free cells specified. Looking for %s", (ns+"/nbvp/information_gain/probabilistic").c_str());
+    ret = false;
+  }
+  
   if(!ros::param::get(ns+"/nbvp/information_gain/free", igFree_))
   {
     ROS_WARN("No information gain for free cells specified. Looking for %s", (ns+"/nbvp/information_gain/free").c_str());
@@ -840,7 +861,9 @@ template<typename stateVec>
 double nbvInspection::nbvPlanner<stateVec>::camHorizontal_ = 100.0;
 template<typename stateVec>
 double nbvInspection::nbvPlanner<stateVec>::camVertical_ = 100.0;
-    
+
+template<typename stateVec>
+double nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ = 0.0;
 template<typename stateVec>
 double nbvInspection::nbvPlanner<stateVec>::igFree_ = 0.0;
 template<typename stateVec>
