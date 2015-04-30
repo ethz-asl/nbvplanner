@@ -5,7 +5,7 @@ The next best view planner is a real-time capable inspection path planner. From 
 # TODO
 
 - Improve implementation of RRT
-- Need loop closure on real sysetem localization for experiments
+- Need loop closure on real system's localization for experiments
 - Check if mapping of free space works well enough in a real scenario
 - Develop strategies to reduce data of octomap (while maintaining a high resolution)
 
@@ -57,7 +57,7 @@ roslaunch nbvplanner firefly_exploration.launch
 - system/camera/horizontal: Horizontal opening of the field of view of the camera sensor
 - system/camera/vertical: Vertical  opening of the field of view of the camera sensor
 
-- nbvp/information_gain/probabilistic: Information gain for mapped volume, scaled by the prabability to be occupied
+- nbvp/information_gain/probabilistic: Information gain for mapped volume, scaled with the prabability to be occupied according to: (0.5 - fabs(0.5 - p)), with p: probability
 - nbvp/information_gain/free: Information gain for visible free volumes
 - nbvp/information_gain/occupied: Information gain for visible occupied volumes
 - nbvp/information_gain/unmapped: Information gain for visible unmapped volumes
