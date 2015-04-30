@@ -181,8 +181,8 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
 			return ret;
     }
     // set up boundaries: increase size as number of iterations grows
-    double radius = 15.0*log(1.0+pow((double)nbvInspection::Node<stateVec>::getCounter(), 2.0) /
-                              ((double)localCount+1.0));
+    double radius = extensionRange_ * log(1.0 + pow((double)nbvInspection::Node<stateVec>::getCounter(), 2.0) /
+                              ((double)localCount + 1.0));
     // sample position of new state
     stateVec newState;
     double dsq = 0.0;
@@ -747,9 +747,9 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
     ROS_WARN("No information gain for unmapped cells specified. Looking for %s", (ns+"/nbvp/information_gain/unmapped").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/nbvp/sampleHolonomic/extension_range", degressiveCoeff_))
+  if(!ros::param::get(ns+"/nbvp/sampleHolonomic/degressive_coeff", degressiveCoeff_))
   {
-    ROS_WARN("No degressive factor for information gain accumulation specified. Looking for %s", (ns+"/nbvp/sampleHolonomic/extension_range").c_str());
+    ROS_WARN("No degressive factor for information gain accumulation specified. Looking for %s", (ns+"/nbvp/sampleHolonomic/degressive_coeff").c_str());
     ret = false;
   }
   if(!ros::param::get(ns+"/nbvp/sampleHolonomic/extension_range", extensionRange_))
