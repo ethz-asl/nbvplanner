@@ -12,7 +12,7 @@ nbvp/information_gain/occupied: 0.0
 nbvp/information_gain/unmapped: 1.0
 nbvp/information_gain/range: 30.0
 nbvp/information_gain/degressive_coeff: 1.0
-nbvp/sampleHolonomic/extension_range: 5.0
+nbvp/sampleHolonomic/extension_range: 15.0
 nbvp/RRT/initial_iterations: 25
 nbvp/dt: 0.5
 nbvp/RRT_extension: true
