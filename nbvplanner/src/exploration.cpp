@@ -93,7 +93,7 @@ int main(int argc, char** argv){
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(2.0).sleep();
   nh.param<double>("wp_x", trajectory_msg.position.x, -7.0);
-  nh.param<double>("wp_y", trajectory_msg.position.y, 2.0);
+  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
   nh.param<double>("wp_z", trajectory_msg.position.z, 7.0);
   trajectory_msg.yaw = 0.0;
   trajectory_msg.header.stamp = ros::Time::now();

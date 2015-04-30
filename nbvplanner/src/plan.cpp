@@ -169,25 +169,21 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   }
   ros::Duration duration = ros::Time::now() - start;
   
-  // calculate ratio of explored space
-  size_t mapped = planner->octomap_->memoryUsage();
-  size_t total = planner->octomap_->memoryFullGrid();
-  size_t sizeNode = planner->octomap_->memoryUsageNode();
-  ROS_INFO("Memory usage: %li/%li (%2.2f), one node: %li", mapped, total, ((double)mapped)/((double)total), sizeNode);
-  double x, y, z, x2, y2, z2;
-  planner->octomap_->getMetricMax(x,y,z);
-  planner->octomap_->getMetricMin(x2,y2,z2);
-  int total2 = (int)(x-x2)*(y-y2)*(z-z2)/pow(planner->octomap_->getResolution(), 3.0);
-  int mappedFree2 = 0;
-  int mappedOccupied2 = 0;
+  // calculate explored space
+  int mappedFree = 0;
+  int mappedOccupied = 0;
   for(typename octomap::OcTree::leaf_iterator it = planner->octomap_->begin_leafs(), end = planner->octomap_->end_leafs(); it != end; it++)
   {
     if(planner->octomap_->isNodeOccupied(*it))
-      mappedOccupied2++;
+      mappedOccupied++;
     else
-      mappedFree2++;
+      mappedFree++;
   }
-  ROS_INFO("Cells mapped, free/occupied: %i/%i of (%i). Ratio: %2.2f", mappedFree2, mappedOccupied2, total2, ((double)(mappedFree2+mappedOccupied2))/((double)total2));
+  double vol = pow(planner->octomap_->getResolution(), 3.0);
+  ROS_INFO("Total volume of %2.2f mapped. Thereof free and occupied: %2.2f/%2.2f",
+            vol * (double)(mappedFree + mappedOccupied),
+            vol * (double) mappedFree,
+            vol * (double) mappedOccupied);
   
   // write planning information to file for postprocessing
   std::fstream tree;
@@ -201,7 +197,7 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   planner->rootNode_->printToFile(tree);
   tree<<"];\n";
   tree.close();
-  ROS_INFO("Replanning lasted %2.2fs and has a Gain of %2.2f", duration.toSec(), IG);
+  ROS_INFO("Replanning lasted %2.2fs and has a Gain of %2.2f, with %i iterations", duration.toSec(), IG, nbvInspection::Node<stateVec_t>::getCounter());
   std::reverse(path.begin(), path.end());
   for(planner_t::vector_t::iterator it = path.begin(); it!=path.end(); it++)
   {

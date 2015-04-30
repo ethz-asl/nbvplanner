@@ -73,7 +73,7 @@ void nbvInspection::Node<stateVec>::printToFile(std::fstream& file)
 }
 
 template<typename stateVec>
-const double nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_ = 0.0;
+const double nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_ = 100.0;
 template<typename stateVec>
 double nbvInspection::Node<stateVec>::bestInformationGain_ = nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_;
 template<typename stateVec>
@@ -159,12 +159,15 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
   {
     if(nbvInspection::Node<stateVec>::getCounter()>1000)
     {
+      ROS_INFO("No information gain found, shutting down");
       ros::shutdown();
       return ret;
     }
     if(localCount > 2000)
     {
-    	stateVec extension = history_.top() - s;
+    	stateVec extension(0.0, 0.0, 0.0, 0.0);
+    	if(history_.size() > 0)
+    	  extension = history_.top() - s;
 			double wp = extension.norm() / (nbvInspection::nbvPlanner<stateVec>::v_max_ *
 				  nbvInspection::nbvPlanner<stateVec>::dt_);
 		  if(extension[3] < -M_PI)
@@ -174,11 +177,12 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
 			for(double i = 0.0; i<wp; i+=1.0)
 		  	ret.push_back(s+(1.0-i/wp)*extension);
     
-		  this->history_.pop();
+		  history_.pop();
 			return ret;
     }
     // set up boundaries: increase size as number of iterations grows
-    double radius = 10.0*log(1.0+(double)nbvInspection::Node<stateVec>::getCounter());
+    double radius = 15.0*log(1.0+pow((double)nbvInspection::Node<stateVec>::getCounter(), 2.0) /
+                              ((double)localCount+1.0));
     // sample position of new state
     stateVec newState;
     double dsq = 0.0;
@@ -203,6 +207,9 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
     direction.z() = newState[2];
     direction -= origin;
     octomap::point3d end;
+    end.x() = 0.0;
+    end.y() = 0.0;
+    end.z() = 0.0;
     double d = sqrt(SQ(newState[0] - newParent->state_[0]) + SQ(newState[1] - newParent->state_[1]) + SQ(newState[2] - newParent->state_[2]));
     bool ignoreUnknownCells = false; // TODO: shoud be false, but free cells are not mapped at this time
     if(!this->castRay(origin, direction, end, ignoreUnknownCells, d))
@@ -550,7 +557,7 @@ template<typename stateVec>
 double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s)
 {
   double gain = 0.0;
-  static const double R = nbvInspection::nbvPlanner<stateVec>::informationGainRange_;
+  double R = nbvInspection::nbvPlanner<stateVec>::informationGainRange_;
   double disc = octomap_->getResolution();
   octomath::Vector3 origin;
   origin.x() = s[0]; origin.y() = s[1]; origin.z() = s[2];
@@ -648,8 +655,14 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s)
 template<typename stateVec>
 bool nbvInspection::nbvPlanner<stateVec>::castRay(octomath::Vector3 origin, octomath::Vector3 direction, octomath::Vector3& end, bool ignoreUnknownCells, double d)
 {
-  static const double Radius = 1.5;
-  if(this->octomap_->castRay(origin, direction, end, ignoreUnknownCells, d+Radius+this->octomap_->getResolution()))
+  static const double Radius = 0.5;
+  bool ignoreUnknownCellsLocal = ignoreUnknownCells;
+  d += Radius + this->octomap_->getResolution();
+  bool rc = this->octomap_->castRay(origin, direction, end, ignoreUnknownCellsLocal, d);
+  double d_real = sqrt(SQ(end.x() - origin.x()) +
+  										 SQ(end.y() - origin.y()) +
+  										 SQ(end.z() - origin.z()));
+  if(rc || d > d_real)
     return true;
   Eigen::Vector3f q(1.0, 1.0, 1.0);
   if(direction.x() != 0.0)
@@ -663,14 +676,19 @@ bool nbvInspection::nbvPlanner<stateVec>::castRay(octomath::Vector3 origin, octo
   dir.normalize();
   for(double i = 0; i<2*M_PI; i+=M_PI/6.0)
   {
+    ignoreUnknownCellsLocal = ignoreUnknownCells;
     AngleAxisf rot = AngleAxisf(i, dir);
     Eigen::Vector3f qi = rot*q;
     octomath::Vector3 origini = origin;
     origini.x()+=qi[0]*Radius;
     origini.y()+=qi[1]*Radius;
     origini.z()+=qi[2]*Radius;
-    if(this->octomap_->castRay(origini, direction, end, ignoreUnknownCells, d+Radius+this->octomap_->getResolution()))
-      return true;
+		rc = this->octomap_->castRay(origini, direction, end, ignoreUnknownCellsLocal, d);
+		d_real = sqrt(SQ(end.x() - origini.x()) +
+							 	  SQ(end.y() - origini.y()) +
+						  	  SQ(end.z() - origini.z()));
+		if(rc || d > d_real)
+		  return true;
   }
   return false;
 }
