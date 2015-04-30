@@ -4,9 +4,9 @@ The next best view planner is a real-time capable inspection path planner. From 
 
 # TODO
 
-- IG account for occupied voxels as well
-- Find way to map free cells, not only occupied
-- Strategies to account for zero IG detection (e.g. go back along the path, increase size of sampling space, among others)
+- Improve implementation of RRT
+- Need loop closure on real sysetem localization for experiments
+- Check if mapping of free space works well enough in a real scenario
 
 # Planner execution
 
