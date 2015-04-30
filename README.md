@@ -7,6 +7,7 @@ The next best view planner is a real-time capable inspection path planner. From 
 - Improve implementation of RRT
 - Need loop closure on real sysetem localization for experiments
 - Check if mapping of free space works well enough in a real scenario
+- Develop strategies to reduce data of octomap (while maintaining a high resolution)
 
 # Planner execution
 
