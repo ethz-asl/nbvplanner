@@ -6,6 +6,10 @@
 #include "visualization_msgs/Marker.h"
 #include "geometry_msgs/PolygonStamped.h"
 
+// Macro defining the probabilistic model to be employed in the
+// different information gain routines.
+#define PROBABILISTIC_MODEL(x) (0.5-fabs(0.5-(x)))
+
 using namespace Eigen;
 
 extern int g_ID;
@@ -537,7 +541,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s)
             {
               gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
               // Add probabilistic gain
-              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * node->getOccupancy();
+              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * PROBABILISTIC_MODEL(node->getOccupancy());
             }
           }
           else
@@ -548,7 +552,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s)
             {
               gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
               // Add probabilistic gain
-              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * node->getOccupancy();
+              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * PROBABILISTIC_MODEL(node->getOccupancy());
             }
           }
         }
@@ -610,25 +614,25 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s)
         else
         {
           if(octomap_->isNodeOccupied(node))
-          { 
+          {
             // Rayshooting to evaluate inspectability of cell
             octomath::Vector3 end;
             if(!this->octomap_->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
             {
               gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
               // Add probabilistic gain
-              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * node->getOccupancy();
+              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * PROBABILISTIC_MODEL(node->getOccupancy());
             }
           }
           else
-          { 
+          {
             // Rayshooting to evaluate inspectability of cell
             octomath::Vector3 end;
             if(!this->octomap_->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
             {
               gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
               // Add probabilistic gain
-              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * node->getOccupancy();
+              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * PROBABILISTIC_MODEL(node->getOccupancy());
             }
           }
         }
@@ -768,7 +772,7 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
     ROS_WARN("No information gain for unmapped cells specified. Looking for %s", (ns+"/nbvp/information_gain/unmapped").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/nbvp/sampleHolonomic/degressive_coeff", degressiveCoeff_))
+  if(!ros::param::get(ns+"/nbvp/information_gain/degressive_coeff", degressiveCoeff_))
   {
     ROS_WARN("No degressive factor for information gain accumulation specified. Looking for %s", (ns+"/nbvp/sampleHolonomic/degressive_coeff").c_str());
     ret = false;
