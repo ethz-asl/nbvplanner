@@ -15,6 +15,13 @@
 #include <octomap_ros/conversions.h>
 #include <tf/transform_datatypes.h>
 
+#include <octomap_to_mesh/rt_nonfinite.h>
+#include <octomap_to_mesh/rtwtypes.h>
+#include <octomap_to_mesh/OctomapToMesh_types.h>
+#include <octomap_to_mesh/OctomapToMesh_struct.h>
+#include <octomap_to_mesh/OctomapToGrid.h>
+#include <octomap_to_mesh/OctomapToMesh.h>
+
 #include "nbvplanner/nbvp.hpp"
 #include "nbvplanner/nbvp_srv.h"
 
@@ -105,6 +112,11 @@ void posCallback(const geometry_msgs::PoseStamped& pose)
 
 bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::Response& res)
 {
+  if(!ros::ok())
+  {
+    ROS_INFO("Exploration completed. Not planning any further moves.");
+    ros::Duration(5.0).sleep();
+  }
   ROS_INFO("Starting NBV Planner");
   if(!planner_t::setParams())
   {
@@ -217,6 +229,44 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
     //ROS_INFO("(%2.2f,%2.2f,%2.2f,%2.2f)", (*it)[0], (*it)[1], (*it)[2], (*it)[3]);
   }
   iteration++;
+  if(!ros::ok()||iteration==40)
+  {
+    ROS_INFO("Exploration completed. Converting octomap to mesh for inspection planning.");
+    
+    OctomapToMesh_T data;
+
+    if(OctomapToGrid (planner->octomap_, &data)) {
+                      
+      struct_T * MeshedOctomap = NULL;
+      char_T * fileName = new char_T[50];
+      strcpy(fileName, (pkgPath+"/data/meshOut.stl").c_str());
+      OctomapToMesh(&data, fileName, MeshedOctomap);
+      
+      // TODO(birchera): clean up allocated memory
+      /*std::fstream meshFile;
+      meshFile.open((pkgPath+"/data/meshOut.m").c_str(), std::ios::out);
+      meshFile << "octomap_gridX = [";
+      for (int i = 0; i < (*octomap_gridX_size)[1]; i++)
+        meshFile << (*octomap_gridX_data)[i] << ";\n";
+      meshFile << "];\n";
+      meshFile << "octomap_gridY = [";
+      for (int i = 0; i < (*octomap_gridY_size)[1]; i++)
+        meshFile << (*octomap_gridY_data)[i] << ";\n";
+      meshFile << "];\n";
+      meshFile << "octomap_gridZ = [";
+      for (int i = 0; i < (*octomap_gridZ_size)[1]; i++)
+        meshFile << (*octomap_gridZ_data)[i] << ";\n";
+      meshFile << "];\n";
+      
+      meshFile << "octomap_voxels_map = zeros(" << (*octomap_gridX_size)[1] << ", " << (*octomap_gridY_size)[1] << ", " << (*octomap_gridZ_size)[1] << ");\n";
+      
+      for (int i = 0; i < (*octomap_gridX_size)[1]; i++)
+        for (int j = 0; j < (*octomap_gridY_size)[1]; j++)
+          for (int k = 0; k < (*octomap_gridZ_size)[1]; k++)
+            meshFile << "octomap_voxels_map(" << i+1 << ", " << j+1 << ", " << k+1 << ") = " << (*octomap_voxels_map)->data[i+j*(*octomap_gridX_size)[1]+k*(*octomap_gridX_size)[1]*(*octomap_gridY_size)[1]] << ";\n";
+      meshFile.close();*/
+    }
+  }
   return true;
 }
 

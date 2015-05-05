@@ -20,15 +20,9 @@ nbvp/RRT_extension: true
 
 # bounding box: necessary to limit the simulation 
 # scenario (smaller than actual gazebo scenario)
-#bbx/minX: -80.0
-#bbx/minY: -80.0
-#bbx/minZ: 0.0
-#bbx/maxX: 80.0
-#bbx/maxY: 80.0
-#bbx/maxZ: 10.0
 bbx/minX: -10.0
 bbx/minY: -70.0
 bbx/minZ: 0.0
-bbx/maxX: 80.0
-bbx/maxY: 10.0
-bbx/maxZ: 40.0
+bbx/maxX: 70.0
+bbx/maxY: 5.0
+bbx/maxZ: 60.0

@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   sensor_msgs
   rotors_gazebo
+  octomap_to_mesh
 )
 find_package(cmake_modules REQUIRED)
 find_package(Eigen REQUIRED)
@@ -77,9 +78,9 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include ${Eigen_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS}
+  INCLUDE_DIRS include ${Eigen_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS}
   LIBRARIES nbvplanner ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES}
-  CATKIN_DEPENDS message_runtime
+  CATKIN_DEPENDS message_runtime octomap_to_mesh
 #  DEPENDS system_lib
 )
 

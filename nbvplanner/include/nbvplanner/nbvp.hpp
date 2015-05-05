@@ -1,10 +1,10 @@
-#include "nbvplanner/nbvp.h"
 #include <cfloat>
 #include <cstdlib>
 #include <sstream>
-#include "tf/transform_datatypes.h"
-#include "visualization_msgs/Marker.h"
-#include "geometry_msgs/PolygonStamped.h"
+#include <tf/transform_datatypes.h>
+#include <visualization_msgs/Marker.h>
+#include <geometry_msgs/PolygonStamped.h>
+#include <nbvplanner/nbvp.h>
 
 // Macro defining the probabilistic model to be employed in the
 // different information gain routines.
@@ -161,13 +161,13 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
   int localCount = 0;
   while(nbvInspection::Node<stateVec>::bestInformationGain_ <= nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_ || nbvInspection::Node<stateVec>::getCounter() < I)
   {
-    if(nbvInspection::Node<stateVec>::getCounter()>1000)
+    if(nbvInspection::Node<stateVec>::getCounter()>500)
     {
       ROS_INFO("No information gain found, shutting down");
       ros::shutdown();
       return ret;
     }
-    if(localCount > 2000)
+    if(localCount > 2500)
     {
     	stateVec extension(0.0, 0.0, 0.0, 0.0);
     	if(history_.size() > 0)
@@ -185,7 +185,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
 			return ret;
     }
     // set up boundaries: increase size as number of iterations grows
-    double radius = extensionRange_ * log(1.0 + pow((double)nbvInspection::Node<stateVec>::getCounter(), 2.0) /
+    double radius = extensionRange_ * sqrt(pow((double)nbvInspection::Node<stateVec>::getCounter(), 2.0) /
                               ((double)localCount + 1.0));
     // sample position of new state
     stateVec newState;
