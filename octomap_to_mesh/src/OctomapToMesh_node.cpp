@@ -48,7 +48,8 @@ int main(int argc, char **argv) {
       
       std::string meshFile = "meshOut.stl";
       std::string ns = ros::this_node::getName();
-      ros::param::get (ns+"/mesh_file_name", meshFile);
+      if(!ros::param::get (ns+"/mesh_file_name", meshFile))
+        ROS_WARN("No mesh file name specified. Using default (meshOut.stl)");
   
       struct_T * MeshedOctomap = NULL;
       char_T * fileName = new char_T[50];

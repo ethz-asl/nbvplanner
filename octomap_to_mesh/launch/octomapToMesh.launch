@@ -1,0 +1,12 @@
+<launch>
+  <node name="OctomapToMesh" pkg="octomap_to_mesh" type="octomap_to_mesh_node" output="screen">
+    <param name="mesh_file_name" type="string" value="meshOut.stl" />
+    <param name="xmin" type="double" value="-10" />
+    <param name="xmax" type="double" value="90" />
+    <param name="ymin" type="double" value="-70" />
+    <param name="ymax" type="double" value="5" />
+    <param name="zmin" type="double" value="0" />
+    <param name="zmax" type="double" value="60" />
+    <remap from="octomap_full" to="/octomap_manager/get_map"/>
+  </node>
+</launch>
