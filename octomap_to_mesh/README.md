@@ -12,16 +12,17 @@ This package supplies functions to generate a surface mesh from an octomap::OcTr
 #include <octomap_to_mesh/OctomapToMesh_types.h>
 #include <octomap_to_mesh/OctomapToMesh_struct.h>
 
+octomap::OcTree * octomap;
 ...
 
 OctomapToMesh_T data;
 
-    if(OctomapToGrid (planner->octomap_, &data)) {
-                      
-      struct_T * MeshedOctomap = NULL;
-      char_T * fileName = new char_T[50];
-      strcpy(fileName, (pkgPath+"/data/meshOut.stl").c_str());
-      OctomapToMesh(&data, fileName, MeshedOctomap);
+if(OctomapToGrid (octomap, &data)) {
+                  
+  struct_T * MeshedOctomap = NULL;
+  char_T * fileName = new char_T[50];
+  strcpy (fileName, (pkgPath+"/data/meshOut.stl").c_str());
+  OctomapToMesh (&data, fileName, MeshedOctomap);
 }
 
 ...
@@ -29,3 +30,5 @@ OctomapToMesh_T data;
 ```
 
 Alternatively use the provided launchfile to save the octomap as a surface mesh.
+
+The core functionality is exported c++ code from the Matlab toolbox Octomap2Mesh. For the conversion, unmapped space is assumed to be occupied.
