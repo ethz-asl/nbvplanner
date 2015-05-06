@@ -31,4 +31,4 @@ if(OctomapToGrid (octomap, &data)) {
 
 Alternatively use the provided launchfile to save the octomap as a surface mesh.
 
-The core functionality is exported c++ code from the Matlab toolbox Octomap2Mesh. For the conversion, unmapped space is assumed to be occupied.
+The core functionality is exported c++ code from the Matlab toolbox Octomap2Mesh. For the mesh generation, unmapped space is assumed to be occupied.
