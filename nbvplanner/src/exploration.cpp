@@ -108,7 +108,7 @@ int main(int argc, char** argv){
     ROS_WARN("could not open path file");
   file<<"pathMatrix = [";
   while (ros::ok()) {
-    //ROS_INFO("Initiating replanning");
+    ROS_INFO("Initiating replanning");
     nbvplanner::nbvp_srv planSrv;
     if(ros::service::call("nbvplanner",planSrv))
     {
@@ -128,8 +128,8 @@ int main(int argc, char** argv){
         ros::Duration(dt).sleep();
       }
     }
-    //else
-      //ROS_WARN("Planner not reachable");
+    else
+      ROS_WARN("Planner not reachable");
   }
   file<<"];";
   file.close();

@@ -137,12 +137,12 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   }
   if(srv.response.map.binary)
   {
-		ROS_WARN("Loading binary octomap");
+		ROS_INFO("Loading binary octomap");
     planner->octomap_ = octomap_msgs::binaryMsgToMap(srv.response.map);
   }
   else
   {
-		ROS_WARN("Loading full octomap");
+		ROS_INFO("Loading full octomap");
     octomap::AbstractOcTree* tree = octomap_msgs::fullMsgToMap(srv.response.map);
     planner->octomap_ = dynamic_cast<octomap::OcTree*>(tree);
   }
@@ -229,7 +229,7 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
     //ROS_INFO("(%2.2f,%2.2f,%2.2f,%2.2f)", (*it)[0], (*it)[1], (*it)[2], (*it)[3]);
   }
   iteration++;
-  if(!ros::ok()||iteration==40)
+  if(!ros::ok()||iteration==50)
   {
     ROS_INFO("Exploration completed. Converting octomap to mesh for inspection planning.");
     

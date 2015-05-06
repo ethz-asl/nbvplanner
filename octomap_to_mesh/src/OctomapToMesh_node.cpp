@@ -34,13 +34,13 @@ int main(int argc, char **argv) {
     
     octomap::OcTree * octomap;
     
-    if(srv.response.map.binary)
-    {
+    if(srv.response.map.binary) {
+    
       octomap = octomap_msgs::binaryMsgToMap(srv.response.map);
     }
-    else
-    {
-      octomap::AbstractOcTree* tree = octomap_msgs::fullMsgToMap(srv.response.map);
+    else {
+    
+      octomap::AbstractOcTree * tree = octomap_msgs::fullMsgToMap(srv.response.map);
       octomap = dynamic_cast<octomap::OcTree*>(tree);
     }
 
