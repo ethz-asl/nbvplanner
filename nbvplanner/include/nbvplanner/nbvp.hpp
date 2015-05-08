@@ -92,13 +92,13 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner()
   double camTop = M_PI*(pitch-nbvInspection::nbvPlanner<stateVec>::camVertical_/2.0)/180.0;
   double camBottom = M_PI*(pitch+nbvInspection::nbvPlanner<stateVec>::camVertical_/2.0)/180.0;
   double side = M_PI*(nbvInspection::nbvPlanner<stateVec>::camHorizontal_)/360.0;
-  Vector3f bottom(cos(camBottom), -sin(camBottom), 0.0);
-  Vector3f top(cos(camTop), -sin(camTop), 0.0);
-  Vector3f right(cos(side), -sin(camBottom), 0.0);
-  Vector3f left(cos(side), sin(camBottom), 0.0);
-  AngleAxisf m = AngleAxisf(pitch, Vector3f::UnitY());
-  Vector3f rightR = m*right;
-  Vector3f leftR = m*left;
+  Vector3d bottom(cos(camBottom), -sin(camBottom), 0.0);
+  Vector3d top(cos(camTop), -sin(camTop), 0.0);
+  Vector3d right(cos(side), -sin(camBottom), 0.0);
+  Vector3d left(cos(side), sin(camBottom), 0.0);
+  AngleAxisd m = AngleAxisd(pitch, Vector3d::UnitY());
+  Vector3d rightR = m*right;
+  Vector3d leftR = m*left;
   rightR.normalize();
   leftR.normalize();
   camBoundNormals_.push_back(bottom);
@@ -201,25 +201,20 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
     nbvInspection::Node<stateVec>* newParent = rootNode_->minDist(newState);
     
     // check for collision
-    octomap::point3d origin;
-    origin.x() = newParent->state_[0];
-    origin.y() = newParent->state_[1];
-    origin.z() = newParent->state_[2];
-    octomap::point3d direction;
-    direction.x() = newState[0];
-    direction.y() = newState[1];
-    direction.z() = newState[2];
+    Eigen::Vector3d origin;
+    origin[0] = newParent->state_[0];
+    origin[1] = newParent->state_[1];
+    origin[2] = newParent->state_[2];
+    Eigen::Vector3d direction;
+    direction[0] = newState[0];
+    direction[1] = newState[1];
+    direction[2] = newState[2];
     direction -= origin;
-    octomap::point3d end;
-    end.x() = 0.0;
-    end.y() = 0.0;
-    end.z() = 0.0;
-    double d = sqrt(SQ(newState[0] - newParent->state_[0]) + SQ(newState[1] - newParent->state_[1]) + SQ(newState[2] - newParent->state_[2]));
-    bool ignoreUnknownCells = false; // TODO: shoud be false, but free cells are not mapped at this time
-    if(!this->castRay(origin, direction, end, ignoreUnknownCells, d))
+    Eigen::Vector3d boundingBox(1.0, 1.0, 0.5);
+    if(volumetric_mapping::OctomapManager::CellStatus::kFree == this->manager_->getLineStatusBoundingBox(origin, direction, boundingBox))
     {
       // sample the new orientation from the set of possible orientations
-      newState[3] = newParent->state_[3] + 2.0 * (((double)rand())/((double)RAND_MAX)-0.5) * d * nbvInspection::nbvPlanner<stateVec>::dyaw_max_ / nbvInspection::nbvPlanner<stateVec>::v_max_;
+      newState[3] = newParent->state_[3] + 2.0 * (((double)rand())/((double)RAND_MAX)-0.5) * direction.norm() * nbvInspection::nbvPlanner<stateVec>::dyaw_max_ / nbvInspection::nbvPlanner<stateVec>::v_max_;
       // create new node and inser into tree
       nbvInspection::Node<stateVec> * newNode = new nbvInspection::Node<stateVec>;
       newNode->state_ = newState;
@@ -271,7 +266,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
       p.pose.orientation.y = q.y();
       p.pose.orientation.z = q.z();
       p.pose.orientation.w = q.w();
-      p.scale.x = d;
+      p.scale.x = direction.norm();
       p.scale.y = 0.03;
       p.scale.z = 0.03;
       p.color.r = 100.0/255.0;
@@ -323,15 +318,14 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
   assert(s.size()==4);
   nbvInspection::nbvPlanner<stateVec>::vector_t ret;
   stateVec extension;
-  octomap::point3d origin;
-  origin.x() = s[0];
-  origin.y() = s[1];
-  origin.z() = s[2];
-  octomap::point3d direction;
-  octomap::point3d end;
-  bool ignoreUnknownCells = false; // TODO: shoud be false, but free cells are not mapped at this time
+  Eigen::Vector3d origin;
+  origin[0] = s[0];
+  origin[1] = s[1];
+  origin[2] = s[2];
+  Eigen::Vector3d direction;
   double d = DBL_MAX;
   int iter = 0;
+  Eigen::Vector3d boundingBox(1.0, 1.0, 0.5);
   do
   {
     for(int i = 0; i<extension.size()-1; i++)
@@ -339,10 +333,11 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
     d = sqrt(SQ(extension[0])+SQ(extension[1])+SQ(extension[2]));
     // sample yaw w.r.t. the constraints
     extension[extension.size()-1] = (nbvInspection::nbvPlanner<stateVec>::dyaw_max_ / nbvInspection::nbvPlanner<stateVec>::v_max_) * d * (((double)rand())/((double)RAND_MAX)-0.5);
-    direction.x() = extension[0];
-    direction.y() = extension[1];
-    direction.z() = extension[2];
-  }while(this->octomap_->castRay(origin, direction, end, ignoreUnknownCells, d*1.1+this->octomap_->getResolution()) && (iter++) < 100);
+    direction[0] = extension[0];
+    direction[1] = extension[1];
+    direction[2] = extension[2];
+  }while(volumetric_mapping::OctomapManager::CellStatus::kFree ==
+             this->manager_->getLineStatusBoundingBox(origin, origin + direction, boundingBox) && (iter++) < 100);
   if(iter>=100)
   {
     ROS_WARN("No connection found to extend tree");
@@ -415,21 +410,21 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
       
   assert(s.size()==8);
   stateVec ds;
-  octomap::point3d origin;
+  Eigen::Vector3d origin;
   double stransl = sqrt(SQ(s[4])+SQ(s[5])+SQ(s[6]));
   if(stransl>SQ(nbvInspection::nbvPlanner<stateVec>::v_max_))
     for(int i = 4; i<7; i++)
       s[i] *= nbvInspection::nbvPlanner<stateVec>::v_max_/stransl;
       
-  octomap::point3d direction;
-  octomap::point3d end;
+  Eigen::Vector3d direction;
   bool ignoreUnknownCells = false; // TODO: shoud be false, but free cells are not mapped at this time
   double d = DBL_MAX;
+  Eigen::Vector3d boundingBox(1.0, 1.0, 0.5);
   for(int i = 0; i < 10; i++)
   {
-    origin.x() = s[0];
-    origin.y() = s[1];
-    origin.z() = s[2];
+    origin[0] = s[0];
+    origin[1] = s[1];
+    origin[2] = s[2];
     do
     {
       // translational
@@ -451,10 +446,11 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
       if(abs(ds[3])>nbvInspection::nbvPlanner<stateVec>::dyaw_max_)
         ds[3] *= nbvInspection::nbvPlanner<stateVec>::dyaw_max_/ds[3];
       
-      direction.x() = ds[0];
-      direction.y() = ds[1];
-      direction.z() = ds[2];
-    }while(this->octomap_->castRay(origin, direction, end, ignoreUnknownCells, d*1.1+octomap_->getResolution()));
+      direction[0] = nbvInspection::nbvPlanner<stateVec>::dt_ * ds[0];
+      direction[1] = nbvInspection::nbvPlanner<stateVec>::dt_ * ds[1];
+      direction[2] = nbvInspection::nbvPlanner<stateVec>::dt_ * ds[2];
+    }while(volumetric_mapping::OctomapManager::CellStatus::kFree ==
+             this->manager_->getLineStatusBoundingBox(origin, origin + direction, boundingBox));
     s[0] += nbvInspection::nbvPlanner<stateVec>::dt_*(s[4]+ds[0])/2.0;
     s[1] += nbvInspection::nbvPlanner<stateVec>::dt_*(s[5]+ds[1])/2.0;
     s[2] += nbvInspection::nbvPlanner<stateVec>::dt_*(s[6]+ds[2])/2.0;
@@ -506,54 +502,52 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s)
 {
   double gain = 0.0;
   double R = nbvInspection::nbvPlanner<stateVec>::informationGainRange_;
-  double disc = octomap_->getResolution();
-  octomath::Vector3 origin;
-  origin.x() = s[0]; origin.y() = s[1]; origin.z() = s[2];
-  bool ignoreUnknownCells = true;
-  octomath::Vector3 vec;
-  for(vec.x() = std::max(s[0] - R, nbvInspection::nbvPlanner<stateVec>::minX_);
-      vec.x() < std::min(s[0] + R, nbvInspection::nbvPlanner<stateVec>::maxX_); vec.x() += disc)
+  double disc = manager_->getResolution();
+  Eigen::Vector3d origin(s[0],s[1],s[2]);
+  Eigen::Vector3d boundingBox(1.0, 1.0, 0.5);
+  Eigen::Vector3d vec;
+  for(vec[0] = std::max(s[0] - R, nbvInspection::nbvPlanner<stateVec>::minX_);
+      vec[0] < std::min(s[0] + R, nbvInspection::nbvPlanner<stateVec>::maxX_); vec[0] += disc)
   {
-    for(vec.y() = std::max(s[1] - R, nbvInspection::nbvPlanner<stateVec>::minY_);
-        vec.y() < std::min(s[1] + R, nbvInspection::nbvPlanner<stateVec>::maxY_); vec.y() += disc)
+    for(vec[1] = std::max(s[1] - R, nbvInspection::nbvPlanner<stateVec>::minY_);
+        vec[1] < std::min(s[1] + R, nbvInspection::nbvPlanner<stateVec>::maxY_); vec[1] += disc)
     {
-      for(vec.z() = std::max(s[2] - R, nbvInspection::nbvPlanner<stateVec>::minZ_);
-          vec.z() < std::min(s[2] + R, nbvInspection::nbvPlanner<stateVec>::maxZ_); vec.z() += disc)
+      for(vec[2] = std::max(s[2] - R, nbvInspection::nbvPlanner<stateVec>::minZ_);
+          vec[2] < std::min(s[2] + R, nbvInspection::nbvPlanner<stateVec>::maxZ_); vec[2] += disc)
       {
-        double dsq = SQ(s[0] - vec.x())+SQ(s[1] - vec.y())+SQ(s[2] - vec.z());
+        double dsq = SQ(s[0] - vec[0])+SQ(s[1] - vec[1])+SQ(s[2] - vec[2]);
         if(dsq>pow(R,2.0))// || !octomap->inBBX(vec))
           continue;
-        octomap::OcTreeNode * node = octomap_->search(vec.x(), vec.y(), vec.z());
-        if (node == NULL)
+          
+        // TODO: add probabilistic information gain
+        volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellStatusPoint(vec);
+        if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown)
         {
           // Rayshooting to evaluate inspectability of cell
-          octomath::Vector3 end;
-          if(this->octomap_->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
+          if(volumetric_mapping::OctomapManager::CellStatus::kFree ==
+             this->manager_->getLineStatusBoundingBox(origin, vec, boundingBox))
             gain+=nbvInspection::nbvPlanner<stateVec>::igUnmapped_;
         }
-        else
-        {
-          if(octomap_->isNodeOccupied(node))
-          { 
-            // Rayshooting to evaluate inspectability of cell
-            octomath::Vector3 end;
-            if(!this->octomap_->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
-            {
-              gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
-              // Add probabilistic gain
-              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * PROBABILISTIC_MODEL(node->getOccupancy());
-            }
+        else if(node == volumetric_mapping::OctomapManager::CellStatus::kOccupied)
+        { 
+          // Rayshooting to evaluate inspectability of cell
+          if(volumetric_mapping::OctomapManager::CellStatus::kFree ==
+             this->manager_->getLineStatusBoundingBox(origin, vec, boundingBox))
+          {
+            gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
+            // Add probabilistic gain
+            // gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * PROBABILISTIC_MODEL(node->getOccupancy());
           }
-          else
-          { 
-            // Rayshooting to evaluate inspectability of cell
-            octomath::Vector3 end;
-            if(!this->octomap_->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
-            {
-              gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
-              // Add probabilistic gain
-              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * PROBABILISTIC_MODEL(node->getOccupancy());
-            }
+        }
+        else
+        { 
+          // Rayshooting to evaluate inspectability of cell
+          if(volumetric_mapping::OctomapManager::CellStatus::kFree ==
+             this->manager_->getLineStatusBoundingBox(origin, vec, boundingBox))
+          {
+            gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
+            // Add probabilistic gain
+            // gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * PROBABILISTIC_MODEL(node->getOccupancy());
           }
         }
       }
@@ -569,29 +563,28 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s)
 {
   double gain = 0.0;
   double R = nbvInspection::nbvPlanner<stateVec>::informationGainRange_;
-  double disc = octomap_->getResolution();
-  octomath::Vector3 origin;
-  origin.x() = s[0]; origin.y() = s[1]; origin.z() = s[2];
-  bool ignoreUnknownCells = true;
-  octomath::Vector3 vec;
-  for(vec.x() = std::max(s[0] - R, nbvInspection::nbvPlanner<stateVec>::minX_);
-      vec.x() < std::min(s[0] + R, nbvInspection::nbvPlanner<stateVec>::maxX_); vec.x() += disc)
+  double disc = manager_->getResolution();
+  Eigen::Vector3d origin(s[0],s[1],s[2]);
+  Eigen::Vector3d boundingBox(1.0, 1.0, 0.5);
+  Eigen::Vector3d vec;
+  for(vec[0] = std::max(s[0] - R, nbvInspection::nbvPlanner<stateVec>::minX_);
+      vec[0] < std::min(s[0] + R, nbvInspection::nbvPlanner<stateVec>::maxX_); vec[0] += disc)
   {
-    for(vec.y() = std::max(s[1] - R, nbvInspection::nbvPlanner<stateVec>::minY_);
-        vec.y() < std::min(s[1] + R, nbvInspection::nbvPlanner<stateVec>::maxY_); vec.y() += disc)
+    for(vec[1] = std::max(s[1] - R, nbvInspection::nbvPlanner<stateVec>::minY_);
+        vec[1] < std::min(s[1] + R, nbvInspection::nbvPlanner<stateVec>::maxY_); vec[1] += disc)
     {
-      for(vec.z() = std::max(s[2] - R, nbvInspection::nbvPlanner<stateVec>::minZ_);
-          vec.z() < std::min(s[2] + R, nbvInspection::nbvPlanner<stateVec>::maxZ_); vec.z() += disc)
+      for(vec[2] = std::max(s[2] - R, nbvInspection::nbvPlanner<stateVec>::minZ_);
+          vec[2] < std::min(s[2] + R, nbvInspection::nbvPlanner<stateVec>::maxZ_); vec[2] += disc)
       {
-        double dsq = SQ(s[0] - vec.x())+SQ(s[1] - vec.y())+SQ(s[2] - vec.z());
-        if(dsq>pow(R,2.0))
+        double dsq = SQ(s[0] - vec[0])+SQ(s[1] - vec[1])+SQ(s[2] - vec[2]);
+        if(dsq>pow(R,2.0))// || !octomap->inBBX(vec))
           continue;
           
-        Vector3f dir(vec.x() - s[0], vec.y() - s[1], vec.z() - s[2]);
+        Vector3d dir(vec[0] - s[0], vec[1] - s[1], vec[2] - s[2]);
         bool bbreak = false;
-        for(typename std::vector<Vector3f>::iterator itCBN = camBoundNormals_.begin(); itCBN!=camBoundNormals_.end(); itCBN++)
+        for(typename std::vector<Vector3d>::iterator itCBN = camBoundNormals_.begin(); itCBN!=camBoundNormals_.end(); itCBN++)
         {
-          Vector3f normal = AngleAxisf(s[3], Vector3f::UnitZ())*(*itCBN);
+          Vector3d normal = AngleAxisd(s[3], Vector3d::UnitZ())*(*itCBN);
           double val = dir.dot(normal);
           if(val<SQRT2*disc)
           {
@@ -601,39 +594,36 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s)
         }
         if(bbreak)
           continue;
-        
-        octomap::OcTreeNode * node = octomap_->search(vec.x(), vec.y(), vec.z());
-        //ROS_INFO("node: %i", (int)(long)node);
-        if (node == NULL)
+          
+        // TODO: add probabilistic information gain
+        volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellStatusPoint(vec);
+        if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown)
         {
           // Rayshooting to evaluate inspectability of cell
-          octomath::Vector3 end;
-          if(!this->octomap_->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
-            gain += nbvInspection::nbvPlanner<stateVec>::igUnmapped_;
+          if(volumetric_mapping::OctomapManager::CellStatus::kFree ==
+             this->manager_->getLineStatusBoundingBox(origin, vec, boundingBox))
+            gain+=nbvInspection::nbvPlanner<stateVec>::igUnmapped_;
+        }
+        else if(node == volumetric_mapping::OctomapManager::CellStatus::kOccupied)
+        { 
+          // Rayshooting to evaluate inspectability of cell
+          if(volumetric_mapping::OctomapManager::CellStatus::kFree ==
+             this->manager_->getLineStatusBoundingBox(origin, vec, boundingBox))
+          {
+            gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
+            // Add probabilistic gain
+            // gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * PROBABILISTIC_MODEL(node->getOccupancy());
+          }
         }
         else
-        {
-          if(octomap_->isNodeOccupied(node))
+        { 
+          // Rayshooting to evaluate inspectability of cell
+          if(volumetric_mapping::OctomapManager::CellStatus::kFree ==
+             this->manager_->getLineStatusBoundingBox(origin, vec, boundingBox))
           {
-            // Rayshooting to evaluate inspectability of cell
-            octomath::Vector3 end;
-            if(!this->octomap_->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
-            {
-              gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
-              // Add probabilistic gain
-              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * PROBABILISTIC_MODEL(node->getOccupancy());
-            }
-          }
-          else
-          {
-            // Rayshooting to evaluate inspectability of cell
-            octomath::Vector3 end;
-            if(!this->octomap_->castRay(origin, vec - origin, end, ignoreUnknownCells, sqrt(dsq)))
-            {
-              gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
-              // Add probabilistic gain
-              gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * PROBABILISTIC_MODEL(node->getOccupancy());
-            }
+            gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
+            // Add probabilistic gain
+            // gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ * PROBABILISTIC_MODEL(node->getOccupancy());
           }
         }
       }
@@ -674,16 +664,16 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s)
 template<typename stateVec>
 bool nbvInspection::nbvPlanner<stateVec>::castRay(octomath::Vector3 origin, octomath::Vector3 direction, octomath::Vector3& end, bool ignoreUnknownCells, double d)
 {
-  static const double Radius = 0.5;
+  /*static const double Radius = 0.5;
   bool ignoreUnknownCellsLocal = ignoreUnknownCells;
-  d += Radius + this->octomap_->getResolution();
-  bool rc = this->octomap_->castRay(origin, direction, end, ignoreUnknownCellsLocal, d);
+  d += Radius + this->manager_->getResolution();
+  bool rc = this->manager_->castRay(origin, direction, end, ignoreUnknownCellsLocal, d);
   double d_real = sqrt(SQ(end.x() - origin.x()) +
   										 SQ(end.y() - origin.y()) +
   										 SQ(end.z() - origin.z()));
   if(rc || d > d_real)
     return true;
-  Eigen::Vector3f q(1.0, 1.0, 1.0);
+  Eigen::Vector3d q(1.0, 1.0, 1.0);
   if(direction.x() != 0.0)
     q[0] = -(direction.y()+direction.z())/direction.x();
   else if(direction.y() != 0.0)
@@ -691,24 +681,24 @@ bool nbvInspection::nbvPlanner<stateVec>::castRay(octomath::Vector3 origin, octo
   else
     q[2] = -(direction.y()+direction.x())/direction.z();
   q.normalize();
-  Eigen::Vector3f dir(direction.x(),direction.y(),direction.z());
+  Eigen::Vector3d dir(direction.x(),direction.y(),direction.z());
   dir.normalize();
   for(double i = 0; i<2*M_PI; i+=M_PI/6.0)
   {
     ignoreUnknownCellsLocal = ignoreUnknownCells;
-    AngleAxisf rot = AngleAxisf(i, dir);
-    Eigen::Vector3f qi = rot*q;
+    AngleAxisd rot = AngleAxisd(i, dir);
+    Eigen::Vector3d qi = rot*q;
     octomath::Vector3 origini = origin;
     origini.x()+=qi[0]*Radius;
     origini.y()+=qi[1]*Radius;
     origini.z()+=qi[2]*Radius;
-		rc = this->octomap_->castRay(origini, direction, end, ignoreUnknownCellsLocal, d);
+		rc = this->manager_->castRay(origini, direction, end, ignoreUnknownCellsLocal, d);
 		d_real = sqrt(SQ(end.x() - origini.x()) +
 							 	  SQ(end.y() - origini.y()) +
 						  	  SQ(end.z() - origini.z()));
 		if(rc || d > d_real)
 		  return true;
-  }
+  }*/
   return false;
 }
 
@@ -898,3 +888,5 @@ template<typename stateVec>
 double nbvInspection::nbvPlanner<stateVec>::maxY_ = 0.0;
 template<typename stateVec>
 double nbvInspection::nbvPlanner<stateVec>::maxZ_ = 0.0;
+template<typename stateVec>
+volumetric_mapping::OctomapManager * nbvInspection::nbvPlanner<stateVec>::manager_ = NULL;

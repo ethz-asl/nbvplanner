@@ -6,6 +6,7 @@
 #include "octomap/octomap.h"
 #include "octomap/OcTreeNode.h"
 #include "octomap/OcTree.h"
+#include <octomap_world/octomap_manager.h>
 
 #define SQ(x) ((x)*(x))
 #define SQRT2 0.70711
@@ -81,7 +82,8 @@ namespace nbvInspection
     static int getInitIterations();
     static bool extensionRangeSet();
     octomap_t * octomap_;
-    std::vector<Eigen::Vector3f> camBoundNormals_;
+    std::vector<Eigen::Vector3d> camBoundNormals_;
     Node<stateVec> * rootNode_;
+    static volumetric_mapping::OctomapManager * manager_;
   };
 }

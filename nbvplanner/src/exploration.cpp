@@ -112,6 +112,7 @@ int main(int argc, char** argv){
     nbvplanner::nbvp_srv planSrv;
     if(ros::service::call("nbvplanner",planSrv))
     {
+    ROS_INFO("Planner reached");
       for(int i = 0; i<100&&i<planSrv.response.path.size(); i++)
       {
         tf::Pose pose;

@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   rotors_gazebo
   octomap_to_mesh
+  octomap_world
 )
 find_package(cmake_modules REQUIRED)
 find_package(Eigen REQUIRED)

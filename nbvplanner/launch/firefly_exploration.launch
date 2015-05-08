@@ -18,7 +18,7 @@
   
   <node name="rviz" pkg="rviz" type="rviz" output="screen"/>
   
-  <node name="octomap_manager" pkg="octomap_world" type="octomap_manager" output="screen">
+  <!-- node name="octomap_manager" pkg="octomap_world" type="octomap_manager" output="screen">
     <param name="tf_frame" type="string" value="world" />
     <param name="resolution" type="double" value="4.0" />
     <param name="sensor_max_range" type="double" value="50.0" />
@@ -26,7 +26,7 @@
     <remap from="cam1/camera_info" to="/firefly/vi_sensor/right/camera_info"/>
     <remap from="pointcloud" to="/firefly/vi_sensor/camera_depth/depth/points"/>
     <remap from="get_map" to="/octomap_manager/get_map"/>
-  </node>
+  </node -->
 
 	<node name="octomap_server" pkg="octomap_server" type="octomap_server_node" output="screen">
     <param name="frame_id" type="string" value="world" />
@@ -38,6 +38,12 @@
   </node>
 
   <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
+    <param name="tf_frame" type="string" value="world" />
+    <param name="resolution" type="double" value="4.0" />
+    <param name="sensor_max_range" type="double" value="50.0" />
+    <remap from="cam0/camera_info" to="/firefly/vi_sensor/left/camera_info"/>
+    <remap from="cam1/camera_info" to="/firefly/vi_sensor/right/camera_info"/>
+    <remap from="pointcloud" to="/firefly/vi_sensor/camera_depth/depth/points"/>
     <remap from="pose" to="firefly/odometry_sensor1/pose"/>
     <remap from="nbvplanner" to="firefly/nbvplanner"/>
     <remap from="octomap_full" to="/octomap_manager/get_map"/>

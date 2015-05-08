@@ -37,11 +37,9 @@ stateVec_t * root;
 stateVec_t * g_stateOld;
 ros::Publisher inspectionPath;
 ros::Publisher treePub;
-ros::Publisher octomapLog;
 ros::ServiceClient octomapClient;
 ros::Time g_timeOld;
 ros::Time g_timeSinceLog;
-ros::Time g_timeSinceLogOctomap;
 int g_ID;
 std::string pkgPath;
 int iteration;
@@ -99,59 +97,25 @@ void posCallback(const geometry_msgs::PoseStamped& pose)
     traj.close();
     g_timeSinceLog = pose.header.stamp;
   }
-  if((pose.header.stamp-g_timeSinceLogOctomap).toSec()>30.0)
-  {
-    OctomapSrv srv;
-    if(octomapClient.call(srv))
-    {
-      octomapLog.publish(srv.response.map);
-    }
-    g_timeSinceLogOctomap = pose.header.stamp;
-  }
 }
 
 bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::Response& res)
 {
+  ROS_INFO("Starting NBV Planner");
   if(!ros::ok())
   {
     ROS_INFO("Exploration completed. Not planning any further moves.");
     ros::Duration(5.0).sleep();
   }
-  ROS_INFO("Starting NBV Planner");
   if(!planner_t::setParams())
   {
     ROS_ERROR("Could not start the planner. Parameters missing!");
     return true;
   }
-  ros::Rate r(10);
-  OctomapSrv srv;
-  if(!octomapClient.call(srv))
-  {
-    ROS_WARN("No octomap available");
-    return true;
-  }
-  if(planner->octomap_)
-  {
-    delete planner->octomap_;
-    planner->octomap_ = NULL;
-  }
-  if(srv.response.map.binary)
-  {
-		ROS_INFO("Loading binary octomap");
-    planner->octomap_ = octomap_msgs::binaryMsgToMap(srv.response.map);
-  }
-  else
-  {
-		ROS_INFO("Loading full octomap");
-    octomap::AbstractOcTree* tree = octomap_msgs::fullMsgToMap(srv.response.map);
-    planner->octomap_ = dynamic_cast<octomap::OcTree*>(tree);
-  }
-  std_srvs::Empty emptyMsg;
-  ros::service::call("/octomap_manager/publish_all", emptyMsg);
-    
-  
+
   int k = 0;
-  if(planner == NULL || planner->octomap_ == NULL || root == NULL)
+  ROS_INFO("planner_t::manager_->getMapSize().norm() = %2.2f", planner_t::manager_->getMapSize().norm());
+  if(planner == NULL || root == NULL || planner_t::manager_ == NULL || planner_t::manager_->getMapSize().norm() < 1.0)
     return true;
   std::vector<stateVec_t> ro; ro.push_back(*root);
   g_ID = 0;
@@ -184,14 +148,14 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   // calculate explored space
   int mappedFree = 0;
   int mappedOccupied = 0;
-  for(typename octomap::OcTree::leaf_iterator it = planner->octomap_->begin_leafs(), end = planner->octomap_->end_leafs(); it != end; it++)
-  {
-    if(planner->octomap_->isNodeOccupied(*it))
-      mappedOccupied++;
-    else
-      mappedFree++;
-  }
-  double vol = pow(planner->octomap_->getResolution(), 3.0);
+  //for(typename octomap::OcTree::leaf_iterator it = planner->octomap_->begin_leafs(), end = planner->octomap_->end_leafs(); it != end; it++)
+  //{
+  //  if(planner->octomap_->isNodeOccupied(*it))
+  //    mappedOccupied++;
+  //  else
+  //    mappedFree++;
+  //}
+  double vol = 0.0;//pow(planner->octomap_->getResolution(), 3.0);
   ROS_INFO("Total volume of %2.2f mapped. Thereof free and occupied: %2.2f/%2.2f",
             vol * (double)(mappedFree + mappedOccupied),
             vol * (double) mappedFree,
@@ -233,14 +197,14 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   {
     ROS_INFO("Exploration completed. Converting octomap to mesh for inspection planning.");
     
-    OctomapToMesh_T data;
+    //OctomapToMesh_T data;
 
-    if(OctomapToGrid (planner->octomap_, &data)) {
+    //if(OctomapToGrid (planner->octomap_, &data)) {
                       
-      struct_T * MeshedOctomap = NULL;
-      char_T * fileName = new char_T[50];
-      strcpy(fileName, (pkgPath+"/data/meshOut.stl").c_str());
-      OctomapToMesh(&data, fileName, MeshedOctomap);
+      //struct_T * MeshedOctomap = NULL;
+      //char_T * fileName = new char_T[50];
+      //strcpy(fileName, (pkgPath+"/data/meshOut.stl").c_str());
+      //OctomapToMesh(&data, fileName, MeshedOctomap);
       
       // TODO(birchera): clean up allocated memory
       /*std::fstream meshFile;
@@ -265,7 +229,7 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
           for (int k = 0; k < (*octomap_gridZ_size)[1]; k++)
             meshFile << "octomap_voxels_map(" << i+1 << ", " << j+1 << ", " << k+1 << ") = " << (*octomap_voxels_map)->data[i+j*(*octomap_gridX_size)[1]+k*(*octomap_gridX_size)[1]*(*octomap_gridY_size)[1]] << ";\n";
       meshFile.close();*/
-    }
+    //}
   }
   return true;
 }
@@ -274,6 +238,14 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "nbvPlanner");
   ros::NodeHandle n;
+  ros::NodeHandle nh_private("~");
+  
+  google::InitGoogleLogging(argv[0]);
+  google::ParseCommandLineFlags(&argc, &argv, false);
+  google::InstallFailureSignalHandler();
+
+  volumetric_mapping::OctomapManager manager(n, nh_private);
+  planner_t::manager_ = &manager;
   
   // prepare log files for postprocessing
   pkgPath = ros::package::getPath("nbvplanner");
@@ -294,7 +266,6 @@ int main(int argc, char **argv)
   // initialize global variables
   g_timeOld = ros::Time::now();
   g_timeSinceLog = ros::Time::now();
-  g_timeSinceLogOctomap = ros::Time::now();
   planner = new planner_t;
   root = NULL;
   g_stateOld = NULL;
@@ -303,7 +274,6 @@ int main(int argc, char **argv)
   // set up the topics and services
   inspectionPath = n.advertise<visualization_msgs::Marker>("inspectionPath", 1000);
   treePub = n.advertise<geometry_msgs::PolygonStamped>("treePol", 1000);
-  octomapLog = n.advertise<octomap_msgs::Octomap>("octomapLog", 1000);
   ros::ServiceServer plannerService = n.advertiseService("nbvplanner", plannerCallback);
   ros::Subscriber pos = n.subscribe("pose", 10, posCallback);
   octomapClient = n.serviceClient<OctomapSrv>("octomap_full");
