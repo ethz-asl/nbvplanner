@@ -11,7 +11,7 @@ nbvp/information_gain/free: 0.0
 nbvp/information_gain/occupied: 0.0
 nbvp/information_gain/unmapped: 1.0
 nbvp/information_gain/probabilistic: 0.0
-nbvp/information_gain/range: 20.0
+nbvp/information_gain/range: 10.0
 nbvp/information_gain/degressive_coeff: 1.0
 nbvp/sampleHolonomic/extension_range: 15.0
 nbvp/RRT/initial_iterations: 25

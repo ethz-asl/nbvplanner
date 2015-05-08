@@ -167,11 +167,14 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
       ros::shutdown();
       return ret;
     }
-    if(localCount > 2500)
+    if(localCount > 10000)
     {
+      ROS_INFO("Exceeding local count, return!");
     	stateVec extension(0.0, 0.0, 0.0, 0.0);
     	if(history_.size() > 0)
     	  extension = history_.top() - s;
+  	  else
+  	    break;
 			double wp = extension.norm() / (nbvInspection::nbvPlanner<stateVec>::v_max_ *
 				  nbvInspection::nbvPlanner<stateVec>::dt_);
 		  if(extension[3] < -M_PI)
@@ -210,7 +213,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
     direction[1] = newState[1];
     direction[2] = newState[2];
     direction -= origin;
-    Eigen::Vector3d boundingBox(1.0, 1.0, 0.5);
+    Eigen::Vector3d boundingBox(0.5, 0.5, 0.25);
     if(volumetric_mapping::OctomapManager::CellStatus::kFree == this->manager_->getLineStatusBoundingBox(origin, direction, boundingBox))
     {
       // sample the new orientation from the set of possible orientations
@@ -278,6 +281,8 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
       inspectionPath.publish(p);
       
       // update best IG and node if applicable
+      ROS_INFO("newNode->informationGain_ %f", newNode->informationGain_);
+      ROS_INFO("bestInformationGain_ %f", nbvInspection::Node<stateVec>::bestInformationGain_);
       if(newNode->informationGain_ > nbvInspection::Node<stateVec>::bestInformationGain_)
       {
         nbvInspection::Node<stateVec>::bestInformationGain_ = newNode->informationGain_;
@@ -308,6 +313,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
   else
     ret.push_back(curr->state_);
   IGout = nbvInspection::Node<stateVec>::bestInformationGain_;
+  ROS_INFO("IGout %f", IGout);
 	this->history_.push(ret.back());
   return ret;
 }
@@ -325,7 +331,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
   Eigen::Vector3d direction;
   double d = DBL_MAX;
   int iter = 0;
-  Eigen::Vector3d boundingBox(1.0, 1.0, 0.5);
+  Eigen::Vector3d boundingBox(0.5, 0.5, 0.25);
   do
   {
     for(int i = 0; i<extension.size()-1; i++)
@@ -419,7 +425,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
   Eigen::Vector3d direction;
   bool ignoreUnknownCells = false; // TODO: shoud be false, but free cells are not mapped at this time
   double d = DBL_MAX;
-  Eigen::Vector3d boundingBox(1.0, 1.0, 0.5);
+  Eigen::Vector3d boundingBox(0.5, 0.5, 0.25);
   for(int i = 0; i < 10; i++)
   {
     origin[0] = s[0];
@@ -504,7 +510,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s)
   double R = nbvInspection::nbvPlanner<stateVec>::informationGainRange_;
   double disc = manager_->getResolution();
   Eigen::Vector3d origin(s[0],s[1],s[2]);
-  Eigen::Vector3d boundingBox(1.0, 1.0, 0.5);
+  Eigen::Vector3d boundingBox(0.5, 0.5, 0.25);
   Eigen::Vector3d vec;
   for(vec[0] = std::max(s[0] - R, nbvInspection::nbvPlanner<stateVec>::minX_);
       vec[0] < std::min(s[0] + R, nbvInspection::nbvPlanner<stateVec>::maxX_); vec[0] += disc)
@@ -524,14 +530,16 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s)
         if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown)
         {
           // Rayshooting to evaluate inspectability of cell
-          if(volumetric_mapping::OctomapManager::CellStatus::kFree ==
+          // TODO: Rayshooting should not stop at unmapped cells and also not when the actual cell
+          //       is hit (no matter what status it has)
+          if(volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
              this->manager_->getLineStatusBoundingBox(origin, vec, boundingBox))
             gain+=nbvInspection::nbvPlanner<stateVec>::igUnmapped_;
         }
         else if(node == volumetric_mapping::OctomapManager::CellStatus::kOccupied)
         { 
           // Rayshooting to evaluate inspectability of cell
-          if(volumetric_mapping::OctomapManager::CellStatus::kFree ==
+          if(volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
              this->manager_->getLineStatusBoundingBox(origin, vec, boundingBox))
           {
             gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
@@ -542,7 +550,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s)
         else
         { 
           // Rayshooting to evaluate inspectability of cell
-          if(volumetric_mapping::OctomapManager::CellStatus::kFree ==
+          if(volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
              this->manager_->getLineStatusBoundingBox(origin, vec, boundingBox))
           {
             gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
@@ -565,7 +573,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s)
   double R = nbvInspection::nbvPlanner<stateVec>::informationGainRange_;
   double disc = manager_->getResolution();
   Eigen::Vector3d origin(s[0],s[1],s[2]);
-  Eigen::Vector3d boundingBox(1.0, 1.0, 0.5);
+  Eigen::Vector3d boundingBox(0.5, 0.5, 0.25);
   Eigen::Vector3d vec;
   for(vec[0] = std::max(s[0] - R, nbvInspection::nbvPlanner<stateVec>::minX_);
       vec[0] < std::min(s[0] + R, nbvInspection::nbvPlanner<stateVec>::maxX_); vec[0] += disc)
@@ -600,14 +608,14 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s)
         if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown)
         {
           // Rayshooting to evaluate inspectability of cell
-          if(volumetric_mapping::OctomapManager::CellStatus::kFree ==
+          if(volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
              this->manager_->getLineStatusBoundingBox(origin, vec, boundingBox))
             gain+=nbvInspection::nbvPlanner<stateVec>::igUnmapped_;
         }
         else if(node == volumetric_mapping::OctomapManager::CellStatus::kOccupied)
         { 
           // Rayshooting to evaluate inspectability of cell
-          if(volumetric_mapping::OctomapManager::CellStatus::kFree ==
+          if(volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
              this->manager_->getLineStatusBoundingBox(origin, vec, boundingBox))
           {
             gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
@@ -618,7 +626,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s)
         else
         { 
           // Rayshooting to evaluate inspectability of cell
-          if(volumetric_mapping::OctomapManager::CellStatus::kFree ==
+          if(volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
              this->manager_->getLineStatusBoundingBox(origin, vec, boundingBox))
           {
             gain += nbvInspection::nbvPlanner<stateVec>::igFree_;

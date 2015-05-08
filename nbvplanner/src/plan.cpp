@@ -101,22 +101,22 @@ void posCallback(const geometry_msgs::PoseStamped& pose)
 
 bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::Response& res)
 {
-  ROS_INFO("Starting NBV Planner");
+  ROS_INFO_THROTTLE(1 , "Starting NBV Planner");
   if(!ros::ok())
   {
-    ROS_INFO("Exploration completed. Not planning any further moves.");
+    ROS_INFO_THROTTLE(1 , "Exploration completed. Not planning any further moves.");
     ros::Duration(5.0).sleep();
   }
   if(!planner_t::setParams())
   {
-    ROS_ERROR("Could not start the planner. Parameters missing!");
+    ROS_ERROR_THROTTLE(1 , "Could not start the planner. Parameters missing!");
     return true;
   }
 
   int k = 0;
-  ROS_INFO("planner_t::manager_->getMapSize().norm() = %2.2f", planner_t::manager_->getMapSize().norm());
-  if(planner == NULL || root == NULL || planner_t::manager_ == NULL || planner_t::manager_->getMapSize().norm() < 1.0)
+  if(planner == NULL || root == NULL || planner_t::manager_ == NULL || planner_t::manager_->getMapSize().norm() <= 0.0)
     return true;
+  planner_t::manager_->publishAll();
   std::vector<stateVec_t> ro; ro.push_back(*root);
   g_ID = 0;
   static const int depth = 2;
@@ -156,10 +156,10 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   //    mappedFree++;
   //}
   double vol = 0.0;//pow(planner->octomap_->getResolution(), 3.0);
-  ROS_INFO("Total volume of %2.2f mapped. Thereof free and occupied: %2.2f/%2.2f",
-            vol * (double)(mappedFree + mappedOccupied),
-            vol * (double) mappedFree,
-            vol * (double) mappedOccupied);
+  //ROS_INFO("Total volume of %2.2f mapped. Thereof free and occupied: %2.2f/%2.2f",
+  //          vol * (double)(mappedFree + mappedOccupied),
+  //          vol * (double) mappedFree,
+  //          vol * (double) mappedOccupied);
   
   // write planning information to file for postprocessing
   std::fstream tree;

@@ -74,28 +74,28 @@ int main(int argc, char** argv){
   nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
   nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
   nh.param<double>("wp_z", trajectory_msg.position.z, 7.0);
-  trajectory_msg.yaw = 0.0;
+  trajectory_msg.yaw = 0.2;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(2.0).sleep();
   nh.param<double>("wp_x", trajectory_msg.position.x, -5.0);
   nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
   nh.param<double>("wp_z", trajectory_msg.position.z, 7.0);
-  trajectory_msg.yaw = 0.0;
+  trajectory_msg.yaw = 0.5;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(2.0).sleep();
   nh.param<double>("wp_x", trajectory_msg.position.x, -10.0);
   nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
   nh.param<double>("wp_z", trajectory_msg.position.z, 7.0);
-  trajectory_msg.yaw = 0.0;
+  trajectory_msg.yaw = 1.0;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(2.0).sleep();
   nh.param<double>("wp_x", trajectory_msg.position.x, -7.0);
   nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
   nh.param<double>("wp_z", trajectory_msg.position.z, 7.0);
-  trajectory_msg.yaw = 0.0;
+  trajectory_msg.yaw = 2.5;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(5.0).sleep();
@@ -108,11 +108,10 @@ int main(int argc, char** argv){
     ROS_WARN("could not open path file");
   file<<"pathMatrix = [";
   while (ros::ok()) {
-    ROS_INFO("Initiating replanning");
+    ROS_INFO_THROTTLE(1 , "Initiating replanning");
     nbvplanner::nbvp_srv planSrv;
     if(ros::service::call("nbvplanner",planSrv))
     {
-    ROS_INFO("Planner reached");
       for(int i = 0; i<100&&i<planSrv.response.path.size(); i++)
       {
         tf::Pose pose;
@@ -130,7 +129,7 @@ int main(int argc, char** argv){
       }
     }
     else
-      ROS_WARN("Planner not reachable");
+      ROS_WARN_THROTTLE(1 , "Planner not reachable");
   }
   file<<"];";
   file.close();
