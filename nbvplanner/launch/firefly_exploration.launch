@@ -8,7 +8,7 @@
     <arg name="world_name" value="$(find nbvplanner)/worlds/wind_turbine_capped.world" />
     <!-- <arg name="debug" value="true"/> -->
     <arg name="paused" value="true"/>
-    <arg name="gui" value="true"/>
+    <arg name="gui" value="false"/>
   </include>
   
   <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 firefly/vi_sensor/ground_truth fcu 1" />
@@ -39,8 +39,8 @@
 
   <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
     <param name="tf_frame" type="string" value="world" />
-    <param name="resolution" type="double" value="4.0" />
-    <param name="sensor_max_range" type="double" value="50.0" />
+    <param name="resolution" type="double" value="1.0" />
+    <param name="sensor_max_range" type="double" value="20.0" />
     <remap from="cam0/camera_info" to="/firefly/vi_sensor/left/camera_info"/>
     <remap from="cam1/camera_info" to="/firefly/vi_sensor/right/camera_info"/>
     <remap from="pointcloud" to="/firefly/vi_sensor/camera_depth/depth/points"/>

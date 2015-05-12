@@ -85,5 +85,6 @@ namespace nbvInspection
     std::vector<Eigen::Vector3d> camBoundNormals_;
     Node<stateVec> * rootNode_;
     static volumetric_mapping::OctomapManager * manager_;
+    static Eigen::Vector3d boundingBox_;
   };
 }

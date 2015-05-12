@@ -115,7 +115,10 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
 
   int k = 0;
   if(planner == NULL || root == NULL || planner_t::manager_ == NULL || planner_t::manager_->getMapSize().norm() <= 0.0)
+  {
+    ROS_ERROR_THROTTLE(1 , "Planner not set up");
     return true;
+  }
   planner_t::manager_->publishAll();
   std::vector<stateVec_t> ro; ro.push_back(*root);
   g_ID = 0;
@@ -173,7 +176,7 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   planner->rootNode_->printToFile(tree);
   tree<<"];\n";
   tree.close();
-  ROS_INFO("Replanning lasted %2.2fs and has a Gain of %2.2f, with %i iterations", duration.toSec(), IG, nbvInspection::Node<stateVec_t>::getCounter());
+  ROS_INFO("Replanning lasted %4.4fs and has a Gain of %2.2f, with %i iterations", duration.toSec(), IG, nbvInspection::Node<stateVec_t>::getCounter());
   std::reverse(path.begin(), path.end());
   for(planner_t::vector_t::iterator it = path.begin(); it!=path.end(); it++)
   {
