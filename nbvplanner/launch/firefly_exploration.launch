@@ -8,7 +8,7 @@
     <arg name="world_name" value="$(find nbvplanner)/worlds/wind_turbine_capped.world" />
     <!-- <arg name="debug" value="true"/> -->
     <arg name="paused" value="true"/>
-    <arg name="gui" value="false"/>
+    <arg name="gui" value="true"/>
   </include>
   
   <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 firefly/vi_sensor/ground_truth fcu 1" />

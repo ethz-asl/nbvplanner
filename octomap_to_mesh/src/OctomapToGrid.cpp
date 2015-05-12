@@ -13,6 +13,7 @@
 
 bool OctomapToGrid (octomap::OcTree *octomap, OctomapToMesh_T * data) {
   std::string ns = ros::this_node::getName();
+  ROS_INFO("ns = %s", ns.c_str());
   double xmin, xmax, ymin, ymax, zmin, zmax;
   if(!ros::param::get (ns+"/bbx/minX", xmin)) {
     ROS_ERROR("Parameter minX has not been set!");

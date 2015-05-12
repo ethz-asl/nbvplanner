@@ -200,17 +200,23 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   {
     ROS_INFO("Exploration completed. Converting octomap to mesh for inspection planning.");
     
-    //OctomapToMesh_T data;
+    octomap_msgs::Octomap* msg
+    manager_->getOctomapFullMsg(msg)
+    
+    octomap::OcTree * octomap;
+    octomap::AbstractOcTree * tree = octomap_msgs::fullMsgToMap(msg);
+    octomap = dynamic_cast<octomap::OcTree*>(tree);
+    OctomapToMesh_T data;
 
-    //if(OctomapToGrid (planner->octomap_, &data)) {
+    if(OctomapToGrid (octomap, &data)) {
                       
-      //struct_T * MeshedOctomap = NULL;
-      //char_T * fileName = new char_T[50];
-      //strcpy(fileName, (pkgPath+"/data/meshOut.stl").c_str());
-      //OctomapToMesh(&data, fileName, MeshedOctomap);
+      struct_T * MeshedOctomap = NULL;
+      char_T * fileName = new char_T[50];
+      strcpy(fileName, (pkgPath+"/data/meshOut.stl").c_str());
+      OctomapToMesh(&data, fileName, MeshedOctomap);
       
       // TODO(birchera): clean up allocated memory
-      /*std::fstream meshFile;
+      std::fstream meshFile;
       meshFile.open((pkgPath+"/data/meshOut.m").c_str(), std::ios::out);
       meshFile << "octomap_gridX = [";
       for (int i = 0; i < (*octomap_gridX_size)[1]; i++)
@@ -231,7 +237,7 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
         for (int j = 0; j < (*octomap_gridY_size)[1]; j++)
           for (int k = 0; k < (*octomap_gridZ_size)[1]; k++)
             meshFile << "octomap_voxels_map(" << i+1 << ", " << j+1 << ", " << k+1 << ") = " << (*octomap_voxels_map)->data[i+j*(*octomap_gridX_size)[1]+k*(*octomap_gridX_size)[1]*(*octomap_gridY_size)[1]] << ";\n";
-      meshFile.close();*/
+      meshFile.close();
     //}
   }
   return true;
