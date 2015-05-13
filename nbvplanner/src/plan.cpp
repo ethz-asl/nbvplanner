@@ -198,7 +198,7 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   iteration++;
   if(!ros::ok()||iteration==50)
   {
-    ROS_INFO("Exploration completed. Converting octomap to mesh for inspection planning.");
+    /*ROS_INFO("Exploration completed. Converting octomap to mesh for inspection planning.");
     
     octomap_msgs::Octomap* msg
     manager_->getOctomapFullMsg(msg)
@@ -238,7 +238,7 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
           for (int k = 0; k < (*octomap_gridZ_size)[1]; k++)
             meshFile << "octomap_voxels_map(" << i+1 << ", " << j+1 << ", " << k+1 << ") = " << (*octomap_voxels_map)->data[i+j*(*octomap_gridX_size)[1]+k*(*octomap_gridX_size)[1]*(*octomap_gridY_size)[1]] << ";\n";
       meshFile.close();
-    //}
+    //}*/
   }
   return true;
 }

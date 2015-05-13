@@ -528,13 +528,13 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
         if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown) {
           // Rayshooting to evaluate inspectability of cell
           if (volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
-              this->manager_->getOcclusion(origin, vec, false))
+              this->manager_->getVisibility(origin, vec, false))
             gain += nbvInspection::nbvPlanner<stateVec>::igUnmapped_;
         }
         else if (node == volumetric_mapping::OctomapManager::CellStatus::kOccupied) { 
           // Rayshooting to evaluate inspectability of cell
           if (volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
-              this->manager_->getOcclusion(origin, vec, false)) {
+              this->manager_->getVisibility(origin, vec, false)) {
             gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
             // Add probabilistic gain
             // gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
@@ -544,7 +544,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
         else { 
           // Rayshooting to evaluate inspectability of cell
           if (volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
-              this->manager_->getOcclusion(origin, vec, false)) {
+              this->manager_->getVisibility(origin, vec, false)) {
             gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
             // Add probabilistic gain
             // gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
@@ -595,14 +595,14 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
         if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown) {
           // Rayshooting to evaluate inspectability of cell
           if (volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
-              this->manager_->getOcclusion(origin, vec, false)) {
+              this->manager_->getVisibility(origin, vec, false)) {
             gain+=nbvInspection::nbvPlanner<stateVec>::igUnmapped_;
           }
         }
         else if(node == volumetric_mapping::OctomapManager::CellStatus::kOccupied) {
           // Rayshooting to evaluate inspectability of cell
           if (volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
-              this->manager_->getOcclusion(origin, vec, false)) {
+              this->manager_->getVisibility(origin, vec, false)) {
             gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
             // Add probabilistic gain
             // gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
@@ -612,7 +612,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
         else {
           // Rayshooting to evaluate inspectability of cell
           if (volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
-              this->manager_->getOcclusion(origin, vec, false)) {
+              this->manager_->getVisibility(origin, vec, false)) {
             gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
             // Add probabilistic gain
             // gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
