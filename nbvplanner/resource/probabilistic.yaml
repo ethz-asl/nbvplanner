@@ -1,0 +1,31 @@
+
+system/v_max: 1.0
+system/dyaw_max: 0.75
+system/dv_max: 0.2
+system/ddyaw_max: 0.2
+system/camera/pitch: 0.1
+system/camera/horizontal: 80.0
+system/camera/vertical: 50.0
+system/bbx/x: 0.5
+system/bbx/y: 0.5
+system/bbx/z: 0.5
+
+nbvp/information_gain/free: 0.0
+nbvp/information_gain/occupied: 0.0
+nbvp/information_gain/unmapped: 1.0
+nbvp/information_gain/probabilistic: 1.0
+nbvp/information_gain/range: 5.0
+nbvp/information_gain/degressive_coeff: 1.0
+nbvp/sampleHolonomic/extension_range: 2.0
+nbvp/RRT/initial_iterations: 25
+nbvp/dt: 0.5
+nbvp/RRT_extension: true
+
+# bounding box: necessary to limit the simulation 
+# scenario (smaller than actual gazebo scenario)
+bbx/minX: -45.0
+bbx/minY: -20.0
+bbx/minZ: 0.0
+bbx/maxX: 45.0
+bbx/maxY: 20.0
+bbx/maxZ: 140.0

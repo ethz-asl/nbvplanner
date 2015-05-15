@@ -59,9 +59,8 @@ int main(int argc, char** argv){
   
   double dt = 1.0;
   std::string ns = ros::this_node::getName();
-  if(!ros::param::get(ns+"/nbvp/dt", dt))
-  {
-    ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", (ns+"/nbvp/dt").c_str());
+  if (!ros::param::get(ns+"/nbvp/dt", dt)) {
+    ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", (ns + "/nbvp/dt").c_str());
     return -1;
   }
 
@@ -73,29 +72,29 @@ int main(int argc, char** argv){
   ROS_INFO("Starting the planner");
   nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
   nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 7.0);
-  trajectory_msg.yaw = 0.2;
+  nh.param<double>("wp_z", trajectory_msg.position.z, 0.2);
+  trajectory_msg.yaw = 0.0;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_msg.position.x, -5.0);
+  nh.param<double>("wp_x", trajectory_msg.position.x, -1.0);
   nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 7.0);
-  trajectory_msg.yaw = 0.5;
+  nh.param<double>("wp_z", trajectory_msg.position.z, 1.5);
+  trajectory_msg.yaw = 0.0;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_msg.position.x, -10.0);
+  nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
   nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 7.0);
-  trajectory_msg.yaw = 1.0;
+  nh.param<double>("wp_z", trajectory_msg.position.z, 1.5);
+  trajectory_msg.yaw = 0.0;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_msg.position.x, -7.0);
+  nh.param<double>("wp_x", trajectory_msg.position.x, 1.0);
   nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 7.0);
-  trajectory_msg.yaw = 2.5;
+  nh.param<double>("wp_z", trajectory_msg.position.z, 1.0);
+  trajectory_msg.yaw = 0.0;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(5.0).sleep();
@@ -103,34 +102,37 @@ int main(int argc, char** argv){
   
   std::string pkgPath = ros::package::getPath("nbvplanner");
   std::fstream file;
-  file.open((pkgPath+"/data/path.m").c_str(), std::ios::out);
-  if(!file.is_open())
+  file.open((pkgPath + "/data/path.m").c_str(), std::ios::out);
+  if (!file.is_open())
     ROS_WARN("could not open path file");
-  file<<"pathMatrix = [";
+  file << "pathMatrix = [";
   while (ros::ok()) {
     ROS_INFO_THROTTLE(1 , "Initiating replanning");
     nbvplanner::nbvp_srv planSrv;
-    if(ros::service::call("nbvplanner",planSrv))
-    {
-      for(int i = 0; i<100&&i<planSrv.response.path.size(); i++)
-      {
+    if (ros::service::call("nbvplanner",planSrv)) {
+      for (int i = 0; i < 100 && i < planSrv.response.path.size(); i++) {
         tf::Pose pose;
         tf::poseMsgToTF(planSrv.response.path[i], pose);
         double yaw = tf::getYaw(pose.getRotation());
         nh.param<double>("wp_x", trajectory_msg.position.x, planSrv.response.path[i].position.x);
         nh.param<double>("wp_y", trajectory_msg.position.y, planSrv.response.path[i].position.y);
-        nh.param<double>("wp_z", trajectory_msg.position.z, planSrv.response.path[i].position.z);
+        // adding offset 0.3 to account for tracking error of lee_position_controller
+        nh.param<double>("wp_z", trajectory_msg.position.z, planSrv.response.path[i].position.z + 0.3);
         nh.param<double>("wp_yaw", trajectory_msg.yaw, yaw);
         
         trajectory_msg.header.stamp = ros::Time::now();
         trajectory_pub.publish(trajectory_msg);
-        file << planSrv.response.path[i].position.x<<", "<<planSrv.response.path[i].position.y<<", "<<planSrv.response.path[i].position.z<<", "<<yaw<<", "<<trajectory_msg.header.stamp.toSec()<<";\n";
+        file << planSrv.response.path[i].position.x << ", " <<
+                planSrv.response.path[i].position.y << ", " <<
+                planSrv.response.path[i].position.z << ", " << yaw << ", " <<
+                trajectory_msg.header.stamp.toSec() << ";\n";
         ros::Duration(dt).sleep();
       }
     }
-    else
+    else {
       ROS_WARN_THROTTLE(1 , "Planner not reachable");
+    }
   }
-  file<<"];";
+  file << "];";
   file.close();
 }

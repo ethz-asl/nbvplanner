@@ -5,7 +5,7 @@
   <arg name="log_file" default="$(arg mav_name)" />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find nbvplanner)/worlds/wind_turbine_capped.world" />
+    <arg name="world_name" value="$(find nbvplanner)/worlds/test_scenario.world" />
     <!-- <arg name="debug" value="true"/> -->
     <arg name="paused" value="true"/>
     <arg name="gui" value="true"/>
@@ -18,26 +18,26 @@
   
   <node name="rviz" pkg="rviz" type="rviz" output="screen"/>
 
-	<node name="octomap_server" pkg="octomap_server" type="octomap_server_node" output="screen">
+	<!-- node name="octomap_server" pkg="octomap_server" type="octomap_server_node" output="screen">
     <param name="frame_id" type="string" value="world" />
-    <param name="resolution" type="double" value="1.0" />
-    <param name="sensor_model/max_range" type="double" value="100.0" />
+    <param name="resolution" type="double" value="0.2" />
+    <param name="sensor_model/max_range" type="double" value="5.0" />
     <param name="latch" type="bool" value="false" />
     <remap from="tf_static" to="/tf"/>
     <remap from="cloud_in" to="/firefly/vi_sensor/camera_depth/depth/points"/>
-  </node>
+  </node -->
 
   <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
     <param name="tf_frame" type="string" value="world" />
-    <param name="resolution" type="double" value="1.0" />
-    <param name="sensor_max_range" type="double" value="20.0" />
+    <param name="resolution" type="double" value="0.2" />
+    <param name="sensor_max_range" type="double" value="5.0" />
     <remap from="cam0/camera_info" to="/firefly/vi_sensor/left/camera_info"/>
     <remap from="cam1/camera_info" to="/firefly/vi_sensor/right/camera_info"/>
     <remap from="pointcloud" to="/firefly/vi_sensor/camera_depth/depth/points"/>
     <remap from="pose" to="firefly/odometry_sensor1/pose"/>
     <remap from="nbvplanner" to="firefly/nbvplanner"/>
     <remap from="octomap_full" to="/octomap_manager/get_map"/>
-    <rosparam command="load" file="$(find nbvplanner)/resource/param.yaml" />
+    <rosparam command="load" file="$(find nbvplanner)/resource/baseline.yaml" />
   </node>
 
   <group ns="$(arg mav_name)">

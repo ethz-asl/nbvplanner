@@ -1,7 +1,7 @@
 octomap_to_mesh
 ===============
 
-This package supplies functions to generate a surface mesh from an octomap::OcTree. The use this package, add the following c++ snipplet to your program:
+This package supplies functions to generate a surface mesh from an octomap::OcTree. To use this package, add the following c++ snipplets to your program:
 
 
 ```cpp

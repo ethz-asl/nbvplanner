@@ -71,7 +71,7 @@ void nbvInspection::Node<stateVec>::printToFile(std::fstream& file) {
 }
 
 template<typename stateVec>
-const double nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_ = 100.0;
+const double nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_ = 0.0;
 template<typename stateVec>
 double nbvInspection::Node<stateVec>::bestInformationGain_ =
   nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_;
@@ -670,32 +670,31 @@ bool nbvInspection::nbvPlanner<stateVec>::castRay(octomath::Vector3 origin,
   double d_real = sqrt(SQ(end.x() - origin.x()) +
   										 SQ(end.y() - origin.y()) +
   										 SQ(end.z() - origin.z()));
-  if(rc || d > d_real)
+  if (rc || d > d_real)
     return true;
   Eigen::Vector3d q(1.0, 1.0, 1.0);
-  if(direction.x() != 0.0)
-    q[0] = -(direction.y()+direction.z())/direction.x();
-  else if(direction.y() != 0.0)
-    q[1] = -(direction.x()+direction.z())/direction.y();
+  if (direction.x() != 0.0)
+    q[0] = -(direction.y() + direction.z()) / direction.x();
+  else if (direction.y() != 0.0)
+    q[1] = -(direction.x() + direction.z()) / direction.y();
   else
-    q[2] = -(direction.y()+direction.x())/direction.z();
+    q[2] = -(direction.y() + direction.x()) / direction.z();
   q.normalize();
   Eigen::Vector3d dir(direction.x(),direction.y(),direction.z());
   dir.normalize();
-  for(double i = 0; i<2*M_PI; i+=M_PI/6.0)
-  {
+  for (double i = 0; i < 2 * M_PI; i += M_PI / 6.0) {
     ignoreUnknownCellsLocal = ignoreUnknownCells;
     AngleAxisd rot = AngleAxisd(i, dir);
-    Eigen::Vector3d qi = rot*q;
+    Eigen::Vector3d qi = rot * q;
     octomath::Vector3 origini = origin;
-    origini.x()+=qi[0]*Radius;
-    origini.y()+=qi[1]*Radius;
-    origini.z()+=qi[2]*Radius;
+    origini.x() += qi[0] * Radius;
+    origini.y() += qi[1] * Radius;
+    origini.z() += qi[2] * Radius;
 		rc = this->manager_->castRay(origini, direction, end, ignoreUnknownCellsLocal, d);
 		d_real = sqrt(SQ(end.x() - origini.x()) +
 							 	  SQ(end.y() - origini.y()) +
 						  	  SQ(end.z() - origini.z()));
-		if(rc || d > d_real)
+		if (rc || d > d_real)
 		  return true;
   }*/
   return false;
@@ -705,120 +704,120 @@ template<typename stateVec>
 bool nbvInspection::nbvPlanner<stateVec>::setParams() {
   std::string ns = ros::this_node::getName();
   bool ret = true;
-  if(!ros::param::get(ns + "/system/v_max", v_max_)) {
+  if (!ros::param::get(ns + "/system/v_max", v_max_)) {
     ROS_WARN("No maximal system speed specified. Looking for %s",
              (ns + "/system/v_max").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/system/dyaw_max", dyaw_max_)) {
+  if (!ros::param::get(ns + "/system/dyaw_max", dyaw_max_)) {
     ROS_WARN("No maximal yaw speed specified. Looking for %s",
              (ns + "/system/yaw_max").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/system/dv_max", dv_max_)) {
+  if (!ros::param::get(ns + "/system/dv_max", dv_max_)) {
     ROS_WARN("No maximal system acceleration specified (node: only used for euler integration tree extension). Looking for %s",
              (ns + "/system/v_max").c_str());
   }
-  if(!ros::param::get(ns+"/system/ddyaw_max", ddyaw_max_)) {
+  if (!ros::param::get(ns + "/system/ddyaw_max", ddyaw_max_)) {
     ROS_WARN("No maximal yaw acceleration specified (node: only used for euler integration tree extension). Looking for %s",
              (ns + "/system/yaw_max").c_str());
   }
-  if(!ros::param::get(ns+"/system/camera/pitch", camPitch_)) {
+  if (!ros::param::get(ns + "/system/camera/pitch", camPitch_)) {
     ROS_WARN("No camera pitch specified. Looking for %s", (ns + "/system/camera/pitch").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/system/camera/horizontal", camHorizontal_)) {
+  if (!ros::param::get(ns + "/system/camera/horizontal", camHorizontal_)) {
     ROS_WARN("No camera horizontal opening specified. Looking for %s",
              (ns + "/system/camera/horizontal").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/system/camera/vertical", camVertical_)) {
+  if (!ros::param::get(ns + "/system/camera/vertical", camVertical_)) {
     ROS_WARN("No camera vertical opening specified. Looking for %s",
              (ns + "/system/camera/vertical").c_str());
     ret = false;
   }
   
-  if(!ros::param::get(ns+"/nbvp/information_gain/probabilistic", igProbabilistic_)) {
+  if (!ros::param::get(ns + "/nbvp/information_gain/probabilistic", igProbabilistic_)) {
     ROS_WARN("No information gain for free cells specified. Looking for %s",
              (ns + "/nbvp/information_gain/probabilistic").c_str());
     ret = false;
   }
   
-  if(!ros::param::get(ns+"/nbvp/information_gain/free", igFree_)) {
+  if (!ros::param::get(ns + "/nbvp/information_gain/free", igFree_)) {
     ROS_WARN("No information gain for free cells specified. Looking for %s",
              (ns + "/nbvp/information_gain/free").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/nbvp/information_gain/occupied", igOccupied_)) {
+  if (!ros::param::get(ns + "/nbvp/information_gain/occupied", igOccupied_)) {
     ROS_WARN("No information gain for occupied cells specified. Looking for %s",
              (ns + "/nbvp/information_gain/occupied").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/nbvp/information_gain/unmapped", igUnmapped_)) {
+  if (!ros::param::get(ns + "/nbvp/information_gain/unmapped", igUnmapped_)) {
     ROS_WARN("No information gain for unmapped cells specified. Looking for %s",
              (ns + "/nbvp/information_gain/unmapped").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/nbvp/information_gain/degressive_coeff", degressiveCoeff_)) {
+  if (!ros::param::get(ns + "/nbvp/information_gain/degressive_coeff", degressiveCoeff_)) {
     ROS_WARN("No degressive factor for information gain accumulation specified. Looking for %s",
              (ns + "/nbvp/sampleHolonomic/degressive_coeff").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/nbvp/sampleHolonomic/extension_range", extensionRange_)) {
+  if (!ros::param::get(ns + "/nbvp/sampleHolonomic/extension_range", extensionRange_)) {
     ROS_WARN("No value for maximal extension range specified (note: only needed for holonomic extension of tree). Looking for %s",
              (ns + "/nbvp/sampleHolonomic/extension_range").c_str());
   }
-  if(!ros::param::get(ns+"/nbvp/RRT/initial_iterations", initIterations_)) {
+  if (!ros::param::get(ns + "/nbvp/RRT/initial_iterations", initIterations_)) {
     ROS_WARN("No number of initial RRT iterations specified (note: only needed when RRT tree method is used). Looking for %s",
              (ns + "/nbvp/RRT/initial_iterations").c_str());
   }
-  if(!ros::param::get(ns+"/nbvp/dt", dt_)) {
+  if (!ros::param::get(ns + "/nbvp/dt", dt_)) {
     ROS_WARN("No time step specified. Looking for %s", (ns + "/nbvp/dt").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/nbvp/RRT_extension", RRTextension_)) {
+  if (!ros::param::get(ns + "/nbvp/RRT_extension", RRTextension_)) {
     ROS_WARN("No extension method specified. Looking for %s",
              (ns + "/nbvp/RRT_extension").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/nbvp/information_gain/range", informationGainRange_)) {
+  if (!ros::param::get(ns + "/nbvp/information_gain/range", informationGainRange_)) {
     ROS_WARN("No information gain range specified. Looking for %s",
              (ns + "/nbvp/information_gain/range").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/bbx/minX", minX_)) {
+  if (!ros::param::get(ns + "/bbx/minX", minX_)) {
     ROS_WARN("No x-min value specified. Looking for %s", (ns + "/bbx/minX").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/bbx/minY", minY_)) {
+  if (!ros::param::get(ns + "/bbx/minY", minY_)) {
     ROS_WARN("No y-min value specified. Looking for %s", (ns + "/bbx/minY").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/bbx/minZ", minZ_)) {
+  if (!ros::param::get(ns + "/bbx/minZ", minZ_)) {
     ROS_WARN("No z-min value specified. Looking for %s", (ns + "/bbx/minZ").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/bbx/maxX", maxX_)) {
+  if (!ros::param::get(ns + "/bbx/maxX", maxX_)) {
     ROS_WARN("No x-max value specified. Looking for %s", (ns + "/bbx/maxX").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/bbx/maxY", maxY_)) {
+  if (!ros::param::get(ns + "/bbx/maxY", maxY_)) {
     ROS_WARN("No y-max value specified. Looking for %s", (ns + "/bbx/maxY").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/bbx/maxZ", maxZ_)) {
+  if (!ros::param::get(ns + "/bbx/maxZ", maxZ_)) {
     ROS_WARN("No z-max value specified. Looking for %s", (ns + "/bbx/maxZ").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/system/bbx/x", boundingBox_[0])) {
+  if (!ros::param::get(ns + "/system/bbx/x", boundingBox_[0])) {
     ROS_WARN("No x size value specified. Looking for %s", (ns + "/system/bbx/x").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/system/bbx/y", boundingBox_[1])) {
+  if (!ros::param::get(ns + "/system/bbx/y", boundingBox_[1])) {
     ROS_WARN("No y size value specified. Looking for %s", (ns + "/system/bbx/y").c_str());
     ret = false;
   }
-  if(!ros::param::get(ns+"/system/bbx/z", boundingBox_[2])) {
+  if (!ros::param::get(ns + "/system/bbx/z", boundingBox_[2])) {
     ROS_WARN("No z size value specified. Looking for %s", (ns + "/system/bbx/z").c_str());
     ret = false;
   }
@@ -826,20 +825,17 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams() {
 }
 
 template<typename stateVec>
-bool nbvInspection::nbvPlanner<stateVec>::getRRTextension()
-{
+bool nbvInspection::nbvPlanner<stateVec>::getRRTextension() {
   return nbvInspection::nbvPlanner<stateVec>::RRTextension_;
 }
 
 template<typename stateVec>
-int nbvInspection::nbvPlanner<stateVec>::getInitIterations()
-{
+int nbvInspection::nbvPlanner<stateVec>::getInitIterations() {
   return nbvInspection::nbvPlanner<stateVec>::initIterations_;
 }
 
 template<typename stateVec>
-bool nbvInspection::nbvPlanner<stateVec>::extensionRangeSet()
-{
+bool nbvInspection::nbvPlanner<stateVec>::extensionRangeSet() {
   return nbvInspection::nbvPlanner<stateVec>::extensionRange_ != 0.0;
 }
 

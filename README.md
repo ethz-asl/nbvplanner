@@ -7,7 +7,6 @@ The next best view planner is a real-time capable inspection path planner. From 
 - Improve implementation of RRT
 - Need loop closure on real system's localization for experiments
 - Check if mapping of free space works well enough in a real scenario
-- Develop strategies to reduce data of octomap (while maintaining a high resolution)
 
 # Planner execution
 
@@ -33,13 +32,14 @@ apt-get install ros-<distro>-octomap-*
 ```
 Please leave a note if you find that something is missing.
 
-Note: some of the required packages are under development and therefore constant change. Seamless interaction with the latest version can not be guaranteed but the interfaces are updated every now and then. (Last update Wednesday, 18.3.2015)
-
 Then run
 
 ```sh
 roslaunch nbvplanner firefly_exploration.launch
 ```
+
+Note: some of the required packages are under development and therefore constant change. Seamless interaction with the latest version can not be guaranteed but the interfaces are updated every now and then. (Last update Wednesday, 13.5.2015)
+Note2: if you encounter problems compiling gtsam_catkin, consider putting gtsam_catkin and eigen_catkin in a seperate workspace, that you build by invoking catkin_make_isolated.
 
 # Visualization in rviz
 
@@ -55,7 +55,10 @@ roslaunch nbvplanner firefly_exploration.launch
 - system/ddyaw_max: Maximal yaw acceleration (only enforced with euler integration tree extension)
 - system/camera/pitch: Pitch of the camera sensor
 - system/camera/horizontal: Horizontal opening of the field of view of the camera sensor
-- system/camera/vertical: Vertical  opening of the field of view of the camera sensor
+- system/camera/vertical: Vertical opening of the field of view of the camera sensor
+- system/bbx/x: Bounding box for collision avoidance, dimension in x-direction
+- system/bbx/y: Bounding box for collision avoidance, dimension in y-direction
+- system/bbx/z: Bounding box for collision avoidance, dimension in z-direction
 
 - nbvp/information_gain/probabilistic: Information gain for mapped volume, scaled with the prabability to be occupied according to: (0.5 - fabs(0.5 - p)), with p: probability
 - nbvp/information_gain/free: Information gain for visible free volumes

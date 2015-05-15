@@ -28,7 +28,7 @@
 using namespace Eigen;
 using namespace nbvInspection;
 
-typedef Matrix<float, 4,1> stateVec_t;
+typedef Matrix<float, 4, 1> stateVec_t;
 typedef nbvPlanner<stateVec_t> planner_t;
 typedef octomap_msgs::GetOctomap OctomapSrv;
 
@@ -44,78 +44,68 @@ int g_ID;
 std::string pkgPath;
 int iteration;
 
-void posCallback(const geometry_msgs::PoseStamped& pose)
-{
+void posCallback(const geometry_msgs::PoseStamped& pose) {
   delete planner->rootNode_;
   planner->rootNode_ = NULL;
   nbvInspection::Node<stateVec_t>::bestNode_ = NULL;
   nbvInspection::Node<stateVec_t>::bestInformationGain_ = nbvInspection::Node<stateVec_t>::ZERO_INFORMATION_GAIN_;
   
-  if(root == NULL)
-  {
+  if (root == NULL) {
     root = new stateVec_t;
   }
   ros::Duration dt = pose.header.stamp - g_timeOld;
-  if(dt.toSec()>0.0 || root->size()<8)
-  {
+  if (dt.toSec() > 0.0 || root->size() < 8) {
     (*root)[0] = pose.pose.position.x;
     (*root)[1] = pose.pose.position.y;
     (*root)[2] = pose.pose.position.z;
     tf::Pose poseTF;
     tf::poseMsgToTF(pose.pose, poseTF);
     (*root)[3] = tf::getYaw(poseTF.getRotation());
-    /*if(g_stateOld == NULL)
-    {
+    /*if (g_stateOld == NULL) {
       g_stateOld = new stateVec_t;
       (*root)[4] = 0.0;
       (*root)[5] = 0.0;
       (*root)[6] = 0.0;
       (*root)[7] = 0.0;
     }
-    else
-    {
-      (*root)[4] = (pose.pose.position.x - (*g_stateOld)[0])/dt.toSec();
-      (*root)[5] = (pose.pose.position.y - (*g_stateOld)[1])/dt.toSec();
-      (*root)[6] = (pose.pose.position.z - (*g_stateOld)[2])/dt.toSec();
-      (*root)[7] = ((*root)[3] - (*g_stateOld)[3])/dt.toSec();
+    else {
+      (*root)[4] = (pose.pose.position.x - (*g_stateOld)[0]) / dt.toSec();
+      (*root)[5] = (pose.pose.position.y - (*g_stateOld)[1]) / dt.toSec();
+      (*root)[6] = (pose.pose.position.z - (*g_stateOld)[2]) / dt.toSec();
+      (*root)[7] = ((*root)[3] - (*g_stateOld)[3]) / dt.toSec();
     }*/
   }
   //*g_stateOld = *root;
   g_timeOld = pose.header.stamp;
   // logging of position
-  if((pose.header.stamp-g_timeSinceLog).toSec()>1.0)
-  {
+  if ((pose.header.stamp - g_timeSinceLog).toSec() > 1.0) {
     std::fstream traj;
-    traj.open((pkgPath+"/data/traj.m").c_str(), std::ios::out | std::ios::app);
-    if(!traj.is_open())
+    traj.open((pkgPath + "/data/traj.m").c_str(), std::ios::out | std::ios::app);
+    if (!traj.is_open())
       ROS_WARN("could not open path file");
-    traj<<pose.pose.position.x<<", ";
-    traj<<pose.pose.position.y<<", ";
-    traj<<pose.pose.position.z<<", ";
-    traj<<(*root)[3]<<", ";
-    traj<<pose.header.stamp.toSec()<<";\n";
+    traj << pose.pose.position.x << ", ";
+    traj << pose.pose.position.y << ", ";
+    traj << pose.pose.position.z << ", ";
+    traj << (*root)[3] << ", ";
+    traj << pose.header.stamp.toSec() << ";\n";
     traj.close();
     g_timeSinceLog = pose.header.stamp;
   }
 }
 
-bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::Response& res)
-{
-  ROS_INFO_THROTTLE(1 , "Starting NBV Planner");
-  if(!ros::ok())
-  {
-    ROS_INFO_THROTTLE(1 , "Exploration completed. Not planning any further moves.");
+bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::Response& res) {
+  ROS_INFO_THROTTLE(1, "Starting NBV Planner");
+  if (!ros::ok()) {
+    ROS_INFO_THROTTLE(1, "Exploration completed. Not planning any further moves.");
     ros::Duration(5.0).sleep();
   }
-  if(!planner_t::setParams())
-  {
-    ROS_ERROR_THROTTLE(1 , "Could not start the planner. Parameters missing!");
+  if (!planner_t::setParams()) {
+    ROS_ERROR_THROTTLE(1, "Could not start the planner. Parameters missing!");
     return true;
   }
 
   int k = 0;
-  if(planner == NULL || root == NULL || planner_t::manager_ == NULL || planner_t::manager_->getMapSize().norm() <= 0.0)
-  {
+  if (planner == NULL || root == NULL || planner_t::manager_ == NULL || planner_t::manager_->getMapSize().norm() <= 0.0) {
     ROS_ERROR_THROTTLE(1 , "Planner not set up");
     return true;
   }
@@ -127,20 +117,16 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   double IG = 0.0;
   ros::Time start = ros::Time::now();
   planner_t::vector_t path;
-  if(nbvInspection::nbvPlanner<stateVec_t>::getRRTextension())
-  {
+  if (nbvInspection::nbvPlanner<stateVec_t>::getRRTextension()) {
     int initIter = nbvInspection::nbvPlanner<stateVec_t>::getInitIterations();
-    if(initIter == 0)
-    {
+    if (initIter == 0) {
       ROS_ERROR("Planning aborted. Parameter initial iterations is either missing or zero");
       return true;
     }
     path = planner->expandStructured(*planner, initIter, *root, IG, &planner_t::informationGainCone);
   }
-  else
-  {
-    if(!nbvInspection::nbvPlanner<stateVec_t>::extensionRangeSet())
-    {
+  else {
+    if (!nbvInspection::nbvPlanner<stateVec_t>::extensionRangeSet()) {
       ROS_ERROR("Planning aborted. Parameter extension range is either missing or zero");
       return true;
     }
@@ -151,9 +137,8 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   // calculate explored space
   int mappedFree = 0;
   int mappedOccupied = 0;
-  //for(typename octomap::OcTree::leaf_iterator it = planner->octomap_->begin_leafs(), end = planner->octomap_->end_leafs(); it != end; it++)
-  //{
-  //  if(planner->octomap_->isNodeOccupied(*it))
+  //for (typename octomap::OcTree::leaf_iterator it = planner->octomap_->begin_leafs(), end = planner->octomap_->end_leafs(); it != end; it++) {
+  //  if (planner->octomap_->isNodeOccupied(*it))
   //    mappedOccupied++;
   //  else
   //    mappedFree++;
@@ -166,23 +151,24 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   
   // write planning information to file for postprocessing
   std::fstream tree;
-  tree.open((pkgPath+"/data/tree.m").c_str(), std::ios::out | std::ios::app);
-  if(!tree.is_open())
+  tree.open((pkgPath + "/data/tree.m").c_str(), std::ios::out | std::ios::app);
+  if (!tree.is_open())
     ROS_WARN("could not open path file");
-  tree<<"stamp{"<<iteration<<"}="<<start.toSec()<<";\n";
-  tree<<"duration{"<<iteration<<"}="<<duration.toSec()<<";\n";
-  tree<<"IG{"<<iteration<<"}="<<IG<<";\n";
-  tree<<"tree{"<<iteration<<"}=[";
+  tree << "stamp{" << iteration << "}=" << start.toSec() << ";\n";
+  tree << "duration{" << iteration << "}=" << duration.toSec() << ";\n";
+  tree << "IG{" << iteration << "}=" << IG << ";\n";
+  tree << "tree{" << iteration << "}=[";
   planner->rootNode_->printToFile(tree);
-  tree<<"];\n";
+  tree << "];\n";
   tree.close();
-  ROS_INFO("Replanning lasted %4.4fs and has a Gain of %2.2f, with %i iterations", duration.toSec(), IG, nbvInspection::Node<stateVec_t>::getCounter());
+  ROS_INFO("Replanning lasted %4.4fs and has a Gain of %2.2f, with %i iterations",
+           duration.toSec(), IG, nbvInspection::Node<stateVec_t>::getCounter());
   std::reverse(path.begin(), path.end());
-  for(planner_t::vector_t::iterator it = path.begin(); it!=path.end(); it++)
-  {
+  for (planner_t::vector_t::iterator it = path.begin(); it != path.end(); it++) {
     geometry_msgs::PoseStamped p;
     p.header.stamp = ros::Time::now();
-    p.header.seq = k; k++;
+    p.header.seq = k;
+    k++;
     p.header.frame_id = "/world";
     p.pose.position.x = (*it)[0];
     p.pose.position.y = (*it)[1];
@@ -196,8 +182,7 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
     //ROS_INFO("(%2.2f,%2.2f,%2.2f,%2.2f)", (*it)[0], (*it)[1], (*it)[2], (*it)[3]);
   }
   iteration++;
-  if(!ros::ok()||iteration==50)
-  {
+  if (!ros::ok()||iteration == 50) {
     /*ROS_INFO("Exploration completed. Converting octomap to mesh for inspection planning.");
     
     octomap_msgs::Octomap* msg
@@ -208,16 +193,16 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
     octomap = dynamic_cast<octomap::OcTree*>(tree);
     OctomapToMesh_T data;
 
-    if(OctomapToGrid (octomap, &data)) {
+    if (OctomapToGrid (octomap, &data)) {
                       
       struct_T * MeshedOctomap = NULL;
       char_T * fileName = new char_T[50];
-      strcpy(fileName, (pkgPath+"/data/meshOut.stl").c_str());
+      strcpy(fileName, (pkgPath + "/data/meshOut.stl").c_str());
       OctomapToMesh(&data, fileName, MeshedOctomap);
       
       // TODO(birchera): clean up allocated memory
       std::fstream meshFile;
-      meshFile.open((pkgPath+"/data/meshOut.m").c_str(), std::ios::out);
+      meshFile.open((pkgPath + "/data/meshOut.m").c_str(), std::ios::out);
       meshFile << "octomap_gridX = [";
       for (int i = 0; i < (*octomap_gridX_size)[1]; i++)
         meshFile << (*octomap_gridX_data)[i] << ";\n";
@@ -243,8 +228,7 @@ bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::R
   return true;
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   ros::init(argc, argv, "nbvPlanner");
   ros::NodeHandle n;
   ros::NodeHandle nh_private("~");
@@ -259,17 +243,17 @@ int main(int argc, char **argv)
   // prepare log files for postprocessing
   pkgPath = ros::package::getPath("nbvplanner");
   std::fstream traj;
-  traj.open((pkgPath+"/data/traj.m").c_str(), std::ios::out);
-  if(!traj.is_open())
+  traj.open((pkgPath + "/data/traj.m").c_str(), std::ios::out);
+  if (!traj.is_open())
     ROS_WARN("could not open path file");
-  traj<<"trajMatrix = [";
+  traj << "trajMatrix = [";
   traj.close();
   
   std::fstream tree;
-  tree.open((pkgPath+"/data/tree.m").c_str(), std::ios::out);
-  if(!tree.is_open())
+  tree.open((pkgPath + "/data/tree.m").c_str(), std::ios::out);
+  if (!tree.is_open())
     ROS_WARN("could not open path file");
-  tree<<"% tree file\n";
+  tree << "% tree file\n";
   tree.close();
   
   // initialize global variables
@@ -288,10 +272,10 @@ int main(int argc, char **argv)
   octomapClient = n.serviceClient<OctomapSrv>("octomap_full");
   ros::spin();
   
-  traj.open((pkgPath+"/data/traj.m").c_str(), std::ios::out | std::ios::app);
-  if(!traj.is_open())
+  traj.open((pkgPath + "/data/traj.m").c_str(), std::ios::out | std::ios::app);
+  if (!traj.is_open())
     ROS_WARN("could not open path file");
-  traj<<"];";
+  traj << "];";
   traj.close();
   return 0;
 }

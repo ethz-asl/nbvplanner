@@ -64,9 +64,8 @@ int main(int argc, char** argv){
   
   double dt = 1.0;
   std::string ns = ros::this_node::getName();
-  if(!ros::param::get(ns+"/dt", dt))
-  {
-    ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", (ns+"/nbvp/dt").c_str());
+  if (!ros::param::get(ns + "/dt", dt)) {
+    ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", (ns + "/nbvp/dt").c_str());
     return -1;
   }
 
@@ -76,7 +75,7 @@ int main(int argc, char** argv){
   mav_msgs::CommandTrajectoryPositionYaw trajectory_msg;
   
   std::string pkgPath = ros::package::getPath("nbvplanner");
-  std::ifstream wp_file((pkgPath+"/resource/wind_turbine_path.txt").c_str());
+  std::ifstream wp_file((pkgPath + "/resource/wind_turbine_path.txt").c_str());
 
   std::vector<Eigen::Vector4f> waypoints;
 
@@ -103,36 +102,37 @@ int main(int argc, char** argv){
   double YAWMAX = 0.75; // TODO: change every time!
   
   std::fstream file;
-  file.open((pkgPath+"/data/path.m").c_str(), std::ios::out);
-  if(!file.is_open())
+  file.open((pkgPath + "/data/path.m").c_str(), std::ios::out);
+  if (!file.is_open())
     ROS_WARN("could not open path file");
-  file<<"pathMatrix = [";
+  file << "pathMatrix = [";
   int l = 0;
-  while (ros::ok() && waypoints.size()>l+1) {
+  while (ros::ok() && waypoints.size() > l + 1) {
     Eigen::Vector4f dvec = waypoints[l+1] - waypoints[l];
     dvec[3] = 0.0;
     double dyaw = waypoints[l+1][3] - waypoints[l][3];
-    if(dyaw>M_PI)
-      dyaw-=2.0*M_PI;
-    if(dyaw<-M_PI)
-      dyaw+=2.0*M_PI;
+    if (dyaw > M_PI)
+      dyaw-=2.0 * M_PI;
+    if (dyaw < -M_PI)
+      dyaw += 2.0 * M_PI;
     ROS_INFO("Progress: %i/%i", l, waypoints.size());
-    double dtime = std::max(sqrt(dvec.dot(dvec))/VMAX, abs(dyaw)/YAWMAX);
-    int iter = dtime/dt;
-    for(int i = 0; i<iter; i++)
-    {
-      double p = ((double)i)/((double)iter);
+    double dtime = std::max(sqrt(dvec.dot(dvec)) / VMAX, abs(dyaw) / YAWMAX);
+    int iter = dtime / dt;
+    for (int i = 0; i < iter; i++) {
+      double p = ((double)i) / ((double)iter);
       nh.param<double>("wp_x", trajectory_msg.position.x, waypoints[l][0]+p*dvec[0]);
       nh.param<double>("wp_y", trajectory_msg.position.y, waypoints[l][1]+p*dvec[1]);
       nh.param<double>("wp_z", trajectory_msg.position.z, waypoints[l][2]+p*dvec[2]);
       nh.param<double>("wp_yaw", trajectory_msg.yaw, waypoints[l][3]+p*dyaw);
       trajectory_msg.header.stamp = ros::Time::now();
       trajectory_pub.publish(trajectory_msg);
-      file << waypoints[l][0]+p*dvec[0]<<", "<<waypoints[l][1]+p*dvec[1]<<", "<<waypoints[l][2]+p*dvec[2]<<", "<<waypoints[l][3]+p*dyaw<<", "<<trajectory_msg.header.stamp.toSec()<<";\n";
+      file << waypoints[l][0] + p * dvec[0] << ", " << waypoints[l][1] + p * dvec[1] << ", " <<
+              waypoints[l][2] + p * dvec[2] << ", " << waypoints[l][3] + p * dyaw << ", " <<
+              trajectory_msg.header.stamp.toSec() << ";\n";
       ros::Duration(dt).sleep();
     }
     l++;
   }
-  file<<"];";
+  file << "];";
   file.close();
 }

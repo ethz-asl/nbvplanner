@@ -11,12 +11,10 @@
 #define SQ(x) ((x)*(x))
 #define SQRT2 0.70711
 
-namespace nbvInspection
-{
+namespace nbvInspection {
   
   template<typename stateVec>
-  class Node
-  {
+  class Node {
     static int counter_;
   public:
     Node();
@@ -35,8 +33,7 @@ namespace nbvInspection
   };
 
   template<typename stateVec>
-  class nbvPlanner
-  {
+  class nbvPlanner {
     static double v_max_;
     static double dyaw_max_;
     static double dv_max_;
@@ -69,14 +66,18 @@ namespace nbvInspection
     
     nbvPlanner();
     ~nbvPlanner();
-    vector_t expand(nbvPlanner<stateVec>& instance, int N, int M, vector_t s, double& IGout, vector_t (nbvPlanner<stateVec>::*sample)(stateVec), double (nbvPlanner<stateVec>::*informationGain)(stateVec));
-    vector_t expandStructured(nbvPlanner<stateVec>& instance, int I, stateVec s, double& IGout, double (nbvPlanner<stateVec>::*informationGain)(stateVec));
+    vector_t expand(nbvPlanner<stateVec>& instance, int N, int M, vector_t s,
+                    double& IGout, vector_t (nbvPlanner<stateVec>::*sample)(stateVec),
+                    double (nbvPlanner<stateVec>::*informationGain)(stateVec));
+    vector_t expandStructured(nbvPlanner<stateVec>& instance, int I, stateVec s, double& IGout,
+                              double (nbvPlanner<stateVec>::*informationGain)(stateVec));
     vector_t sampleHolonomic(stateVec s);
     vector_t sampleEuler(stateVec s);
     double informationGainRand(stateVec s);
     double informationGainSimple(stateVec s);
     double informationGainCone(stateVec s);
-    bool castRay(octomath::Vector3 origin, octomath::Vector3 direction, octomath::Vector3& end, bool ignoreUnknownCells, double d);
+    bool castRay(octomath::Vector3 origin, octomath::Vector3 direction,
+                 octomath::Vector3& end, bool ignoreUnknownCells, double d);
     static bool setParams();
     static bool getRRTextension();
     static int getInitIterations();
