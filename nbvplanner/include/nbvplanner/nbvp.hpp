@@ -209,12 +209,17 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
     origin[1] = newParent->state_[1];
     origin[2] = newParent->state_[2];
     Eigen::Vector3d direction;
-    direction[0] = newState[0];
-    direction[1] = newState[1];
-    direction[2] = newState[2];
+    direction[0] = newState[0] - origin[0];
+    direction[1] = newState[1] - origin[1];
+    direction[2] = newState[2] - origin[2];
+    const static double max_dist = 3.0;
+    if (direction.norm() > max_dist)
+      direction = max_dist * direction / direction.norm();
     if (volumetric_mapping::OctomapManager::CellStatus::kFree ==
-        this->manager_->getLineStatusBoundingBox(origin, direction, boundingBox_)) {
-      direction -= origin;
+        this->manager_->getLineStatusBoundingBox(origin, direction + origin, boundingBox_)) {
+      newState[0] = origin[0] + direction[0];
+      newState[1] = origin[1] + direction[1];
+      newState[2] = origin[2] + direction[2];
       // sample the new orientation from the set of possible orientations
       newState[3] = newParent->state_[3] + 2.0 * (((double)rand()) / ((double)RAND_MAX) - 0.5) *
                     direction.norm() * nbvInspection::nbvPlanner<stateVec>::dyaw_max_ /

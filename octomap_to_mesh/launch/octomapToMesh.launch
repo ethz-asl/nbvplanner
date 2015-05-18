@@ -1,12 +1,12 @@
 <launch>
   <node name="OctomapToMesh" pkg="octomap_to_mesh" type="octomap_to_mesh_node" output="screen" launch-prefix="gdb -ex run --args" >
     <param name="mesh_file_name" type="string" value="meshOut.stl" />
-    <param name="bbx/minX" type="double" value="-45" />
-    <param name="bbx/maxX" type="double" value="45" />
-    <param name="bbx/minY" type="double" value="-20" />
-    <param name="bbx/maxY" type="double" value="20" />
-    <param name="bbx/minZ" type="double" value="0" />
-    <param name="bbx/maxZ" type="double" value="125" />
+    <param name="bbx/minX" type="double" value="-10" />
+    <param name="bbx/maxX" type="double" value="10" />
+    <param name="bbx/minY" type="double" value="-10" />
+    <param name="bbx/maxY" type="double" value="10" />
+    <param name="bbx/minZ" type="double" value="-0.4" />
+    <param name="bbx/maxZ" type="double" value="2.8" />
     <remap from="octomap_full" to="/nbvPlanner/get_map"/>
   </node>
 </launch>
