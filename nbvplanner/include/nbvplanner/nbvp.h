@@ -1,12 +1,16 @@
+#ifndef NBVP_H_
+#define NBVP_H_
+
 #include <vector>
 #include <fstream>
 #include <eigen3/Eigen/Dense>
 #include <ros/ros.h>
 #include <ros/package.h>
-#include "octomap/octomap.h"
-#include "octomap/OcTreeNode.h"
-#include "octomap/OcTree.h"
+#include <octomap/octomap.h>
+#include <octomap/OcTreeNode.h>
+#include <octomap/OcTree.h>
 #include <octomap_world/octomap_manager.h>
+#include <nbvplanner/nbvp_srv.h>
 
 #define SQ(x) ((x)*(x))
 #define SQRT2 0.70711
@@ -60,11 +64,26 @@ namespace nbvInspection {
     static double maxY_;
     static double maxZ_;
     std::stack<stateVec> history_;
+  
+    ros::NodeHandle nh_;
+    ros::NodeHandle nh_private_;
+    stateVec * root_;
+    stateVec * g_stateOld_;
+    ros::Publisher inspectionPath_;
+    ros::Publisher treePub_;
+    ros::ServiceClient octomapClient_;
+    ros::Subscriber posClient_;
+    ros::ServiceServer plannerService_;
+    ros::Time g_timeOld_;
+    int g_ID_;
+    std::string pkgPath_;
+    int iteration_;
   public:
     typedef std::vector<stateVec> vector_t;
     typedef octomap::OcTree octomap_t;
     
-    nbvPlanner();
+    nbvPlanner(const ros::NodeHandle& nh,
+               const ros::NodeHandle& nh_private);
     ~nbvPlanner();
     vector_t expand(nbvPlanner<stateVec>& instance, int N, int M, vector_t s,
                     double& IGout, vector_t (nbvPlanner<stateVec>::*sample)(stateVec),
@@ -82,10 +101,16 @@ namespace nbvInspection {
     static bool getRRTextension();
     static int getInitIterations();
     static bool extensionRangeSet();
-    octomap_t * octomap_;
+
+    void posCallback(const geometry_msgs::PoseStamped& pose);
+    bool plannerCallback(nbvplanner::nbvp_srv::Request& req,
+                         nbvplanner::nbvp_srv::Response& res);
+                         
     std::vector<Eigen::Vector3d> camBoundNormals_;
     Node<stateVec> * rootNode_;
     static volumetric_mapping::OctomapManager * manager_;
     static Eigen::Vector3d boundingBox_;
   };
 }
+
+#endif // NBVP_H_

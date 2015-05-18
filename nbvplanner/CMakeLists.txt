@@ -104,7 +104,7 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-add_executable(nbvPlanner src/plan.cpp src/nbvp.cpp)
+add_executable(nbvPlanner src/nbv_planner_node.cpp src/nbvp.cpp)
 add_executable(exploration src/exploration.cpp)
 add_executable(wpFollower src/wpFollower.cpp)
 

@@ -1,20 +1,35 @@
+#ifndef NBVP_HPP_
+#define NBVP_HPP_
+
+#include <ros/ros.h>
+#include <ros/package.h>
+#include <eigen3/Eigen/Dense>
 #include <cfloat>
 #include <cstdlib>
 #include <sstream>
+
 #include <tf/transform_datatypes.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
 #include <geometry_msgs/PolygonStamped.h>
+
+#include <planning_msgs/Octomap.h>
+#include <octomap/octomap.h>
+#include <octomap/OcTreeKey.h>
+#include <octomap_msgs/BoundingBoxQuery.h>
+#include <octomap_msgs/conversions.h>
+#include <octomap_msgs/GetOctomap.h>
+#include <octomap_msgs/Octomap.h>
+#include <octomap_ros/conversions.h>
+
 #include <nbvplanner/nbvp.h>
+#include <nbvplanner/nbvp_srv.h>
 
 // Macro defining the probabilistic model to be employed in the
 // different information gain routines.
 #define PROBABILISTIC_MODEL(x) (0.5-fabs(0.5-(x)))
 
 using namespace Eigen;
-
-extern int g_ID;
-extern ros::Publisher inspectionPath;
-extern ros::Publisher treePub;
 
 template<typename stateVec>
 nbvInspection::Node<stateVec>::Node() {
@@ -81,7 +96,30 @@ template<typename stateVec>
 int nbvInspection::Node<stateVec>::counter_ = 0;
 
 template<typename stateVec>
-nbvInspection::nbvPlanner<stateVec>::nbvPlanner() {
+nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
+                                                const ros::NodeHandle& nh_private)
+    : nh_(nh),
+      nh_private_(nh_private) {
+  
+  manager_ = new volumetric_mapping::OctomapManager(nh_, nh_private_);
+  
+  // initialize variables
+  g_timeOld_ = ros::Time::now();
+  root_ = NULL;
+  g_stateOld_ = NULL;
+  iteration_ = 1;
+  
+  // set up the topics and services
+  inspectionPath_ = nh_.advertise<visualization_msgs::Marker>("inspectionPath", 1000);
+  treePub_ = nh_.advertise<geometry_msgs::PolygonStamped>("treePol", 1000);
+  plannerService_ = nh_.advertiseService("nbvplanner", &nbvInspection::nbvPlanner<stateVec>::plannerCallback, this);
+  posClient_ = nh_.subscribe("pose", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback, this);
+  octomapClient_ = nh_.serviceClient<octomap_msgs::GetOctomap>("octomap_full");
+  
+  if (!setParams()) {
+    ROS_ERROR("Could not start the planner. Parameters missing!");
+  }
+  
   double pitch = M_PI * nbvInspection::nbvPlanner<stateVec>::camPitch_ / 180.0;
   double camTop = M_PI * (pitch - nbvInspection::nbvPlanner<stateVec>::camVertical_ / 2.0) / 180.0;
   double camBottom = M_PI * (pitch + nbvInspection::nbvPlanner<stateVec>::camVertical_ / 2.0) / 180.0;
@@ -101,15 +139,124 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner() {
   camBoundNormals_.push_back(leftR);
   
   rootNode_ = NULL;
-  octomap_ = NULL;
 }
 
 template<typename stateVec>
 nbvInspection::nbvPlanner<stateVec>::~nbvPlanner() {
   delete rootNode_;
   rootNode_ = NULL;
-  delete octomap_;
-  octomap_ = NULL;
+  
+  delete manager_;
+  delete root_;
+  delete g_stateOld_;
+}
+
+template<typename stateVec>
+void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseStamped& pose) {
+  if (rootNode_)
+    delete rootNode_;
+  rootNode_ = NULL;
+  
+  if (root_ == NULL) {
+    root_ = new stateVec;
+  }
+  ros::Duration dt = pose.header.stamp - g_timeOld_;
+  if (dt.toSec() > 0.0 || root_->size() < 8) {
+    (*root_)[0] = pose.pose.position.x;
+    (*root_)[1] = pose.pose.position.y;
+    (*root_)[2] = pose.pose.position.z;
+    tf::Pose poseTF;
+    tf::poseMsgToTF(pose.pose, poseTF);
+    (*root_)[3] = tf::getYaw(poseTF.getRotation());
+    /*if (g_stateOld_ == NULL) {
+      g_stateOld_ = new stateVec;
+      (*root_)[4] = 0.0;
+      (*root_)[5] = 0.0;
+      (*root_)[6] = 0.0;
+      (*root_)[7] = 0.0;
+    }
+    else {
+      (*root_)[4] = (pose.pose.position.x - (*g_stateOld_)[0]) / dt.toSec();
+      (*root_)[5] = (pose.pose.position.y - (*g_stateOld_)[1]) / dt.toSec();
+      (*root_)[6] = (pose.pose.position.z - (*g_stateOld_)[2]) / dt.toSec();
+      (*root_)[7] = ((*root_)[3] - (*g_stateOld_)[3]) / dt.toSec();
+    }*/
+  }
+  //*g_stateOld_ = *root_;
+  g_timeOld_ = pose.header.stamp;
+}
+
+template<typename stateVec>
+bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::Response& res) {
+  ROS_INFO_THROTTLE(1, "Starting NBV Planner");
+  if (!ros::ok()) {
+    ROS_INFO_THROTTLE(1, "Exploration completed. Not planning any further moves.");
+    ros::Duration(5.0).sleep();
+  }
+
+  int k = 0;
+  if (root_ == NULL || manager_ == NULL || manager_->getMapSize().norm() <= 0.0) {
+    ROS_ERROR_THROTTLE(1 , "Planner not set up");
+    return true;
+  }
+  nbvInspection::Node<stateVec>::bestNode_ = NULL;
+  nbvInspection::Node<stateVec>::bestInformationGain_ = nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_;
+  manager_->publishAll();
+  std::vector<stateVec> ro;
+  ro.push_back(*root_);
+  g_ID_ = 0;
+  static const int depth = 2;
+  static const int width = 16;
+  double IG = 0.0;
+  ros::Time start = ros::Time::now();
+  vector_t path;
+  if (getRRTextension()) {
+    int initIter = getInitIterations();
+    if (initIter == 0) {
+      ROS_ERROR("Planning aborted. Parameter initial iterations is either missing or zero");
+      return true;
+    }
+    path = expandStructured(*this, initIter, *root_, IG,
+                            &nbvInspection::nbvPlanner<stateVec>::informationGainCone);
+  }
+  else {
+    if (!nbvInspection::nbvPlanner<stateVec>::extensionRangeSet()) {
+      ROS_ERROR("Planning aborted. Parameter extension range is either missing or zero");
+      return true;
+    }
+    path = expand(*this, depth, width, ro, IG,
+                  &nbvInspection::nbvPlanner<stateVec>::sampleHolonomic,
+                  &nbvInspection::nbvPlanner<stateVec>::informationGainCone);
+  }
+  ros::Duration duration = ros::Time::now() - start;
+  
+  // calculate explored space
+  int mappedFree = 0;
+  int mappedOccupied = 0;
+  double vol = 0.0;
+  
+  ROS_INFO("Replanning lasted %4.4fs and has a Gain of %2.2f, with %i iterations",
+           duration.toSec(), IG, nbvInspection::Node<stateVec>::getCounter());
+  std::reverse(path.begin(), path.end());
+  for (typename vector_t::iterator it = path.begin(); it != path.end(); it++) {
+    geometry_msgs::PoseStamped p;
+    p.header.stamp = ros::Time::now();
+    p.header.seq = k;
+    k++;
+    p.header.frame_id = "/world";
+    p.pose.position.x = (*it)[0];
+    p.pose.position.y = (*it)[1];
+    p.pose.position.z = (*it)[2];
+    tf::Quaternion quat; quat.setEuler(0.0, 0.0, (*it)[3]);
+    p.pose.orientation.x = quat.x();
+    p.pose.orientation.y = quat.y();
+    p.pose.orientation.z = quat.z();
+    p.pose.orientation.w = quat.w();
+    res.path.push_back(p.pose);
+    //ROS_INFO("(%2.2f,%2.2f,%2.2f,%2.2f)", (*it)[0], (*it)[1], (*it)[2], (*it)[3]);
+  }
+  iteration_++;
+  return true;
 }
 
 template<typename stateVec>
@@ -234,10 +381,10 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
       
       visualization_msgs::Marker p;
       p.header.stamp = ros::Time::now();
-      p.header.seq = g_ID;
+      p.header.seq = g_ID_;
       p.header.frame_id = "/world";
-      p.id = g_ID;
-      g_ID++;
+      p.id = g_ID_;
+      g_ID_++;
       p.ns = "vp_tree";
       p.type = visualization_msgs::Marker::ARROW;
       p.action = visualization_msgs::Marker::ADD;
@@ -258,10 +405,10 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
       p.color.a = 1.0;
       p.lifetime = ros::Duration(10.0);
       p.frame_locked = false;
-      inspectionPath.publish(p);
+      inspectionPath_.publish(p);
       
-      p.id = g_ID;
-      g_ID++;
+      p.id = g_ID_;
+      g_ID_++;
       p.ns = "vp_branches";
       p.type = visualization_msgs::Marker::ARROW;
       p.action = visualization_msgs::Marker::ADD;
@@ -288,7 +435,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
       p.color.a = 1.0;
       p.lifetime = ros::Duration(10.0);
       p.frame_locked = false;
-      inspectionPath.publish(p);
+      inspectionPath_.publish(p);
       
       // update best IG and node if applicable
       // ROS_INFO("newNode->informationGain_ %f", newNode->informationGain_);
@@ -364,10 +511,10 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
   double IG = this->informationGainCone(s + extension);
   visualization_msgs::Marker p;
   p.header.stamp = ros::Time::now();
-  p.header.seq = g_ID;
+  p.header.seq = g_ID_;
   p.header.frame_id = "/world";
-  p.id = g_ID;
-  g_ID++;
+  p.id = g_ID_;
+  g_ID_++;
   p.ns = "vp_tree";
   p.type = visualization_msgs::Marker::ARROW;
   p.action = visualization_msgs::Marker::ADD;
@@ -389,11 +536,11 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
   p.color.a = 1.0;
   p.lifetime = ros::Duration(0.0);
   p.frame_locked = false;
-  inspectionPath.publish(p);
+  inspectionPath_.publish(p);
   
   geometry_msgs::PolygonStamped pol;
-  pol.header.seq = g_ID;
-  g_ID++;
+  pol.header.seq = g_ID_;
+  g_ID_++;
   pol.header.stamp = ros::Time::now();
   pol.header.frame_id = "/world";
   geometry_msgs::Point32 point;
@@ -405,7 +552,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
   point.y += extension[1];
   point.z += extension[2];
   pol.polygon.points.push_back(point);
-  treePub.publish(pol);
+  treePub_.publish(pol);
   
   return ret;
 }
@@ -478,10 +625,10 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
     
   visualization_msgs::Marker p;
   p.header.stamp = ros::Time::now();
-  p.header.seq = g_ID;
+  p.header.seq = g_ID_;
   p.header.frame_id = "/world";
-  p.id = g_ID;
-  g_ID++;
+  p.id = g_ID_;
+  g_ID_++;
   p.type = visualization_msgs::Marker::ARROW;
   p.action = visualization_msgs::Marker::ADD;
   p.pose.position.x = ret.back()[0];
@@ -502,7 +649,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
   p.color.a = 1.0;
   p.lifetime = ros::Duration(0.0);
   p.frame_locked = false;
-  inspectionPath.publish(p);
+  inspectionPath_.publish(p);
   return ret;
 }
 
@@ -631,7 +778,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
   
   visualization_msgs::Marker p;
   p.header.stamp = ros::Time::now();
-  p.header.seq = g_ID;
+  p.header.seq = g_ID_;
   p.header.frame_id = "/world";
   p.id = 0;
   p.ns = "workspace";
@@ -658,7 +805,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
   p.color.a = 0.1;
   p.lifetime = ros::Duration(0.0);
   p.frame_locked = false;
-  inspectionPath.publish(p);
+  inspectionPath_.publish(p);
   
   return gain;
 }
@@ -896,3 +1043,5 @@ volumetric_mapping::OctomapManager * nbvInspection::nbvPlanner<stateVec>::manage
 template<typename stateVec>
 Eigen::Vector3d nbvInspection::nbvPlanner<stateVec>::boundingBox_ =
                 Eigen::Vector3d(0.5, 0.5, 0.3);
+
+#endif // NBVP_HPP_
