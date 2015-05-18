@@ -490,16 +490,16 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
   int iter = 0;
   do {
     for (int i = 0; i<extension.size()-1; i++)
-      extension[i] = nbvInspection::nbvPlanner<stateVec>::extensionRange_ *
+      extension[i] = 2.0 * nbvInspection::nbvPlanner<stateVec>::extensionRange_ *
         (((double)rand()) / ((double)RAND_MAX) - 0.5);
     d = sqrt(SQ(extension[0])+SQ(extension[1])+SQ(extension[2]));
     // sample yaw w.r.t. the constraints
-    extension[extension.size()-1] = (nbvInspection::nbvPlanner<stateVec>::dyaw_max_ /
+    extension[extension.size()-1] = 2.0 * (nbvInspection::nbvPlanner<stateVec>::dyaw_max_ /
       nbvInspection::nbvPlanner<stateVec>::v_max_) * d * (((double)rand()) / ((double)RAND_MAX) - 0.5);
     direction[0] = extension[0];
     direction[1] = extension[1];
     direction[2] = extension[2];
-  } while (volumetric_mapping::OctomapManager::CellStatus::kFree ==
+  } while (volumetric_mapping::OctomapManager::CellStatus::kFree !=
            this->manager_->getLineStatusBoundingBox(origin, origin + direction, boundingBox_) && (iter++) < 100);
   if (iter >= 100) {
     ROS_WARN("No connection found to extend tree");
@@ -536,7 +536,37 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
   p.color.g = 167.0 / 255.0;
   p.color.b = 0.0;
   p.color.a = 1.0;
-  p.lifetime = ros::Duration(0.0);
+  p.lifetime = ros::Duration(10.0);
+  p.frame_locked = false;
+  inspectionPath_.publish(p);
+      
+  p.id = g_ID_;
+  g_ID_++;
+  p.ns = "vp_branches";
+  p.type = visualization_msgs::Marker::ARROW;
+  p.action = visualization_msgs::Marker::ADD;
+  p.pose.position.x = s[0];
+  p.pose.position.y = s[1];
+  p.pose.position.z = s[2];
+  Eigen::Quaternion<float> q;
+  Eigen::Vector3f init(1.0, 0.0, 0.0);
+  Eigen::Vector3f dir(ret.front()[0] - s[0],
+                      ret.front()[1] - s[1],
+                      ret.front()[2] - s[2]);
+  q.setFromTwoVectors(init , dir);
+  q.normalize();
+  p.pose.orientation.x = q.x();
+  p.pose.orientation.y = q.y();
+  p.pose.orientation.z = q.z();
+  p.pose.orientation.w = q.w();
+  p.scale.x = dir.norm();
+  p.scale.y = 0.03;
+  p.scale.z = 0.03;
+  p.color.r = 100.0 / 255.0;
+  p.color.g = 100.0 / 255.0;
+  p.color.b = 0.7;
+  p.color.a = 1.0;
+  p.lifetime = ros::Duration(10.0);
   p.frame_locked = false;
   inspectionPath_.publish(p);
   
@@ -611,7 +641,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
       direction[0] = nbvInspection::nbvPlanner<stateVec>::dt_ * ds[0];
       direction[1] = nbvInspection::nbvPlanner<stateVec>::dt_ * ds[1];
       direction[2] = nbvInspection::nbvPlanner<stateVec>::dt_ * ds[2];
-    } while (volumetric_mapping::OctomapManager::CellStatus::kFree ==
+    } while (volumetric_mapping::OctomapManager::CellStatus::kFree !=
              this->manager_->getLineStatusBoundingBox(origin, origin + direction, boundingBox_));
     s[0] += nbvInspection::nbvPlanner<stateVec>::dt_ * (s[4] + ds[0]) / 2.0;
     s[1] += nbvInspection::nbvPlanner<stateVec>::dt_ * (s[5] + ds[1]) / 2.0;
@@ -650,6 +680,36 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
   p.color.b = 0.0;
   p.color.a = 1.0;
   p.lifetime = ros::Duration(0.0);
+  p.frame_locked = false;
+  inspectionPath_.publish(p);
+      
+  p.id = g_ID_;
+  g_ID_++;
+  p.ns = "vp_branches";
+  p.type = visualization_msgs::Marker::ARROW;
+  p.action = visualization_msgs::Marker::ADD;
+  p.pose.position.x = s[0];
+  p.pose.position.y = s[1];
+  p.pose.position.z = s[2];
+  Eigen::Quaternion<float> q;
+  Eigen::Vector3f init(1.0, 0.0, 0.0);
+  Eigen::Vector3f dir(ret.back()[0] - s[0],
+                      ret.back()[1] - s[1],
+                      ret.back()[2] - s[2]);
+  q.setFromTwoVectors(init , dir);
+  q.normalize();
+  p.pose.orientation.x = q.x();
+  p.pose.orientation.y = q.y();
+  p.pose.orientation.z = q.z();
+  p.pose.orientation.w = q.w();
+  p.scale.x = dir.norm();
+  p.scale.y = 0.03;
+  p.scale.z = 0.03;
+  p.color.r = 100.0 / 255.0;
+  p.color.g = 100.0 / 255.0;
+  p.color.b = 0.7;
+  p.color.a = 1.0;
+  p.lifetime = ros::Duration(10.0);
   p.frame_locked = false;
   inspectionPath_.publish(p);
   return ret;
