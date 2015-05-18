@@ -71,7 +71,7 @@ void nbvInspection::Node<stateVec>::printToFile(std::fstream& file) {
 }
 
 template<typename stateVec>
-const double nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_ = 0.0;
+const double nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_ = 1.0;
 template<typename stateVec>
 double nbvInspection::Node<stateVec>::bestInformationGain_ =
   nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_;
@@ -251,7 +251,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
       p.color.g = 167.0 / 255.0;
       p.color.b = 0.0;
       p.color.a = 1.0;
-      p.lifetime = ros::Duration(0.0);
+      p.lifetime = ros::Duration(10.0);
       p.frame_locked = false;
       inspectionPath.publish(p);
       
@@ -281,7 +281,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
       p.color.g = 100.0 / 255.0;
       p.color.b = 0.7;
       p.color.a = 1.0;
-      p.lifetime = ros::Duration(0.0);
+      p.lifetime = ros::Duration(10.0);
       p.frame_locked = false;
       inspectionPath.publish(p);
       

@@ -241,7 +241,7 @@
         </link>
       </model>
       <model name='grey_wall_9'>
-        <pose>0.593966 -6 0 0 -0 0</pose>
+        <pose>0.593966 -76 0 0 -0 0</pose>
         <link name='link'>
           <pose>0.593966 -6 1.4 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
@@ -258,19 +258,10 @@
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
-      <model name='ground_plane2'>
-        <pose>0 0 2.8 0 -0 0</pose>
-        <link name='link'>
-          <pose>0 0 2.8 0 -0 0</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
     </state>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose>-2 0 1 0 0 0</pose>
+        <pose>19.3153 -18.3233 15.7788 3.25529e-17 0.549797 1.9362</pose>
         <view_controller>orbit</view_controller>
       </camera>
     </gui>
@@ -1055,55 +1046,6 @@
         <gravity>1</gravity>
       </link>
       <pose>-9.4264 -7 0 0 -0 0</pose>
-    </model>
-    <model name='ground_plane2'>
-      <static>1</static>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry>
-            <plane>
-              <normal>-1 0 0</normal>
-              <size>100 100</size>
-            </plane>
-          </geometry>
-          <surface>
-            <friction>
-              <ode>
-                <mu>100</mu>
-                <mu2>50</mu2>
-              </ode>
-            </friction>
-            <bounce/>
-            <contact>
-              <ode/>
-            </contact>
-          </surface>
-          <max_contacts>10</max_contacts>
-        </collision>
-        <visual name='visual'>
-          <cast_shadows>0</cast_shadows>
-          <geometry>
-            <plane>
-              <normal>-1 0 0</normal>
-              <size>100 100</size>
-            </plane>
-          </geometry>
-          <material>
-            <script>
-              <uri>file://media/materials/scripts/gazebo.material</uri>
-              <name>Gazebo/Grey</name>
-            </script>
-          </material>
-        </visual>
-        <velocity_decay>
-          <linear>0</linear>
-          <angular>0</angular>
-        </velocity_decay>
-        <self_collide>0</self_collide>
-        <kinematic>0</kinematic>
-        <gravity>1</gravity>
-      </link>
-      <pose>0 0 0 0 -0 0</pose>
     </model>
   </world>
 </sdf>
