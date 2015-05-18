@@ -57,7 +57,7 @@ nbvInspection::Node<stateVec> * nbvInspection::Node<stateVec>::minDist(stateVec 
     nbvInspection::Node<stateVec> * tmp = (*it)->minDist(s);
     double tmpDist = sqrt(SQ(s[0] - tmp->state_[0]) + SQ(s[1] - tmp->state_[1]) +
                           SQ(s[2] - tmp->state_[2]));
-    if(tmpDist<bestDist) {
+    if (tmpDist < bestDist) {
       ret = tmp;
       bestDist = tmpDist;
     }
@@ -187,7 +187,8 @@ void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseS
 }
 
 template<typename stateVec>
-bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::Response& res) {
+bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::Request& req,
+                                                          nbvplanner::nbvp_srv::Response& res) {
   ROS_INFO_THROTTLE(1, "Starting NBV Planner");
   if (!ros::ok()) {
     ROS_INFO_THROTTLE(1, "Exploration completed. Not planning any further moves.");
@@ -200,7 +201,8 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
     return true;
   }
   nbvInspection::Node<stateVec>::bestNode_ = NULL;
-  nbvInspection::Node<stateVec>::bestInformationGain_ = nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_;
+  nbvInspection::Node<stateVec>::bestInformationGain_ =
+      nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_;
   manager_->publishAll();
   std::vector<stateVec> ro;
   ro.push_back(*root_);
@@ -342,10 +344,10 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
     stateVec newState;
     double dsq = 0.0;
     do {
-      for(int i = 0; i < 3; i++)
+      for (int i = 0; i < 3; i++)
         newState[i] = 2.0 * radius * (((double)rand()) / ((double)RAND_MAX) - 0.5);
       dsq = SQ(newState[0]) + SQ(newState[1]) + SQ(newState[2]);
-    } while(dsq > pow(radius, 2.0));
+    } while (dsq > pow(radius, 2.0));
     // offset new state by root
     newState += rootNode_->state_;
     nbvInspection::Node<stateVec> * newParent = rootNode_->minDist(newState);
@@ -450,8 +452,8 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
   }
   // extract best path
   nbvInspection::Node<stateVec> * curr = nbvInspection::Node<stateVec>::bestNode_;
-  if(curr->parent_ != NULL) {
-    while(curr->parent_ != rootNode_ && curr->parent_ != NULL) {
+  if (curr->parent_ != NULL) {
+    while (curr->parent_ != rootNode_ && curr->parent_ != NULL) {
       curr = curr->parent_;
     }
     
@@ -460,8 +462,8 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
                SQ(curr->state_[2] - curr->parent_->state_[2]);
     d = sqrt(d);
     double disc = nbvInspection::nbvPlanner<stateVec>::dt_ * nbvInspection::nbvPlanner<stateVec>::v_max_ / d;
-    for(double it = 0.0; it < 1.0; it += disc) {
-      ret.push_back((1.0-it)*curr->state_ + it*curr->parent_->state_);
+    for (double it = 0.0; it < 1.0; it += disc) {
+      ret.push_back((1.0 - it) * curr->state_ + it * curr->parent_->state_);
     }
   }
   else {
@@ -487,7 +489,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
   double d = DBL_MAX;
   int iter = 0;
   do {
-    for(int i = 0; i<extension.size()-1; i++)
+    for (int i = 0; i<extension.size()-1; i++)
       extension[i] = nbvInspection::nbvPlanner<stateVec>::extensionRange_ *
         (((double)rand()) / ((double)RAND_MAX) - 0.5);
     d = sqrt(SQ(extension[0])+SQ(extension[1])+SQ(extension[2]));
@@ -499,7 +501,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
     direction[2] = extension[2];
   } while (volumetric_mapping::OctomapManager::CellStatus::kFree ==
            this->manager_->getLineStatusBoundingBox(origin, origin + direction, boundingBox_) && (iter++) < 100);
-  if(iter>=100) {
+  if (iter >= 100) {
     ROS_WARN("No connection found to extend tree");
     ret.push_back(s);
     return ret;
@@ -560,11 +562,11 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
 template<typename stateVec>
 typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner<stateVec>::sampleEuler(stateVec s) {
   nbvInspection::nbvPlanner<stateVec>::vector_t ret;
-  if(nbvInspection::nbvPlanner<stateVec>::dv_max_ == 0) {
+  if (nbvInspection::nbvPlanner<stateVec>::dv_max_ == 0) {
     ROS_ERROR("Unable to perform planning. Parameter maximal acceleration is either missing or zero");
     return ret;
   }
-  if(nbvInspection::nbvPlanner<stateVec>::dyaw_max_ == 0) {
+  if (nbvInspection::nbvPlanner<stateVec>::dyaw_max_ == 0) {
     ROS_ERROR("Unable to perform planning. Parameter maximal yaw acceleration is either missing or zero");
     return ret;
   }
@@ -580,7 +582,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
   Eigen::Vector3d direction;
   bool ignoreUnknownCells = false; // TODO: shoud be false, but free cells are not mapped at this time
   double d = DBL_MAX;
-  for(int i = 0; i < 10; i++) {
+  for (int i = 0; i < 10; i++) {
     origin[0] = s[0];
     origin[1] = s[1];
     origin[2] = s[2];
@@ -734,12 +736,12 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
              itCBN!=camBoundNormals_.end(); itCBN++) {
           Vector3d normal = AngleAxisd(s[3], Vector3d::UnitZ()) * (*itCBN);
           double val = dir.dot(normal);
-          if(val < SQRT2 * disc) {
+          if (val < SQRT2 * disc) {
             bbreak = true;
             break;
           }
         }
-        if(bbreak)
+        if (bbreak)
           continue;
           
         // TODO: add probabilistic information gain
@@ -751,7 +753,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
             gain+=nbvInspection::nbvPlanner<stateVec>::igUnmapped_;
           }
         }
-        else if(node == volumetric_mapping::OctomapManager::CellStatus::kOccupied) {
+        else if (node == volumetric_mapping::OctomapManager::CellStatus::kOccupied) {
           // Rayshooting to evaluate inspectability of cell
           if (volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
               this->manager_->getVisibility(origin, vec, false)) {
