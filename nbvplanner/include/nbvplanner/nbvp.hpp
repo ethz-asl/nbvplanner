@@ -773,7 +773,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
             gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
             // Add probabilistic gain
             gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-                    PROBABILISTIC_MODEL(this->manager_->getCellStatusPointProbability(vec));
+                    PROBABILISTIC_MODEL(this->manager_->getCellProbabilityPoint(vec));
           }
         }
         else { 
@@ -783,7 +783,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
             gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
             // Add probabilistic gain
             gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-                    PROBABILISTIC_MODEL(this->manager_->getCellStatusPointProbability(vec));
+                    PROBABILISTIC_MODEL(this->manager_->getCellProbabilityPoint(vec));
           }
         }
       }
@@ -841,7 +841,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
             gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
             // Add probabilistic gain
             gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-                    PROBABILISTIC_MODEL(this->manager_->getCellStatusPointProbability(vec));
+                    PROBABILISTIC_MODEL(this->manager_->getCellProbabilityPoint(vec));
           }
         }
         else {
@@ -851,7 +851,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
             gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
             // Add probabilistic gain
             gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-                    PROBABILISTIC_MODEL(this->manager_->getCellStatusPointProbability(vec));
+                    PROBABILISTIC_MODEL(this->manager_->getCellProbabilityPoint(vec));
           }
         }
       }
