@@ -28,6 +28,7 @@
 // Macro defining the probabilistic model to be employed in the
 // different information gain routines.
 #define PROBABILISTIC_MODEL(x) (std::max(0.0,probability_deviation_clamp_-fabs(probability_mean_clamp_-(x))))
+#define ANGABS(x) (fmod(fabs(x),2.0*M_PI)<M_PI?fmod(fabs(x),2.0*M_PI):2.0*M_PI-fmod(fabs(x),2.0*M_PI))
 
 using namespace Eigen;
 
@@ -153,9 +154,19 @@ nbvInspection::nbvPlanner<stateVec>::~nbvPlanner() {
 
 template<typename stateVec>
 void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseStamped& pose) {
-  if (rootNode_)
+  if (rootNode_) {
+    // prune everything except the best path
+    if (use_history_) {
+      nbvInspection::Node<stateVec> * nodeCurrent = nbvInspection::Node<stateVec>::bestNode_;
+      bestBranchOld_.clear();
+      while (nodeCurrent && nodeCurrent->parent_ && nodeCurrent->parent_->parent_) {
+        bestBranchOld_.push_back(nodeCurrent->state_);
+        nodeCurrent = nodeCurrent->parent_;
+      }
+    }
     delete rootNode_;
-  rootNode_ = NULL;
+    rootNode_ = NULL;
+  }
   
   if (root_ == NULL) {
     root_ = new stateVec;
@@ -237,7 +248,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   int mappedOccupied = 0;
   double vol = 0.0;
   
-  ROS_INFO("Replanning lasted %4.4fs and has a Gain of %2.2f, with %i iterations",
+  ROS_INFO("Replanning lasted %fs and has a Gain of %2.2f, with %i iterations",
            duration.toSec(), IG, nbvInspection::Node<stateVec>::getCounter());
   std::reverse(path.begin(), path.end());
   for (typename vector_t::iterator it = path.begin(); it != path.end(); it++) {
@@ -348,8 +359,12 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
         newState[i] = 2.0 * radius * (((double)rand()) / ((double)RAND_MAX) - 0.5);
       dsq = SQ(newState[0]) + SQ(newState[1]) + SQ(newState[2]);
     } while (dsq > pow(radius, 2.0));
-    // offset new state by root
-    newState += rootNode_->state_;
+    if (!bestBranchOld_.empty()) {
+      newState = bestBranchOld_.back();
+    } else {
+      // offset new state by root
+      newState += rootNode_->state_;
+    }
     nbvInspection::Node<stateVec> * newParent = rootNode_->minDist(newState);
     
     // check for collision
@@ -370,9 +385,12 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
       newState[1] = origin[1] + direction[1];
       newState[2] = origin[2] + direction[2];
       // sample the new orientation from the set of possible orientations
-      newState[3] = newParent->state_[3] + 2.0 * (((double)rand()) / ((double)RAND_MAX) - 0.5) *
-                    direction.norm() * nbvInspection::nbvPlanner<stateVec>::dyaw_max_ /
-                    nbvInspection::nbvPlanner<stateVec>::v_max_;
+      if (bestBranchOld_.empty() || direction.norm() / ANGABS(newState[3] - newParent->state_[3]) >
+          nbvInspection::nbvPlanner<stateVec>::v_max_ / nbvInspection::nbvPlanner<stateVec>::dyaw_max_) {
+        newState[3] = newParent->state_[3] + 2.0 * (((double)rand()) / ((double)RAND_MAX) - 0.5) *
+                      direction.norm() * nbvInspection::nbvPlanner<stateVec>::dyaw_max_ /
+                      nbvInspection::nbvPlanner<stateVec>::v_max_;
+      }
       // create new node and insert into tree
       nbvInspection::Node<stateVec> * newNode = new nbvInspection::Node<stateVec>;
       newNode->state_ = newState;
@@ -447,6 +465,9 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
         nbvInspection::Node<stateVec>::bestNode_ = newNode;
         
       }
+    }
+    if (!bestBranchOld_.empty()) {
+      bestBranchOld_.pop_back();
     }
     localCount++;
   }
@@ -1036,17 +1057,21 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams() {
     ret = false;
   }
   if (!ros::param::get(ns + "/threshold_min", probability_mean_clamp_) &&
-      bvInspection::nbvPlanner<stateVec>::igProbabilistic_ > 0.0) {
+      nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ > 0.0) {
     ROS_WARN("No min clamp threshold value specified. Looking for %s", (ns + "/threshold_min").c_str());
     ret = false;
   }
   if (!ros::param::get(ns + "/threshold_max", probability_deviation_clamp_) &&
-      bvInspection::nbvPlanner<stateVec>::igProbabilistic_ > 0.0) {
+      nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ > 0.0) {
     ROS_WARN("No max clamp threshold value specified. Looking for %s", (ns + "/threshold_max").c_str());
     ret = false;
   }
   probability_mean_clamp_ = 0.5 * (probability_mean_clamp_ + probability_deviation_clamp_);
   probability_deviation_clamp_ -= probability_mean_clamp_;
+  if (!ros::param::get(ns + "/use_history", use_history_)) {
+    ROS_WARN("Not specified whether to use history. Looking for %s", (ns + "/use_history").c_str());
+    ret = false;
+  }
   return ret;
 }
 
@@ -1121,5 +1146,7 @@ template<typename stateVec>
 double nbvInspection::nbvPlanner<stateVec>::probability_mean_clamp_ = 0.5;
 template<typename stateVec>
 double nbvInspection::nbvPlanner<stateVec>::probability_deviation_clamp_ = 0.5;
+template<typename stateVec>
+bool nbvInspection::nbvPlanner<stateVec>::use_history_ = false;
 
 #endif // NBVP_HPP_

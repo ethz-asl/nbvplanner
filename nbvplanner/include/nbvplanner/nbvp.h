@@ -66,6 +66,7 @@ namespace nbvInspection {
     static double probability_mean_clamp_;
     static double probability_deviation_clamp_;
     std::stack<stateVec> history_;
+    static bool use_history_;
   
     ros::NodeHandle nh_;
     ros::NodeHandle nh_private_;
@@ -80,6 +81,11 @@ namespace nbvInspection {
     int g_ID_;
     std::string pkgPath_;
     int iteration_;
+    std::vector<Eigen::Vector3d> camBoundNormals_;
+    Node<stateVec> * rootNode_;
+    std::vector<stateVec> bestBranchOld_;
+    static volumetric_mapping::OctomapManager * manager_;
+    static Eigen::Vector3d boundingBox_;
   public:
     typedef std::vector<stateVec> vector_t;
     typedef octomap::OcTree octomap_t;
@@ -108,10 +114,6 @@ namespace nbvInspection {
     bool plannerCallback(nbvplanner::nbvp_srv::Request& req,
                          nbvplanner::nbvp_srv::Response& res);
                          
-    std::vector<Eigen::Vector3d> camBoundNormals_;
-    Node<stateVec> * rootNode_;
-    static volumetric_mapping::OctomapManager * manager_;
-    static Eigen::Vector3d boundingBox_;
   };
 }
 

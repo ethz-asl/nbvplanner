@@ -1,6 +1,6 @@
 
-system/v_max: 0.25
-system/dyaw_max: 0.5
+system/v_max: 0.5
+system/dyaw_max: .75
 system/dv_max: 0.2
 system/ddyaw_max: 0.2
 system/camera/pitch: 0.1

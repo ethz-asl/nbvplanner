@@ -45,7 +45,7 @@
       <remap from="odometry" to="odometry_sensor1/odometry" />
     </node>
     <node name="exploration" pkg="nbvplanner" type="exploration" output="screen" >
-      <rosparam command="load" file="$(find nbvplanner)/resource/param.yaml" />
+      <rosparam command="load" file="$(find nbvplanner)/resource/baseline.yaml" />
     </node>
     
   </group>
