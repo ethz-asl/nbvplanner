@@ -27,7 +27,7 @@
 
 // Macro defining the probabilistic model to be employed in the
 // different information gain routines.
-#define PROBABILISTIC_MODEL(x) (0.5-fabs(0.5-(x)))
+#define PROBABILISTIC_MODEL(x) (std::max(0.0,probability_deviation_clamp_-fabs(probability_mean_clamp_-(x))))
 
 using namespace Eigen;
 
@@ -751,8 +751,8 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
               this->manager_->getVisibility(origin, vec, false)) {
             gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
             // Add probabilistic gain
-            // gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-            //         PROBABILISTIC_MODEL(node->getOccupancy());
+            gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
+                    PROBABILISTIC_MODEL(this->manager_->getCellStatusPointProbability(vec));
           }
         }
         else { 
@@ -761,8 +761,8 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
               this->manager_->getVisibility(origin, vec, false)) {
             gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
             // Add probabilistic gain
-            // gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-            //         PROBABILISTIC_MODEL(node->getOccupancy());
+            gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
+                    PROBABILISTIC_MODEL(this->manager_->getCellStatusPointProbability(vec));
           }
         }
       }
@@ -819,8 +819,8 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
               this->manager_->getVisibility(origin, vec, false)) {
             gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
             // Add probabilistic gain
-            // gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-            //         PROBABILISTIC_MODEL(node->getOccupancy());
+            gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
+                    PROBABILISTIC_MODEL(this->manager_->getCellStatusPointProbability(vec));
           }
         }
         else {
@@ -829,8 +829,8 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
               this->manager_->getVisibility(origin, vec, false)) {
             gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
             // Add probabilistic gain
-            // gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-            //         PROBABILISTIC_MODEL(node->getOccupancy());
+            gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
+                    PROBABILISTIC_MODEL(this->manager_->getCellStatusPointProbability(vec));
           }
         }
       }
@@ -1035,6 +1035,18 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams() {
     ROS_WARN("No z size value specified. Looking for %s", (ns + "/system/bbx/z").c_str());
     ret = false;
   }
+  if (!ros::param::get(ns + "/threshold_min", probability_mean_clamp_) &&
+      bvInspection::nbvPlanner<stateVec>::igProbabilistic_ > 0.0) {
+    ROS_WARN("No min clamp threshold value specified. Looking for %s", (ns + "/threshold_min").c_str());
+    ret = false;
+  }
+  if (!ros::param::get(ns + "/threshold_max", probability_deviation_clamp_) &&
+      bvInspection::nbvPlanner<stateVec>::igProbabilistic_ > 0.0) {
+    ROS_WARN("No max clamp threshold value specified. Looking for %s", (ns + "/threshold_max").c_str());
+    ret = false;
+  }
+  probability_mean_clamp_ = 0.5 * (probability_mean_clamp_ + probability_deviation_clamp_);
+  probability_deviation_clamp_ -= probability_mean_clamp_;
   return ret;
 }
 
@@ -1105,5 +1117,9 @@ volumetric_mapping::OctomapManager * nbvInspection::nbvPlanner<stateVec>::manage
 template<typename stateVec>
 Eigen::Vector3d nbvInspection::nbvPlanner<stateVec>::boundingBox_ =
                 Eigen::Vector3d(0.5, 0.5, 0.3);
+template<typename stateVec>
+double nbvInspection::nbvPlanner<stateVec>::probability_mean_clamp_ = 0.5;
+template<typename stateVec>
+double nbvInspection::nbvPlanner<stateVec>::probability_deviation_clamp_ = 0.5;
 
 #endif // NBVP_HPP_
