@@ -109,6 +109,7 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   root_ = NULL;
   g_stateOld_ = NULL;
   iteration_ = 1;
+  average_computation_duration_ = 0.02;
   
   // set up the topics and services
   inspectionPath_ = nh_.advertise<visualization_msgs::Marker>("inspectionPath", 1000);
@@ -147,9 +148,12 @@ nbvInspection::nbvPlanner<stateVec>::~nbvPlanner() {
   delete rootNode_;
   rootNode_ = NULL;
   
-  delete manager_;
-  delete root_;
-  delete g_stateOld_;
+  if (manager_)
+    delete manager_;
+  if (root_)
+    delete root_;
+  if (g_stateOld_)
+    delete g_stateOld_;
 }
 
 template<typename stateVec>
@@ -172,28 +176,33 @@ void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseS
     root_ = new stateVec;
   }
   ros::Duration dt = pose.header.stamp - g_timeOld_;
-  if (dt.toSec() > 0.0 || root_->size() < 8) {
+  if (dt.toSec() > 0.0) {
     (*root_)[0] = pose.pose.position.x;
     (*root_)[1] = pose.pose.position.y;
     (*root_)[2] = pose.pose.position.z;
     tf::Pose poseTF;
     tf::poseMsgToTF(pose.pose, poseTF);
     (*root_)[3] = tf::getYaw(poseTF.getRotation());
-    /*if (g_stateOld_ == NULL) {
-      g_stateOld_ = new stateVec;
-      (*root_)[4] = 0.0;
-      (*root_)[5] = 0.0;
-      (*root_)[6] = 0.0;
-      (*root_)[7] = 0.0;
+    if (root_->size() >= 8) {
+      if (g_stateOld_ == NULL) {
+        g_stateOld_ = new stateVec;
+        (*root_)[4] = 0.0;
+        (*root_)[5] = 0.0;
+        (*root_)[6] = 0.0;
+        (*root_)[7] = 0.0;
+        (*root_)[8] = pose.header.stamp.toSec();
+      }
+      else {
+        (*root_)[4] = (pose.pose.position.x - (*g_stateOld_)[0]) / dt.toSec();
+        (*root_)[5] = (pose.pose.position.y - (*g_stateOld_)[1]) / dt.toSec();
+        (*root_)[6] = (pose.pose.position.z - (*g_stateOld_)[2]) / dt.toSec();
+        (*root_)[7] = ((*root_)[3] - (*g_stateOld_)[3]) / dt.toSec();
+        (*root_)[8] = pose.header.stamp.toSec();
+      }
     }
-    else {
-      (*root_)[4] = (pose.pose.position.x - (*g_stateOld_)[0]) / dt.toSec();
-      (*root_)[5] = (pose.pose.position.y - (*g_stateOld_)[1]) / dt.toSec();
-      (*root_)[6] = (pose.pose.position.z - (*g_stateOld_)[2]) / dt.toSec();
-      (*root_)[7] = ((*root_)[3] - (*g_stateOld_)[3]) / dt.toSec();
-    }*/
   }
-  //*g_stateOld_ = *root_;
+  if (g_stateOld_)
+    *g_stateOld_ = *root_;
   g_timeOld_ = pose.header.stamp;
 }
 
@@ -210,6 +219,16 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   if (root_ == NULL || manager_ == NULL || manager_->getMapSize().norm() <= 0.0) {
     ROS_ERROR_THROTTLE(1 , "Planner not set up");
     return true;
+  }
+  // estimate expected starting point of new piece of path
+  if  (root_->size() >= 9) {
+    double dt = ros::Time::now().toSec() + dt_ +
+                average_computation_duration_ - (*root_)[8];
+    ROS_INFO("Adapting the root location for time %f (%f)", dt, average_computation_duration_);
+    (*root_)[0] += (*root_)[4] * dt;
+    (*root_)[1] += (*root_)[5] * dt;
+    (*root_)[2] += (*root_)[6] * dt;
+    (*root_)[3] += (*root_)[7] * dt;
   }
   nbvInspection::Node<stateVec>::bestNode_ = NULL;
   nbvInspection::Node<stateVec>::bestInformationGain_ =
@@ -238,10 +257,12 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
       return true;
     }
     path = expand(*this, depth, width, ro, IG,
-                  &nbvInspection::nbvPlanner<stateVec>::sampleHolonomic,
+                  &nbvInspection::nbvPlanner<stateVec>::sampleEuler,
                   &nbvInspection::nbvPlanner<stateVec>::informationGainCone);
   }
   ros::Duration duration = ros::Time::now() - start;
+  
+  average_computation_duration_ = 0.9 * average_computation_duration_ + 0.1 * duration.toSec();
   
   // calculate explored space
   int mappedFree = 0;
@@ -326,7 +347,9 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
     }
     if (localCount > 10000) {
       ROS_INFO("Exceeding local count, return!");
-    	stateVec extension(0.0, 0.0, 0.0, 0.0);
+    	stateVec extension;
+    	for (int i = 0; i < extension.size(); i++)
+    	  extension[i] = 0.0;
     	if (history_.size() > 0) {
     	  extension = history_.top() - s;
   	  }
@@ -379,8 +402,11 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
     const static double max_dist = 3.0;
     if (direction.norm() > max_dist)
       direction = max_dist * direction / direction.norm();
+    double tOvershoot = 2.0 * dt_ + average_computation_duration_;
+    tOvershoot *= nbvInspection::nbvPlanner<stateVec>::v_max_;
     if (volumetric_mapping::OctomapManager::CellStatus::kFree ==
-        this->manager_->getLineStatusBoundingBox(origin, direction + origin, boundingBox_)) {
+        this->manager_->getLineStatusBoundingBox(origin, direction + origin +
+        direction.normalized() * tOvershoot , boundingBox_)) {
       newState[0] = origin[0] + direction[0];
       newState[1] = origin[1] + direction[1];
       newState[2] = origin[2] + direction[2];
@@ -631,7 +657,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
       s[i] *= nbvInspection::nbvPlanner<stateVec>::v_max_ / stransl;
       
   Eigen::Vector3d direction;
-  bool ignoreUnknownCells = false; // TODO: shoud be false, but free cells are not mapped at this time
+  bool ignoreUnknownCells = false;
   double d = DBL_MAX;
   for (int i = 0; i < 10; i++) {
     origin[0] = s[0];
@@ -649,7 +675,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
       ds[1] = s[5] + nbvInspection::nbvPlanner<stateVec>::dt_ * ds[5];
       ds[2] = s[6] + nbvInspection::nbvPlanner<stateVec>::dt_ * ds[6];
       double transls = sqrt(SQ(ds[0]) + SQ(ds[1]) + SQ(ds[2]));
-      if (transls > nbvInspection::nbvPlanner<stateVec>::v_max) // limit speed to sMax;
+      if (transls > nbvInspection::nbvPlanner<stateVec>::v_max_) // limit speed to sMax;
         for (int i = 0; i < 3; i++)
           ds[i] *= nbvInspection::nbvPlanner<stateVec>::v_max_ / transls;
       // rotational
@@ -755,10 +781,9 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
       for (vec[2] = std::max(s[2] - R, nbvInspection::nbvPlanner<stateVec>::minZ_);
            vec[2] < std::min(s[2] + R, nbvInspection::nbvPlanner<stateVec>::maxZ_); vec[2] += disc) {
         double dsq = SQ(s[0] - vec[0]) + SQ(s[1] - vec[1]) + SQ(s[2] - vec[2]);
-        if (dsq > pow(R, 2.0))// || !octomap->inBBX(vec))
+        if (dsq > pow(R, 2.0))
           continue;
           
-        // TODO: add probabilistic information gain
         volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellStatusPoint(vec);
         if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown) {
           // Rayshooting to evaluate inspectability of cell
@@ -808,7 +833,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
       for (vec[2] = std::max(s[2] - R, nbvInspection::nbvPlanner<stateVec>::minZ_);
            vec[2] < std::min(s[2] + R, nbvInspection::nbvPlanner<stateVec>::maxZ_); vec[2] += disc) {
         double dsq = SQ(s[0] - vec[0]) + SQ(s[1] - vec[1]) + SQ(s[2] - vec[2]);
-        if (dsq > pow(R, 2.0))// || !octomap->inBBX(vec))
+        if (dsq > pow(R, 2.0))
           continue;
           
         Vector3d dir(vec[0] - s[0], vec[1] - s[1], vec[2] - s[2]);
@@ -825,7 +850,6 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
         if (bbreak)
           continue;
           
-        // TODO: add probabilistic information gain
         volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellStatusPoint(vec);
         if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown) {
           // Rayshooting to evaluate inspectability of cell
@@ -1068,10 +1092,7 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams() {
   }
   probability_mean_clamp_ = 0.5 * (probability_mean_clamp_ + probability_deviation_clamp_);
   probability_deviation_clamp_ -= probability_mean_clamp_;
-  if (!ros::param::get(ns + "/use_history", use_history_)) {
-    ROS_WARN("Not specified whether to use history. Looking for %s", (ns + "/use_history").c_str());
-    ret = false;
-  }
+  ros::param::get(ns + "/use_history", use_history_);
   return ret;
 }
 

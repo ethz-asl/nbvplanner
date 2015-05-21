@@ -78,6 +78,7 @@ namespace nbvInspection {
     ros::Subscriber posClient_;
     ros::ServiceServer plannerService_;
     ros::Time g_timeOld_;
+    double average_computation_duration_;
     int g_ID_;
     std::string pkgPath_;
     int iteration_;

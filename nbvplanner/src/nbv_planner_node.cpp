@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::ParseCommandLineFlags(&argc, &argv, false);
   google::InstallFailureSignalHandler();
-  nbvInspection::nbvPlanner<Eigen::Matrix<double, 4, 1> > planner(nh, nh_private);
+  nbvInspection::nbvPlanner<Eigen::Matrix<double, 9, 1> > planner(nh, nh_private);
   
   ros::spin();
   return 0;
