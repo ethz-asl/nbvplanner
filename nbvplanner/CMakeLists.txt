@@ -16,12 +16,13 @@ find_package(catkin REQUIRED COMPONENTS
   rotors_gazebo
   octomap_to_mesh
   octomap_world
+  tf
 )
 find_package(cmake_modules REQUIRED)
 find_package(Eigen REQUIRED)
 find_package(octomap REQUIRED)
 
-set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -104,7 +105,7 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-add_executable(nbvPlanner src/nbv_planner_node.cpp src/nbvp.cpp)
+add_executable(nbvPlanner src/nbv_planner_node.cpp src/mesh_structure.cpp src/nbvp.cpp)
 add_executable(exploration src/exploration.cpp)
 add_executable(wpFollower src/wpFollower.cpp)
 

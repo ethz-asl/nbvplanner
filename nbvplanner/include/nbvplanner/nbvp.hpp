@@ -24,6 +24,7 @@
 
 #include <nbvplanner/nbvp.h>
 #include <nbvplanner/nbvp_srv.h>
+#include <nbvplanner/mesh_structure.h>
 
 // Macro defining the probabilistic model to be employed in the
 // different information gain routines.
@@ -141,6 +142,22 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   camBoundNormals_.push_back(leftR);
   
   rootNode_ = NULL;
+  
+  std::string ns = ros::this_node::getName();
+  std::string stlPath = "";
+  if (ros::param::get(ns + "/stl_file_path", stlPath)) {
+    std::fstream stlFile;
+    stlFile.open(stlPath.c_str());
+    if (!stlFile.is_open())
+      ROS_INFO("Unable to open STL file");
+    mesh_ = new mesh::StlMesh(stlFile);
+    mesh_->setResolution(4.0);
+    mesh_->setOctomapManager(manager_);
+    mesh_->setCameraParams(nbvInspection::nbvPlanner<stateVec>::camPitch_,
+                           nbvInspection::nbvPlanner<stateVec>::camHorizontal_,
+                           nbvInspection::nbvPlanner<stateVec>::camVertical_,
+                           nbvInspection::nbvPlanner<stateVec>::informationGainRange_);
+  }
 }
 
 template<typename stateVec>
@@ -204,6 +221,42 @@ void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseS
   if (g_stateOld_)
     *g_stateOld_ = *root_;
   g_timeOld_ = pose.header.stamp;
+  static double throttleTime = ros::Time::now().toSec();
+  if(ros::Time::now().toSec() - throttleTime > 1.0) {
+    mesh_->incoorporateViewFromPoseMsg(pose.pose);
+    throttleTime += 1.0;
+    visualization_msgs::Marker inspected;
+    inspected.ns = "meshInspected";
+    inspected.id = 0;
+    inspected.header.seq = inspected.id;
+    inspected.header.stamp = pose.header.stamp;
+    inspected.header.frame_id = "world";
+    inspected.type = visualization_msgs::Marker::TRIANGLE_LIST;
+    inspected.lifetime = ros::Duration(10);
+    inspected.action = visualization_msgs::Marker::ADD;
+    inspected.pose.position.x = 0.0;
+    inspected.pose.position.y = 0.0;
+    inspected.pose.position.z = 0.0;
+    inspected.pose.orientation.x = 0.0;
+    inspected.pose.orientation.y = 0.0;
+    inspected.pose.orientation.z = 0.0;
+    inspected.pose.orientation.w = 1.0;
+    inspected.scale.x = 1.0;
+    inspected.scale.y = 1.0;
+    inspected.scale.z = 1.0;
+    visualization_msgs::Marker uninspected = inspected;
+    uninspected.header.seq++;
+    uninspected.id++;
+    uninspected.ns = "meshUninspected";
+    //inspected.colors.clear();
+    //uninspected.colors.clear();
+    mesh_->assembleMarkerArray(inspected, uninspected);
+    ROS_WARN("Publishing the mesh, %i, %i", inspected.points.size(), uninspected.points.size());
+    if (inspected.points.size() > 0)
+      inspectionPath_.publish(inspected);
+    if (uninspected.points.size() > 0)
+      inspectionPath_.publish(uninspected);
+  }
 }
 
 template<typename stateVec>
@@ -328,7 +381,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
     nbvInspection::nbvPlanner<stateVec>& instance,
     int I, stateVec s, double& IGout,
     double (nbvInspection::nbvPlanner<stateVec>::*informationGain)(stateVec)) {
-  assert(s.size() == 4);
+  assert(s.size() >= 4);
   nbvInspection::nbvPlanner<stateVec>::vector_t ret;
   if (rootNode_) {
     delete rootNode_;
@@ -401,7 +454,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
     direction[2] = newState[2] - origin[2];
     const static double max_dist = 3.0;
     if (direction.norm() > max_dist)
-      direction = max_dist * direction / direction.norm();
+      direction = max_dist * direction.normalized();
     double tOvershoot = 2.0 * dt_ + average_computation_duration_;
     tOvershoot *= nbvInspection::nbvPlanner<stateVec>::v_max_;
     if (volumetric_mapping::OctomapManager::CellStatus::kFree ==
@@ -413,9 +466,14 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
       // sample the new orientation from the set of possible orientations
       if (bestBranchOld_.empty() || direction.norm() / ANGABS(newState[3] - newParent->state_[3]) >
           nbvInspection::nbvPlanner<stateVec>::v_max_ / nbvInspection::nbvPlanner<stateVec>::dyaw_max_) {
-        newState[3] = newParent->state_[3] + 2.0 * (((double)rand()) / ((double)RAND_MAX) - 0.5) *
-                      direction.norm() * nbvInspection::nbvPlanner<stateVec>::dyaw_max_ /
-                      nbvInspection::nbvPlanner<stateVec>::v_max_;
+        double segmentTime = direction.norm() / nbvInspection::nbvPlanner<stateVec>::v_max_;
+        newState[3] = 2.0 * (((double)rand()) / ((double)RAND_MAX) - 0.5) *
+                      nbvInspection::nbvPlanner<stateVec>::dyaw_max_ * segmentTime;
+        newState[3] += newParent->state_[3];
+        if (newState[3] > M_PI)
+          newState[3] -= 2.0 * M_PI;
+        if (newState[3] < -M_PI)
+          newState[3] += 2.0 * M_PI;
       }
       // create new node and insert into tree
       nbvInspection::Node<stateVec> * newNode = new nbvInspection::Node<stateVec>;
@@ -442,7 +500,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
       p.pose.orientation.y = quat.y();
       p.pose.orientation.z = quat.z();
       p.pose.orientation.w = quat.w();
-      p.scale.x = std::max(newNode->informationGain_ / 2000.0, 0.05);
+      p.scale.x = std::max(newNode->informationGain_ / 200.0, 0.05);
       p.scale.y = 0.1;
       p.scale.z = 0.1;
       p.color.r = 167.0 / 255.0;
@@ -816,6 +874,12 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
   }
   gain *= pow(disc, 3.0);
   
+  tf::Transform transform;
+  transform.setOrigin(tf::Vector3(s.x(), s.y(), s.z()));
+  transform.setRotation(tf::Quaternion(s[3], 0.0, 0.0));
+  gain += nbvInspection::nbvPlanner<stateVec>::igArea_ *
+          mesh_->computeInspectableArea(transform);
+  
   return gain;
 }
 
@@ -882,6 +946,12 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
     }
   }
   gain *= pow(disc, 3.0);
+  
+  tf::Transform transform;
+  transform.setOrigin(tf::Vector3(s.x(), s.y(), s.z()));
+  transform.setRotation(tf::Quaternion(s[3], 0.0, 0.0));
+  gain += nbvInspection::nbvPlanner<stateVec>::igArea_ *
+          mesh_->computeInspectableArea(transform);
   
   visualization_msgs::Marker p;
   p.header.stamp = ros::Time::now();
@@ -1017,6 +1087,11 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams() {
              (ns + "/nbvp/information_gain/unmapped").c_str());
     ret = false;
   }
+  if (!ros::param::get(ns + "/nbvp/information_gain/area", igArea_)) {
+    ROS_WARN("No information gain for mesh area specified. Looking for %s",
+             (ns + "/nbvp/information_gain/area").c_str());
+    ret = false;
+  }
   if (!ros::param::get(ns + "/nbvp/information_gain/degressive_coeff", degressiveCoeff_)) {
     ROS_WARN("No degressive factor for information gain accumulation specified. Looking for %s",
              (ns + "/nbvp/sampleHolonomic/degressive_coeff").c_str());
@@ -1135,6 +1210,8 @@ double nbvInspection::nbvPlanner<stateVec>::igOccupied_ = 0.0;
 template<typename stateVec>
 double nbvInspection::nbvPlanner<stateVec>::igUnmapped_ = 1.0;
 template<typename stateVec>
+double nbvInspection::nbvPlanner<stateVec>::igArea_ = 0.0;
+template<typename stateVec>
 double nbvInspection::nbvPlanner<stateVec>::informationGainRange_ = 1.0;
 template<typename stateVec>
 double nbvInspection::nbvPlanner<stateVec>::degressiveCoeff_ = 1.0;
@@ -1160,6 +1237,8 @@ template<typename stateVec>
 double nbvInspection::nbvPlanner<stateVec>::maxZ_ = 0.0;
 template<typename stateVec>
 volumetric_mapping::OctomapManager * nbvInspection::nbvPlanner<stateVec>::manager_ = NULL;
+template<typename stateVec>
+mesh::StlMesh * nbvInspection::nbvPlanner<stateVec>::mesh_ = NULL;
 template<typename stateVec>
 Eigen::Vector3d nbvInspection::nbvPlanner<stateVec>::boundingBox_ =
                 Eigen::Vector3d(0.5, 0.5, 0.3);

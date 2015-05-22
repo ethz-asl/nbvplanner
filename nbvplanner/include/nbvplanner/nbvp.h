@@ -11,6 +11,7 @@
 #include <octomap/OcTree.h>
 #include <octomap_world/octomap_manager.h>
 #include <nbvplanner/nbvp_srv.h>
+#include <nbvplanner/mesh_structure.h>
 
 #define SQ(x) ((x)*(x))
 #define SQRT2 0.70711
@@ -50,6 +51,7 @@ namespace nbvInspection {
     static double igFree_;
     static double igOccupied_;
     static double igUnmapped_;
+    static double igArea_;
     static double informationGainRange_;
     static double degressiveCoeff_;
     static double extensionRange_;
@@ -72,11 +74,13 @@ namespace nbvInspection {
     ros::NodeHandle nh_private_;
     stateVec * root_;
     stateVec * g_stateOld_;
+    
     ros::Publisher inspectionPath_;
     ros::Publisher treePub_;
     ros::ServiceClient octomapClient_;
     ros::Subscriber posClient_;
     ros::ServiceServer plannerService_;
+    
     ros::Time g_timeOld_;
     double average_computation_duration_;
     int g_ID_;
@@ -86,6 +90,7 @@ namespace nbvInspection {
     Node<stateVec> * rootNode_;
     std::vector<stateVec> bestBranchOld_;
     static volumetric_mapping::OctomapManager * manager_;
+    static mesh::StlMesh * mesh_;
     static Eigen::Vector3d boundingBox_;
   public:
     typedef std::vector<stateVec> vector_t;
