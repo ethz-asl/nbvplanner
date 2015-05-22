@@ -222,7 +222,7 @@ void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseS
     *g_stateOld_ = *root_;
   g_timeOld_ = pose.header.stamp;
   static double throttleTime = ros::Time::now().toSec();
-  if(ros::Time::now().toSec() - throttleTime > 1.0) {
+  if(ros::Time::now().toSec() - throttleTime > 1.0 && mesh_) {
     mesh_->incoorporateViewFromPoseMsg(pose.pose);
     throttleTime += 1.0;
     visualization_msgs::Marker inspected;
@@ -248,8 +248,6 @@ void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseS
     uninspected.header.seq++;
     uninspected.id++;
     uninspected.ns = "meshUninspected";
-    //inspected.colors.clear();
-    //uninspected.colors.clear();
     mesh_->assembleMarkerArray(inspected, uninspected);
     ROS_WARN("Publishing the mesh, %i, %i", inspected.points.size(), uninspected.points.size());
     if (inspected.points.size() > 0)
@@ -874,11 +872,13 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
   }
   gain *= pow(disc, 3.0);
   
-  tf::Transform transform;
-  transform.setOrigin(tf::Vector3(s.x(), s.y(), s.z()));
-  transform.setRotation(tf::Quaternion(s[3], 0.0, 0.0));
-  gain += nbvInspection::nbvPlanner<stateVec>::igArea_ *
-          mesh_->computeInspectableArea(transform);
+  if (mesh_) {
+    tf::Transform transform;
+    transform.setOrigin(tf::Vector3(s.x(), s.y(), s.z()));
+    transform.setRotation(tf::Quaternion(s[3], 0.0, 0.0));
+    gain += nbvInspection::nbvPlanner<stateVec>::igArea_ *
+            mesh_->computeInspectableArea(transform);
+  }
   
   return gain;
 }
@@ -947,11 +947,13 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
   }
   gain *= pow(disc, 3.0);
   
-  tf::Transform transform;
-  transform.setOrigin(tf::Vector3(s.x(), s.y(), s.z()));
-  transform.setRotation(tf::Quaternion(s[3], 0.0, 0.0));
-  gain += nbvInspection::nbvPlanner<stateVec>::igArea_ *
-          mesh_->computeInspectableArea(transform);
+  if (mesh_) {
+    tf::Transform transform;
+    transform.setOrigin(tf::Vector3(s.x(), s.y(), s.z()));
+    transform.setRotation(tf::Quaternion(s[3], 0.0, 0.0));
+    gain += nbvInspection::nbvPlanner<stateVec>::igArea_ *
+            mesh_->computeInspectableArea(transform);
+  }
   
   visualization_msgs::Marker p;
   p.header.stamp = ros::Time::now();

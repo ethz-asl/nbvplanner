@@ -13,6 +13,7 @@ system/bbx/z: 0.3
 nbvp/information_gain/free: 0.0
 nbvp/information_gain/occupied: 0.0
 nbvp/information_gain/unmapped: 1.0
+nbvp/information_gain/area: 0.0
 nbvp/information_gain/probabilistic: 0.0
 nbvp/information_gain/range: 5.0
 nbvp/information_gain/degressive_coeff: 1.0
