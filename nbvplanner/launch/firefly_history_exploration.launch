@@ -18,7 +18,7 @@
   
   <node name="rviz" pkg="rviz" type="rviz" output="screen"/>
 
-  <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen" launch-prefix="gdb -ex run --args">
+  <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
     <param name="tf_frame" type="string" value="world" />
     <param name="resolution" type="double" value="2.0" />
     <param name="use_history" type="bool" value="true" />

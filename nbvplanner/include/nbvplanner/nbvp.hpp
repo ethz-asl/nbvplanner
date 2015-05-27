@@ -9,6 +9,7 @@
 #include <sstream>
 
 #include <tf/transform_datatypes.h>
+#include <tf/transform_broadcaster.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
 #include <geometry_msgs/PolygonStamped.h>
@@ -124,13 +125,13 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   }
   
   double pitch = M_PI * nbvInspection::nbvPlanner<stateVec>::camPitch_ / 180.0;
-  double camTop = M_PI * (pitch - nbvInspection::nbvPlanner<stateVec>::camVertical_ / 2.0) / 180.0;
-  double camBottom = M_PI * (pitch + nbvInspection::nbvPlanner<stateVec>::camVertical_ / 2.0) / 180.0;
-  double side = M_PI * (nbvInspection::nbvPlanner<stateVec>::camHorizontal_) / 360.0;
-  Vector3d bottom(cos(camBottom), -sin(camBottom), 0.0);
-  Vector3d top(cos(camTop), -sin(camTop), 0.0);
-  Vector3d right(cos(side), -sin(camBottom), 0.0);
-  Vector3d left(cos(side), sin(camBottom), 0.0);
+  double camTop = M_PI * (pitch - nbvInspection::nbvPlanner<stateVec>::camVertical_ / 2.0) / 180.0 + M_PI / 2.0;
+  double camBottom = M_PI * (pitch + nbvInspection::nbvPlanner<stateVec>::camVertical_ / 2.0) / 180.0 - M_PI / 2.0;
+  double side = M_PI * (nbvInspection::nbvPlanner<stateVec>::camHorizontal_) / 360.0 + M_PI / 2.0;
+  Vector3d bottom(cos(camBottom), 0.0, -sin(camBottom));
+  Vector3d top(cos(camTop), 0.0, -sin(camTop));
+  Vector3d right(cos(side), sin(side), 0.0);
+  Vector3d left(cos(side), -sin(side), 0.0);
   AngleAxisd m = AngleAxisd(pitch, Vector3d::UnitY());
   Vector3d rightR = m * right;
   Vector3d leftR = m * left;
@@ -222,9 +223,10 @@ void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseS
     *g_stateOld_ = *root_;
   g_timeOld_ = pose.header.stamp;
   static double throttleTime = ros::Time::now().toSec();
-  if(ros::Time::now().toSec() - throttleTime > 1.0 && mesh_) {
+  const static double throttleConst = 0.25; // TODO: make parameter
+  if(ros::Time::now().toSec() - throttleTime > throttleConst && mesh_) {
     mesh_->incoorporateViewFromPoseMsg(pose.pose);
-    throttleTime += 1.0;
+    throttleTime += throttleConst;
     visualization_msgs::Marker inspected;
     inspected.ns = "meshInspected";
     inspected.id = 0;
@@ -368,7 +370,6 @@ nbvInspection::nbvPlanner<stateVec>::expand(nbvPlanner<stateVec>& instance, int 
       IGout = IG + nbvInspection::nbvPlanner<stateVec>::degressiveCoeff_ * IGnew;
     }
   }
-  //ROS_INFO("Information Gain is: %2.2f", IGout);
   return ret;
 }
 
@@ -573,7 +574,6 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
     ret.push_back(curr->state_);
   }
   IGout = nbvInspection::Node<stateVec>::bestInformationGain_;
-  ROS_INFO("IGout %f", IGout);
 	this->history_.push(ret.back());
   return ret;
 }
@@ -597,6 +597,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
         (((double)rand()) / ((double)RAND_MAX) - 0.5);
     d = sqrt(SQ(extension[0])+SQ(extension[1])+SQ(extension[2]));
     // sample yaw w.r.t. the constraints
+    // TODO: limit to full rotation
     extension[extension.size()-1] = 2.0 * (nbvInspection::nbvPlanner<stateVec>::dyaw_max_ /
       nbvInspection::nbvPlanner<stateVec>::v_max_) * d * (((double)rand()) / ((double)RAND_MAX) - 0.5);
     direction[0] = extension[0];
@@ -875,9 +876,13 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
   if (mesh_) {
     tf::Transform transform;
     transform.setOrigin(tf::Vector3(s.x(), s.y(), s.z()));
-    transform.setRotation(tf::Quaternion(s[3], 0.0, 0.0));
+    tf::Quaternion quaternion; quaternion.setEuler(0.0, 0.0, s[3]);
+    transform.setRotation(quaternion);
+    static tf::TransformBroadcaster br;
+    br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "inspectionAreaFrame"));
     gain += nbvInspection::nbvPlanner<stateVec>::igArea_ *
             mesh_->computeInspectableArea(transform);
+    ROS_INFO("Computing the mesh inspection area: %f", mesh_->computeInspectableArea(transform));
   }
   
   return gain;
@@ -950,7 +955,10 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
   if (mesh_) {
     tf::Transform transform;
     transform.setOrigin(tf::Vector3(s.x(), s.y(), s.z()));
-    transform.setRotation(tf::Quaternion(s[3], 0.0, 0.0));
+    tf::Quaternion quaternion; quaternion.setEuler(0.0, 0.0, s[3]);
+    transform.setRotation(quaternion);
+    static tf::TransformBroadcaster br;
+    br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "inspectionAreaFrame"));
     gain += nbvInspection::nbvPlanner<stateVec>::igArea_ *
             mesh_->computeInspectableArea(transform);
   }

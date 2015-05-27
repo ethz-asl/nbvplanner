@@ -28,7 +28,7 @@ class StlMesh {
   
   void incoorporateViewFromPoseMsg(const geometry_msgs::Pose& pose);
   
-  double computeInspectableArea(const tf::Transform& transform) const;
+  double computeInspectableArea(const tf::Transform& transform);
   
   void assembleMarkerArray(visualization_msgs::Marker& inspected,
                            visualization_msgs::Marker& uninspected) const;

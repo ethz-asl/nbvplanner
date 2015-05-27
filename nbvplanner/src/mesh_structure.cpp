@@ -7,6 +7,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
 #include <tf/transform_datatypes.h>
+#include <tf/transform_broadcaster.h>
 #include <octomap_world/octomap_manager.h>
 #include <nbvplanner/mesh_structure.h>
 
@@ -125,6 +126,7 @@ mesh::StlMesh::StlMesh(std::fstream& file)
       assert(line = (char *) realloc(line, MaxLine));
       file.getline(line, MaxLine);
     }
+    newNode->normal_ = ((newNode->x3_ - newNode->x2_).cross(newNode->x1_ - newNode->x2_) / 2.0);
     children_.push_back(newNode);
   //ROS_INFO("Loading STL 9");
     k++;
@@ -151,13 +153,13 @@ void mesh::StlMesh::setCameraParams(double cameraPitch, double cameraHorizontalF
     cameraVerticalFoV_ = cameraVerticalFoV;
     maxDist_ = maxDist;
     double pitch = M_PI * cameraPitch_ / 180.0;
-    double camTop = M_PI * (pitch - cameraVerticalFoV_ / 2.0) / 180.0;
-    double camBottom = M_PI * (pitch + cameraVerticalFoV_ / 2.0) / 180.0;
-    double side = M_PI * (cameraHorizontalFoV_) / 360.0;
-    Eigen::Vector3d bottom(cos(camBottom), -sin(camBottom), 0.0);
-    Eigen::Vector3d top(cos(camTop), -sin(camTop), 0.0);
-    Eigen::Vector3d right(cos(side), -sin(camBottom), 0.0);
-    Eigen::Vector3d left(cos(side), sin(camBottom), 0.0);
+    double camTop = M_PI * (pitch - cameraVerticalFoV_ / 2.0) / 180.0 + M_PI / 2.0;
+    double camBottom = M_PI * (pitch + cameraVerticalFoV_ / 2.0) / 180.0 - M_PI / 2.0;
+    double side = M_PI * (cameraHorizontalFoV_) / 360.0 - M_PI / 2.0;
+    Eigen::Vector3d bottom(cos(camBottom), 0.0, -sin(camBottom));
+    Eigen::Vector3d top(cos(camTop), 0.0, -sin(camTop));
+    Eigen::Vector3d right(cos(side), sin(side), 0.0);
+    Eigen::Vector3d left(cos(side), -sin(side), 0.0);
     Eigen::AngleAxisd m = Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY());
     Eigen::Vector3d rightR = m * right;
     Eigen::Vector3d leftR = m * left;
@@ -178,6 +180,8 @@ void mesh::StlMesh::incoorporateViewFromPoseMsg(const geometry_msgs::Pose& pose)
   tf::Quaternion quaternion;
   tf::quaternionMsgToTF(pose.orientation, quaternion);
   transform.setRotation(quaternion);
+  static tf::TransformBroadcaster br;
+  br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "incoorporationFrame"));
   incoorporateViewFromTf(transform);
   collapse();
 }
@@ -245,32 +249,37 @@ void mesh::StlMesh::incoorporateViewFromTf(const tf::Transform& transform) {
     if (currentNode->isInspected_)
       continue;
     bool partialVisibility = false;
-    if (currentNode->isVisible(transform, partialVisibility)) {
+    if (currentNode->isVisible(transform.inverse(), partialVisibility)) {
       currentNode->isInspected_ = true;
-      if (!currentNode->isLeaf_ && !currentNode->isHead_) {
+      if (!currentNode->isLeaf_) {
         for (typename std::vector<mesh::StlMesh*>::iterator currentChild = currentNode->children_.begin();
              currentChild != currentNode->children_.end(); currentChild++)
           delete *currentChild;
         currentNode->children_.clear();
         currentNode->isLeaf_ = true;
       }
-    } else if (partialVisibility && !currentNode->isHead_) {
-      if (currentNode->isLeaf_ && currentNode->normal_.norm() > resolution_)
+    } else if (partialVisibility) {
+      if (currentNode->isLeaf_ && currentNode->normal_.norm() > 0.25 * resolution_)
         currentNode->split();
-      currentNode->incoorporateViewFromTf(transform);
-    } else if (currentNode->isHead_) {
       currentNode->incoorporateViewFromTf(transform);
     }
   }
 }
 
-double mesh::StlMesh::computeInspectableArea(const tf::Transform& transform) const {
+double mesh::StlMesh::computeInspectableArea(const tf::Transform& transform) {
   if (isLeaf_) {
-    bool partiallyVisible;
-    if (isVisible(transform, partiallyVisible))
-      return normal_.norm();
-    else
+    if (isInspected_)
       return 0.0;
+    bool partiallyVisible;
+    if (isVisible(transform.inverse(), partiallyVisible)) {
+      return normal_.norm();
+    } else if (partiallyVisible) {
+      if (normal_.norm() < 0.25 * resolution_)
+        return 0.0;
+      split();
+    } else {
+      return 0.0;
+    }
   }
 
   double ret = 0.0;
@@ -281,6 +290,7 @@ double mesh::StlMesh::computeInspectableArea(const tf::Transform& transform) con
 }
 
 void mesh::StlMesh::split() {
+  assert(!isInspected_);
   isLeaf_ = false;
   // #1
   mesh::StlMesh * tmpNode = new mesh::StlMesh;
@@ -293,7 +303,7 @@ void mesh::StlMesh::split() {
   children_.push_back(tmpNode);
   // #2
   tmpNode = new mesh::StlMesh;
-  tmpNode->x1_ = x1_;
+  tmpNode->x1_ = x2_;
   tmpNode->x2_ = 0.5 * (x2_ + x3_);
   tmpNode->x3_ = 0.5 * (x2_ + x1_);
   tmpNode->normal_ = normal_ / 4.0;
@@ -302,7 +312,7 @@ void mesh::StlMesh::split() {
   children_.push_back(tmpNode);
   // #3
   tmpNode = new mesh::StlMesh;
-  tmpNode->x1_ = x2_;
+  tmpNode->x1_ = x3_;
   tmpNode->x2_ = 0.5 * (x3_ + x1_);
   tmpNode->x3_ = 0.5 * (x3_ + x2_);
   tmpNode->normal_ = normal_ / 4.0;
@@ -318,6 +328,7 @@ void mesh::StlMesh::split() {
   tmpNode->isHead_ = false;
   tmpNode->isInspected_ = false;
   children_.push_back(tmpNode);
+  //ROS_INFO("split leaf");
 }
 
 bool mesh::StlMesh::collapse() {
@@ -332,7 +343,7 @@ bool mesh::StlMesh::collapse() {
   }
   // collapse if all children have same state
   if (collapsible) {
-    bool state = children_.front()->isInspected_;
+    bool state = true; // children_.front()->isInspected_;
     for (typename std::vector<StlMesh*>::iterator it = children_.begin();
          it != children_.end(); it++) {
       if ((*it)->isHead_)
@@ -347,6 +358,7 @@ bool mesh::StlMesh::collapse() {
     isInspected_ = state;
     isLeaf_ = true;
   }
+  //ROS_INFO("collapsed branch");
   return true;
 }
 
@@ -354,39 +366,47 @@ bool mesh::StlMesh::isVisible(const tf::Transform& transform, bool& partialVisib
   bool ret = true;
   partialVisibility = false;
   // #1
-  tf::Vector3 origin = transform.getOrigin();
+  double yaw = -tf::getYaw(transform.getRotation());
+  tf::Vector3 transformedNormal = tf::Vector3(normal_.x() * cos(yaw) + normal_.y() * sin(yaw),
+                                             -normal_.x() * sin(yaw) + normal_.y() * cos(yaw), normal_.z());
   tf::Vector3 transformedX1 = transform * tf::Vector3(x1_.x(), x1_.y(), x1_.z());
-  if (tf::Vector3(normal_.x(), normal_.y(), normal_.z()).dot(origin - transformedX1) <= 0.0)
+  if (transformedNormal.dot(transformedX1) >= 0.0)
     return false;
-  if ((origin - transformedX1).length() > maxDist_ ||
-      !manager_->getVisibility(Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
-      Eigen::Vector3d(transformedX1.x(), transformedX1.y(), transformedX1.z()), false)) {
+  if (transformedX1.length() > maxDist_ || false) {
+//      !manager_->getVisibility(Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
+//      Eigen::Vector3d(transformedX1.x(), transformedX1.y(), transformedX1.z()), false)) {
     ret = false;
   } else {
     bool visibility1 = true;
     for (typename std::vector<tf::Vector3>::iterator it = camBoundNormals_.begin();
          it != camBoundNormals_.end(); it++) {
-      if (it->dot(transformedX1 - origin) < 0.0) {
+      //ROS_INFO("camBoundNormals_: (%2.2f,%2.2f,%2.2f)", (*it).x(), (*it).y(), (*it).z());
+      if (it->dot(transformedX1) < 0.0) {
         visibility1 = false;
         break;
       }
     }
+    //ROS_INFO("Transform: (%2.2f,%2.2f,%2.2f,%2.2f)", transform.getOrigin().x(), transform.getOrigin().y(), transform.getOrigin().z(), yaw);
+    //ROS_INFO("x1_: (%2.2f,%2.2f,%2.2f)", x1_.x(), x1_.y(), x1_.z());
+    //ROS_INFO("transformedX1: (%2.2f,%2.2f,%2.2f) %s", transformedX1.x(), transformedX1.y(), transformedX1.z(), visibility1?"True":"False");
+    //ROS_INFO("normal_: (%2.2f,%2.2f,%2.2f)", normal_.x(), normal_.y(), normal_.z());
+    //ROS_INFO("transformedNormal: (%2.2f,%2.2f,%2.2f)", transformedNormal.x(), transformedNormal.y(), transformedNormal.z());
     if (visibility1)
       partialVisibility = true;
     else
       ret = false;
   }
   // #2
-  tf::Vector3 transformedX2 = transform * tf::Vector3(x1_.x(), x1_.y(), x1_.z());
-  if ((origin - transformedX2).length() > maxDist_ ||
-      !manager_->getVisibility(Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
-      Eigen::Vector3d(transformedX2.x(), transformedX2.y(), transformedX2.z()), false)) {
+  tf::Vector3 transformedX2 = transform * tf::Vector3(x2_.x(), x2_.y(), x2_.z());
+  if (transformedX2.length() > maxDist_ || false) {
+//      !manager_->getVisibility(Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
+//      Eigen::Vector3d(transformedX2.x(), transformedX2.y(), transformedX2.z()), false)) {
     ret = false;
   } else {
     bool visibility2 = true;
     for (typename std::vector<tf::Vector3>::iterator it = camBoundNormals_.begin();
          it != camBoundNormals_.end(); it++) {
-      if (it->dot(transformedX2 - origin) < 0.0) {
+      if (it->dot(transformedX2) < 0.0) {
         visibility2 = false;
         break;
       }
@@ -399,16 +419,16 @@ bool mesh::StlMesh::isVisible(const tf::Transform& transform, bool& partialVisib
   if(partialVisibility && !ret)
     return ret;
   // #3
-  tf::Vector3 transformedX3 = transform * tf::Vector3(x1_.x(), x1_.y(), x1_.z());
-  if ((origin - transformedX3).length() > maxDist_ ||
-      !manager_->getVisibility(Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
-      Eigen::Vector3d(transformedX3.x(), transformedX3.y(), transformedX3.z()), false)) {
+  tf::Vector3 transformedX3 = transform * tf::Vector3(x3_.x(), x3_.y(), x3_.z());
+  if (transformedX3.length() > maxDist_ || false) {
+//      !manager_->getVisibility(Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
+//      Eigen::Vector3d(transformedX3.x(), transformedX3.y(), transformedX3.z()), false)) {
     ret = false;
   } else {
     bool visibility3 = true;
     for (typename std::vector<tf::Vector3>::iterator it = camBoundNormals_.begin();
          it != camBoundNormals_.end(); it++) {
-      if (it->dot(transformedX3 - origin) < 0.0) {
+      if (it->dot(transformedX3) < 0.0) {
         visibility3 = false;
         break;
       }
@@ -421,7 +441,7 @@ bool mesh::StlMesh::isVisible(const tf::Transform& transform, bool& partialVisib
   return ret;
 }
 
-double mesh::StlMesh::resolution_ = 1.0;
+double mesh::StlMesh::resolution_ = 0.5;
 double mesh::StlMesh::cameraPitch_ = 15.0;
 double mesh::StlMesh::cameraHorizontalFoV_ = 90.0;
 double mesh::StlMesh::cameraVerticalFoV_ = 60.0;

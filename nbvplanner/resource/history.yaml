@@ -1,9 +1,9 @@
 
-system/v_max: 1.0
+system/v_max: 0.5
 system/dyaw_max: 0.5
 system/dv_max: 0.5
 system/ddyaw_max: 0.5
-system/camera/pitch: 0.1
+system/camera/pitch: 15.0
 system/camera/horizontal: 80.0
 system/camera/vertical: 50.0
 system/bbx/x: 0.4
@@ -12,8 +12,8 @@ system/bbx/z: 0.3
 
 nbvp/information_gain/free: 0.0
 nbvp/information_gain/occupied: 0.0
-nbvp/information_gain/unmapped: 0.1
-nbvp/information_gain/area: 100.0
+nbvp/information_gain/unmapped: 0.0
+nbvp/information_gain/area: 10.0
 nbvp/information_gain/probabilistic: 0.0
 nbvp/information_gain/range: 20.0
 nbvp/information_gain/degressive_coeff: 1.0
