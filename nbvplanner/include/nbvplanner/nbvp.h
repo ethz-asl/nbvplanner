@@ -81,9 +81,19 @@ namespace nbvInspection {
     ros::ServiceClient octomapClient_;
     ros::Subscriber posClient0_;
     ros::Subscriber posClient1_;
+    ros::Subscriber posClient2_;
+    ros::Subscriber posClient3_;
+    ros::Subscriber posClient4_;
     ros::ServiceServer plannerService0_;
     ros::ServiceServer plannerService1_;
+    ros::ServiceServer plannerService2_;
+    ros::ServiceServer plannerService3_;
+    ros::ServiceServer plannerService4_;
+    ros::Subscriber pointcloud_sub0_;
     ros::Subscriber pointcloud_sub1_;
+    ros::Subscriber pointcloud_sub2_;
+    ros::Subscriber pointcloud_sub3_;
+    ros::Subscriber pointcloud_sub4_;
     
     std::vector<ros::Time> g_timeOld_;
     double average_computation_duration_;
@@ -122,10 +132,19 @@ namespace nbvInspection {
 
     void posCallback0(const geometry_msgs::PoseStamped& pose);
     void posCallback1(const geometry_msgs::PoseStamped& pose);
+    void posCallback2(const geometry_msgs::PoseStamped& pose);
+    void posCallback3(const geometry_msgs::PoseStamped& pose);
+    void posCallback4(const geometry_msgs::PoseStamped& pose);
     void posCallback(const geometry_msgs::PoseStamped& pose, int agentID);
     bool plannerCallback0(nbvplanner::nbvp_srv::Request& req,
                          nbvplanner::nbvp_srv::Response& res);
     bool plannerCallback1(nbvplanner::nbvp_srv::Request& req,
+                         nbvplanner::nbvp_srv::Response& res);
+    bool plannerCallback2(nbvplanner::nbvp_srv::Request& req,
+                         nbvplanner::nbvp_srv::Response& res);
+    bool plannerCallback3(nbvplanner::nbvp_srv::Request& req,
+                         nbvplanner::nbvp_srv::Response& res);
+    bool plannerCallback4(nbvplanner::nbvp_srv::Request& req,
                          nbvplanner::nbvp_srv::Response& res);
     bool plannerCallback(nbvplanner::nbvp_srv::Request& req,
                          nbvplanner::nbvp_srv::Response& res, int agentID);

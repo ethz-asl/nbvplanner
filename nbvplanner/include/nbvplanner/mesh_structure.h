@@ -37,7 +37,7 @@ class StlMesh {
   void incoorporateViewFromTf(const tf::Transform& transform);
   void split();
   bool collapse();
-  bool isVisible(const tf::Transform& transform, bool& partialVisibility) const;
+  bool getVisibility(const tf::Transform& transform, bool& partialVisibility, bool stop_at_unknown_cell) const;
   
   bool isLeaf_;
   bool isHead_;

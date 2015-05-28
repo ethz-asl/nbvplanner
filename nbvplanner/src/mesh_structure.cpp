@@ -246,7 +246,7 @@ void mesh::StlMesh::incoorporateViewFromTf(const tf::Transform& transform) {
     if (currentNode->isInspected_)
       continue;
     bool partialVisibility = false;
-    if (currentNode->isVisible(transform.inverse(), partialVisibility)) {
+    if (currentNode->getVisibility(transform.inverse(), partialVisibility, true)) {
       currentNode->isInspected_ = true;
       if (!currentNode->isLeaf_) {
         for (typename std::vector<mesh::StlMesh*>::iterator currentChild = currentNode->children_.begin();
@@ -268,7 +268,7 @@ double mesh::StlMesh::computeInspectableArea(const tf::Transform& transform) {
     if (isInspected_)
       return 0.0;
     bool partiallyVisible;
-    if (isVisible(transform.inverse(), partiallyVisible)) {
+    if (getVisibility(transform.inverse(), partiallyVisible, false)) {
       return normal_.norm();
     } else if (partiallyVisible) {
       if (normal_.norm() < 0.25 * resolution_)
@@ -359,7 +359,7 @@ bool mesh::StlMesh::collapse() {
   return true;
 }
 
-bool mesh::StlMesh::isVisible(const tf::Transform& transform, bool& partialVisibility) const {
+bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialVisibility, bool stop_at_unknown_cell) const {
   bool ret = true;
   partialVisibility = false;
   // #1
@@ -372,7 +372,7 @@ bool mesh::StlMesh::isVisible(const tf::Transform& transform, bool& partialVisib
     return false;
   if (transformedX1.length() > maxDist_ ||
       !manager_->getVisibility(Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
-      Eigen::Vector3d(transformedX1.x(), transformedX1.y(), transformedX1.z()), false)) {
+      Eigen::Vector3d(transformedX1.x(), transformedX1.y(), transformedX1.z()), stop_at_unknown_cell)) {
     ret = false;
   } else {
     bool visibility1 = true;
@@ -398,7 +398,7 @@ bool mesh::StlMesh::isVisible(const tf::Transform& transform, bool& partialVisib
   tf::Vector3 transformedX2 = transform * tf::Vector3(x2_.x(), x2_.y(), x2_.z());
   if (transformedX2.length() > maxDist_ ||
       !manager_->getVisibility(Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
-      Eigen::Vector3d(transformedX2.x(), transformedX2.y(), transformedX2.z()), false)) {
+      Eigen::Vector3d(transformedX2.x(), transformedX2.y(), transformedX2.z()), stop_at_unknown_cell)) {
     ret = false;
   } else {
     bool visibility2 = true;
@@ -420,7 +420,7 @@ bool mesh::StlMesh::isVisible(const tf::Transform& transform, bool& partialVisib
   tf::Vector3 transformedX3 = transform * tf::Vector3(x3_.x(), x3_.y(), x3_.z());
   if (transformedX3.length() > maxDist_ ||
       !manager_->getVisibility(Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
-      Eigen::Vector3d(transformedX3.x(), transformedX3.y(), transformedX3.z()), false)) {
+      Eigen::Vector3d(transformedX3.x(), transformedX3.y(), transformedX3.z()), stop_at_unknown_cell)) {
     ret = false;
   } else {
     bool visibility3 = true;

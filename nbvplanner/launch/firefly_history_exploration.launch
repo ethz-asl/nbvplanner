@@ -5,54 +5,37 @@
   <arg name="log_file" default="$(arg mav_name)" />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find nbvplanner)/worlds/wind_turbine_capped.world" />
+    <arg name="world_name" value="$(find nbvplanner)/worlds/test_scenario.world" />
     <!-- <arg name="debug" value="true"/> -->
     <arg name="paused" value="true"/>
     <arg name="gui" value="true"/>
   </include>
   
-  <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 firefly/vi_sensor/ground_truth fcu 1" />
-  <node pkg="tf" type="static_transform_publisher" name="link2_broadcaster" args="0.015 0.055 0.0065 -1.57 0.1 -1.57 fcu firefly/vi_sensor/camera_depth_optical_center_link 1" />
-  <node pkg="tf" type="static_transform_publisher" name="link3_broadcaster" args="0.015 0.055 0.0065 -1.57 0.1 -1.57 fcu firefly/vi_sensor/camera_left_link 1" />
-  <node pkg="tf" type="static_transform_publisher" name="link4_broadcaster" args="0.015 -0.055 0.0065 -1.57 0.1 -1.57 fcu firefly/vi_sensor/camera_right_link 1" />
-  
   <node name="rviz" pkg="rviz" type="rviz" output="screen"/>
 
   <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
     <param name="tf_frame" type="string" value="world" />
-    <param name="resolution" type="double" value="1.5" />
+    <param name="resolution" type="double" value="0.4" />
     <param name="use_history" type="bool" value="true" />
-    <param name="sensor_max_range" type="double" value="20.0" />
-    <param name="stl_file_path" type="string" value="$(find nbvplanner)/mesh/WindTurbine_Split_2220.stl" />
-    <remap from="cam0/camera_info" to="/firefly/vi_sensor/left/camera_info"/>
-    <remap from="cam1/camera_info" to="/firefly/vi_sensor/right/camera_info"/>
-    <remap from="pointcloud" to="/firefly/vi_sensor/camera_depth/depth/points"/>
-    <remap from="pose0" to="firefly/odometry_sensor1/pose"/>
-    <remap from="nbvplanner0" to="firefly/nbvplanner"/>
+    <param name="sensor_max_range" type="double" value="8.0" />
+    <remap from="cam0/camera_info" to="/$(arg mav_name)_1/vi_sensor/left/camera_info"/>
+    <remap from="cam1/camera_info" to="/$(arg mav_name)_1/vi_sensor/right/camera_info"/>
+    <remap from="pointcloud0" to="/$(arg mav_name)_1/vi_sensor/camera_depth/depth/points"/>
+    <remap from="pose0" to="$(arg mav_name)_1/odometry_sensor1/pose"/>
+    <remap from="nbvplanner0" to="$(arg mav_name)_1/nbvplanner"/>
     <rosparam command="load" file="$(find nbvplanner)/resource/history.yaml" />
   </node>
 
-  <group ns="$(arg mav_name)">
-    <rosparam param="wp_x">5.0</rosparam>
-    <rosparam param="wp_y">0.0</rosparam>
-    <rosparam param="wp_z">3.0</rosparam>
-    <include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
-      <arg name="mav_name" value="$(arg mav_name)" />
-      <arg name="x" value="5" />
-      <arg name="model" value="$(find rotors_description)/urdf/$(arg mav_name)_vi_sensor.gazebo" />
-      <arg name="enable_logging" value="$(arg enable_logging)" />
-      <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
-      <arg name="log_file" value="$(arg log_file)"/>
-    </include>
-    <node name="lee_position_controller_node" pkg="rotors_control" type="lee_position_controller_node" output="screen">
-      <rosparam command="load" file="$(find rotors_gazebo)/resource/lee_controller_$(arg mav_name).yaml" />
-      <rosparam command="load" file="$(find rotors_gazebo)/resource/$(arg mav_name).yaml" />
-      <remap from="odometry" to="odometry_sensor1/odometry" />
-    </node>
-    <node name="exploration" pkg="nbvplanner" type="exploration" output="screen" >
-      <rosparam command="load" file="$(find nbvplanner)/resource/history.yaml" />
-    </node>
-    
-  </group>
+  <include file="$(find nbvplanner)/launch/mav_inspector.launch">
+    <arg name="mav_name" value="firefly" />
+    <arg name="subscript" value="1" />
+    <arg name="waypoint_x" value="5.0" />
+    <arg name="waypoint_y" value="0.0" />
+    <arg name="waypoint_z" value="1.0" />
+    <arg name="param_file" value="$(find nbvplanner)/resource/history.yaml" />
+    <arg name="enable_logging" value="$(arg enable_logging)" />
+    <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
+    <arg name="log_file" value="$(arg log_file)" />
+  </include>
   
 </launch>

@@ -115,10 +115,24 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   treePub_ = nh_.advertise<geometry_msgs::PolygonStamped>("treePol", 1000);
   plannerService0_ = nh_.advertiseService("nbvplanner0", &nbvInspection::nbvPlanner<stateVec>::plannerCallback0, this);
   plannerService1_ = nh_.advertiseService("nbvplanner1", &nbvInspection::nbvPlanner<stateVec>::plannerCallback1, this);
+  plannerService2_ = nh_.advertiseService("nbvplanner2", &nbvInspection::nbvPlanner<stateVec>::plannerCallback2, this);
+  plannerService3_ = nh_.advertiseService("nbvplanner3", &nbvInspection::nbvPlanner<stateVec>::plannerCallback3, this);
+  plannerService4_ = nh_.advertiseService("nbvplanner4", &nbvInspection::nbvPlanner<stateVec>::plannerCallback4, this);
   posClient0_ = nh_.subscribe("pose0", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback0, this);
   posClient1_ = nh_.subscribe("pose1", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback1, this);
+  posClient2_ = nh_.subscribe("pose2", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback2, this);
+  posClient3_ = nh_.subscribe("pose3", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback3, this);
+  posClient4_ = nh_.subscribe("pose4", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback4, this);
+  pointcloud_sub0_ = nh_.subscribe(
+      "pointcloud0", 40, &volumetric_mapping::OctomapManager::insertPointcloudWithTf, manager_);
   pointcloud_sub1_ = nh_.subscribe(
       "pointcloud1", 40, &volumetric_mapping::OctomapManager::insertPointcloudWithTf, manager_);
+  pointcloud_sub2_ = nh_.subscribe(
+      "pointcloud2", 40, &volumetric_mapping::OctomapManager::insertPointcloudWithTf, manager_);
+  pointcloud_sub3_ = nh_.subscribe(
+      "pointcloud3", 40, &volumetric_mapping::OctomapManager::insertPointcloudWithTf, manager_);
+  pointcloud_sub4_ = nh_.subscribe(
+      "pointcloud4", 40, &volumetric_mapping::OctomapManager::insertPointcloudWithTf, manager_);
   
   if (!setParams()) {
     ROS_ERROR("Could not start the planner. Parameters missing!");
@@ -188,6 +202,21 @@ void nbvInspection::nbvPlanner<stateVec>::posCallback0(const geometry_msgs::Pose
 template<typename stateVec>
 void nbvInspection::nbvPlanner<stateVec>::posCallback1(const geometry_msgs::PoseStamped& pose) {
   nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 1);
+}
+
+template<typename stateVec>
+void nbvInspection::nbvPlanner<stateVec>::posCallback2(const geometry_msgs::PoseStamped& pose) {
+  nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 2);
+}
+
+template<typename stateVec>
+void nbvInspection::nbvPlanner<stateVec>::posCallback3(const geometry_msgs::PoseStamped& pose) {
+  nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 3);
+}
+
+template<typename stateVec>
+void nbvInspection::nbvPlanner<stateVec>::posCallback4(const geometry_msgs::PoseStamped& pose) {
+  nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 4);
 }
 
 template<typename stateVec>
@@ -285,6 +314,24 @@ template<typename stateVec>
 bool nbvInspection::nbvPlanner<stateVec>::plannerCallback1(nbvplanner::nbvp_srv::Request& req,
                                                            nbvplanner::nbvp_srv::Response& res) {
   nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 1);
+}
+
+template<typename stateVec>
+bool nbvInspection::nbvPlanner<stateVec>::plannerCallback2(nbvplanner::nbvp_srv::Request& req,
+                                                           nbvplanner::nbvp_srv::Response& res) {
+  nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 2);
+}
+
+template<typename stateVec>
+bool nbvInspection::nbvPlanner<stateVec>::plannerCallback3(nbvplanner::nbvp_srv::Request& req,
+                                                           nbvplanner::nbvp_srv::Response& res) {
+  nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 3);
+}
+
+template<typename stateVec>
+bool nbvInspection::nbvPlanner<stateVec>::plannerCallback4(nbvplanner::nbvp_srv::Request& req,
+                                                           nbvplanner::nbvp_srv::Response& res) {
+  nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 4);
 }
 
 template<typename stateVec>
@@ -898,13 +945,17 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
         double dsq = SQ(s[0] - vec[0]) + SQ(s[1] - vec[1]) + SQ(s[2] - vec[2]);
         if (dsq > pow(R, 2.0))
           continue;
-          
-        volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellStatusPoint(vec);
+        
+        double probability = 0.5;
+        volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellProbabilityPoint(vec, probability);
         if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown) {
           // Rayshooting to evaluate inspectability of cell
           if (volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
               this->manager_->getVisibility(origin, vec, false))
             gain += nbvInspection::nbvPlanner<stateVec>::igUnmapped_;
+            // Add probabilistic gain
+            gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
+                    PROBABILISTIC_MODEL(probability);
         }
         else if (node == volumetric_mapping::OctomapManager::CellStatus::kOccupied) { 
           // Rayshooting to evaluate inspectability of cell
@@ -913,7 +964,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
             gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
             // Add probabilistic gain
             gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-                    PROBABILISTIC_MODEL(this->manager_->getCellProbabilityPoint(vec));
+                    PROBABILISTIC_MODEL(probability);
           }
         }
         else { 
@@ -923,7 +974,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
             gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
             // Add probabilistic gain
             gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-                    PROBABILISTIC_MODEL(this->manager_->getCellProbabilityPoint(vec));
+                    PROBABILISTIC_MODEL(probability);
           }
         }
       }
@@ -974,28 +1025,26 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
         if (bbreak)
           continue;
           
-        //ROS_INFO("Evaluate information gain, %2.2f", disc);
-        volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellStatusPoint(vec);
+        double probability = 0.5;
+        volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellProbabilityPoint(vec, probability);
         if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown) {
-        //ROS_INFO("Evaluate information gain kUnknown");
           // Rayshooting to evaluate inspectability of cell
           if (volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
               this->manager_->getVisibility(origin, vec, false)) {
-        //ROS_INFO("Evaluate information gain getVisibility true");
             gain+=nbvInspection::nbvPlanner<stateVec>::igUnmapped_;
-            //ROS_INFO("Adding gain for unmapped %f", gain);
+            // Add probabilistic gain
+            gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
+                    PROBABILISTIC_MODEL(probability);
           }
         }
         else if (node == volumetric_mapping::OctomapManager::CellStatus::kOccupied) {
-        //ROS_INFO("Evaluate information gain kOccupied");
           // Rayshooting to evaluate inspectability of cell
           if (volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
               this->manager_->getVisibility(origin, vec, false)) {
-        //ROS_INFO("Evaluate information gain getVisibility true");
             gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
             // Add probabilistic gain
             gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-                    PROBABILISTIC_MODEL(this->manager_->getCellProbabilityPoint(vec));
+                    PROBABILISTIC_MODEL(probability);
           }
         }
         else {
@@ -1005,7 +1054,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
             gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
             // Add probabilistic gain
             gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-                    PROBABILISTIC_MODEL(this->manager_->getCellProbabilityPoint(vec));
+                    PROBABILISTIC_MODEL(probability);
           }
         }
       }
@@ -1053,7 +1102,6 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
   p.frame_locked = false;
   inspectionPath_.publish(p);
   
-  ROS_INFO("Gain out: %f", gain);
   return gain;
 }
 
