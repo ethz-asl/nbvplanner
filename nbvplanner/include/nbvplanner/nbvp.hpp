@@ -531,16 +531,34 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
     // sample position of new state
     stateVec newState;
     double dsq = 0.0;
-    do {
-      for (int i = 0; i < 3; i++)
-        newState[i] = 2.0 * radius * (((double)rand()) / ((double)RAND_MAX) - 0.5);
-      dsq = SQ(newState[0]) + SQ(newState[1]) + SQ(newState[2]);
-    } while (dsq > pow(radius, 2.0));
+    bool inBounds = true;
     if (!bestBranchOld_[agentID].empty()) {
       newState = bestBranchOld_[agentID].back();
     } else {
-      // offset new state by root
-      newState += rootNode_->state_;
+      // sample uniformly over space and throw away those samples that lie outside ot the sampling area
+      do {
+        for (int i = 0; i < 3; i++)
+          newState[i] = 2.0 * radius * (((double)rand()) / ((double)RAND_MAX) - 0.5);
+        dsq = SQ(newState[0]) + SQ(newState[1]) + SQ(newState[2]);
+        // offset new state by root
+        newState += rootNode_->state_;
+        if (!softBounds_) {
+          inBounds = true;
+          if (newState.x() < minX_ + 0.5 * boundingBox_.x()) {
+            inBounds = false;
+          } else if (newState.y() < minY_ + 0.5 * boundingBox_.y()) {
+            inBounds = false;
+          } else if (newState.z() < minZ_ + 0.5 * boundingBox_.z()) {
+            inBounds = false;
+          } else if (newState.x() > maxX_ - 0.5 * boundingBox_.x()) {
+            inBounds = false;
+          } else if (newState.y() > maxY_ - 0.5 * boundingBox_.y()) {
+            inBounds = false;
+          } else if (newState.z() > maxZ_ - 0.5 * boundingBox_.z()) {
+            inBounds = false;
+          }
+        }
+      } while (dsq > pow(radius, 2.0) || !inBounds);
     }
     nbvInspection::Node<stateVec> * newParent = rootNode_->minDist(newState);
     
@@ -1261,6 +1279,11 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams() {
     ROS_WARN("No z-max value specified. Looking for %s", (ns + "/bbx/maxZ").c_str());
     ret = false;
   }
+  if (!ros::param::get(ns + "/bbx/softBounds", softBounds_)) {
+    ROS_WARN("Not specified whether scenario bounds are soft or hard. Looking for %s",
+             (ns + "/bbx/softBounds").c_str());
+    ret = false;
+  }
   if (!ros::param::get(ns + "/system/bbx/x", boundingBox_[0])) {
     ROS_WARN("No x size value specified. Looking for %s", (ns + "/system/bbx/x").c_str());
     ret = false;
@@ -1353,6 +1376,8 @@ template<typename stateVec>
 double nbvInspection::nbvPlanner<stateVec>::maxY_ = 0.0;
 template<typename stateVec>
 double nbvInspection::nbvPlanner<stateVec>::maxZ_ = 0.0;
+template<typename stateVec>
+bool nbvInspection::nbvPlanner<stateVec>::softBounds_ = true;
 template<typename stateVec>
 volumetric_mapping::OctomapManager * nbvInspection::nbvPlanner<stateVec>::manager_ = NULL;
 template<typename stateVec>

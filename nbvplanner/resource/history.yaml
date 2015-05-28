@@ -30,3 +30,4 @@ bbx/minZ: 0.0
 bbx/maxX: 10.0
 bbx/maxY: 10.0
 bbx/maxZ: 2.8
+bbx/softBounds: false

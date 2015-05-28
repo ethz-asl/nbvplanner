@@ -66,6 +66,7 @@ namespace nbvInspection {
     static double maxX_;
     static double maxY_;
     static double maxZ_;
+    static bool softBounds_;
     static double probability_mean_clamp_;
     static double probability_deviation_clamp_;
     std::vector<std::stack<stateVec> > history_;
