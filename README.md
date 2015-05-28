@@ -1,12 +1,14 @@
 # nbvp_planning
 
-The next best view planner is a real-time capable inspection path planner. From the current pose it expands a tree to find a next pose that gives a high information gain. This information gain reflects the exploration of space that is not yet (sufficiently) known. As the vehicle proceeds on the path, the tree is recomputed, taking in account the new information from the sensor.
+The next best view planner is a real-time capable inspection path planner. From the current pose it expands a tree to find a next pose that gives a high information gain. This information gain reflects the exploration of space that is not yet (sufficiently) known. As the vehicle proceeds on the path, the tree is recomputed, taking into account the new information from the sensor.
+
+This README gives a short overview. For more information refer to the [wiki](https://github.com/ethz-asl/nbvp_planning/wiki).
 
 # TODO
 
 - Improve implementation of RRT
-- Need loop closure on real system's localization for experiments
-- Check if mapping of free space works well enough in a real scenario
+- Cooperative collision avoidance: Do not crash into partner!
+- Do not insert partner into octomap. This eventually blocks all movement.
 
 # Planner execution
 
