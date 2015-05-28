@@ -1,5 +1,5 @@
 
-system/v_max: 0.25
+system/v_max: 0.5
 system/dyaw_max: 0.5
 system/dv_max: 0.2
 system/ddyaw_max: 0.2
@@ -16,7 +16,7 @@ nbvp/information_gain/unmapped: 1.0
 nbvp/information_gain/area: 0.0
 nbvp/information_gain/probabilistic: 0.0
 nbvp/information_gain/range: 5.0
-nbvp/information_gain/degressive_coeff: 1.0
+nbvp/information_gain/degressive_coeff: 0.0
 nbvp/sampleHolonomic/extension_range: 3.0
 nbvp/RRT/initial_iterations: 15
 nbvp/dt: 0.5

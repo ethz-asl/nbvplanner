@@ -9,7 +9,6 @@
 #include <sstream>
 
 #include <tf/transform_datatypes.h>
-#include <tf/transform_broadcaster.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
 #include <geometry_msgs/PolygonStamped.h>
@@ -38,6 +37,7 @@ template<typename stateVec>
 nbvInspection::Node<stateVec>::Node() {
   parent_ = NULL;
   informationGain_ = 0.0;
+  distance_ = 0.0;
   counter_++;
 }
     
@@ -107,18 +107,18 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   manager_ = new volumetric_mapping::OctomapManager(nh_, nh_private_);
   
   // initialize variables
-  g_timeOld_ = ros::Time::now();
-  root_ = NULL;
-  g_stateOld_ = NULL;
   iteration_ = 1;
   average_computation_duration_ = 0.02;
   
   // set up the topics and services
   inspectionPath_ = nh_.advertise<visualization_msgs::Marker>("inspectionPath", 1000);
   treePub_ = nh_.advertise<geometry_msgs::PolygonStamped>("treePol", 1000);
-  plannerService_ = nh_.advertiseService("nbvplanner", &nbvInspection::nbvPlanner<stateVec>::plannerCallback, this);
-  posClient_ = nh_.subscribe("pose", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback, this);
-  octomapClient_ = nh_.serviceClient<octomap_msgs::GetOctomap>("octomap_full");
+  plannerService0_ = nh_.advertiseService("nbvplanner0", &nbvInspection::nbvPlanner<stateVec>::plannerCallback0, this);
+  plannerService1_ = nh_.advertiseService("nbvplanner1", &nbvInspection::nbvPlanner<stateVec>::plannerCallback1, this);
+  posClient0_ = nh_.subscribe("pose0", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback0, this);
+  posClient1_ = nh_.subscribe("pose1", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback1, this);
+  pointcloud_sub1_ = nh_.subscribe(
+      "pointcloud1", 40, &volumetric_mapping::OctomapManager::insertPointcloudWithTf, manager_);
   
   if (!setParams()) {
     ROS_ERROR("Could not start the planner. Parameters missing!");
@@ -127,7 +127,7 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   double pitch = M_PI * nbvInspection::nbvPlanner<stateVec>::camPitch_ / 180.0;
   double camTop = M_PI * (pitch - nbvInspection::nbvPlanner<stateVec>::camVertical_ / 2.0) / 180.0 + M_PI / 2.0;
   double camBottom = M_PI * (pitch + nbvInspection::nbvPlanner<stateVec>::camVertical_ / 2.0) / 180.0 - M_PI / 2.0;
-  double side = M_PI * (nbvInspection::nbvPlanner<stateVec>::camHorizontal_) / 360.0 + M_PI / 2.0;
+  double side = M_PI * (nbvInspection::nbvPlanner<stateVec>::camHorizontal_) / 360.0 - M_PI / 2.0;
   Vector3d bottom(cos(camBottom), 0.0, -sin(camBottom));
   Vector3d top(cos(camTop), 0.0, -sin(camTop));
   Vector3d right(cos(side), sin(side), 0.0);
@@ -168,60 +168,74 @@ nbvInspection::nbvPlanner<stateVec>::~nbvPlanner() {
   
   if (manager_)
     delete manager_;
-  if (root_)
-    delete root_;
-  if (g_stateOld_)
-    delete g_stateOld_;
+  for (typename std::vector<stateVec *>::iterator it = root_.begin();
+       it != root_.end(); it++)
+    if (*it)
+      delete *it;
+  root_.clear();
+  for (typename std::vector<stateVec *>::iterator it = g_stateOld_.begin();
+       it != g_stateOld_.end(); it++)
+    if (*it)
+      delete *it;
+  g_stateOld_.clear();
 }
 
 template<typename stateVec>
-void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseStamped& pose) {
-  if (rootNode_) {
-    // prune everything except the best path
-    if (use_history_) {
-      nbvInspection::Node<stateVec> * nodeCurrent = nbvInspection::Node<stateVec>::bestNode_;
-      bestBranchOld_.clear();
-      while (nodeCurrent && nodeCurrent->parent_ && nodeCurrent->parent_->parent_) {
-        bestBranchOld_.push_back(nodeCurrent->state_);
-        nodeCurrent = nodeCurrent->parent_;
-      }
+void nbvInspection::nbvPlanner<stateVec>::posCallback0(const geometry_msgs::PoseStamped& pose) {
+  nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 0);
+}
+
+template<typename stateVec>
+void nbvInspection::nbvPlanner<stateVec>::posCallback1(const geometry_msgs::PoseStamped& pose) {
+  nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 1);
+}
+
+template<typename stateVec>
+void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseStamped& pose, int agentID) {
+  if (root_.size()<=agentID) {
+    for (int it = root_.size(); it <= agentID; it ++) {
+      ROS_INFO("@posCallback: Adding new agent %i to NBV planner", it);
+      root_.push_back(NULL);
+      g_stateOld_.push_back(NULL);
+      std::stack<stateVec> newStack;
+      history_.push_back(newStack);
+      g_timeOld_.push_back(pose.header.stamp - ros::Duration(0.0));
+      std::vector<stateVec> newVector;
+      bestBranchOld_.push_back(newVector);
     }
-    delete rootNode_;
-    rootNode_ = NULL;
   }
-  
-  if (root_ == NULL) {
-    root_ = new stateVec;
+  if (root_[agentID] == NULL) {
+    root_[agentID] = new stateVec;
   }
-  ros::Duration dt = pose.header.stamp - g_timeOld_;
+  ros::Duration dt = pose.header.stamp - g_timeOld_[agentID];
   if (dt.toSec() > 0.0) {
-    (*root_)[0] = pose.pose.position.x;
-    (*root_)[1] = pose.pose.position.y;
-    (*root_)[2] = pose.pose.position.z;
+    (*root_[agentID])[0] = pose.pose.position.x;
+    (*root_[agentID])[1] = pose.pose.position.y;
+    (*root_[agentID])[2] = pose.pose.position.z;
     tf::Pose poseTF;
     tf::poseMsgToTF(pose.pose, poseTF);
-    (*root_)[3] = tf::getYaw(poseTF.getRotation());
-    if (root_->size() >= 8) {
-      if (g_stateOld_ == NULL) {
-        g_stateOld_ = new stateVec;
-        (*root_)[4] = 0.0;
-        (*root_)[5] = 0.0;
-        (*root_)[6] = 0.0;
-        (*root_)[7] = 0.0;
-        (*root_)[8] = pose.header.stamp.toSec();
+    (*root_[agentID])[3] = tf::getYaw(poseTF.getRotation());
+    if (root_[agentID]->size() >= 8) {
+      if (g_stateOld_[agentID] == NULL) {
+        g_stateOld_[agentID] = new stateVec;
+        (*root_[agentID])[4] = 0.0;
+        (*root_[agentID])[5] = 0.0;
+        (*root_[agentID])[6] = 0.0;
+        (*root_[agentID])[7] = 0.0;
+        (*root_[agentID])[8] = pose.header.stamp.toSec();
       }
       else {
-        (*root_)[4] = (pose.pose.position.x - (*g_stateOld_)[0]) / dt.toSec();
-        (*root_)[5] = (pose.pose.position.y - (*g_stateOld_)[1]) / dt.toSec();
-        (*root_)[6] = (pose.pose.position.z - (*g_stateOld_)[2]) / dt.toSec();
-        (*root_)[7] = ((*root_)[3] - (*g_stateOld_)[3]) / dt.toSec();
-        (*root_)[8] = pose.header.stamp.toSec();
+        (*root_[agentID])[4] = (pose.pose.position.x - (*g_stateOld_[agentID])[0]) / dt.toSec();
+        (*root_[agentID])[5] = (pose.pose.position.y - (*g_stateOld_[agentID])[1]) / dt.toSec();
+        (*root_[agentID])[6] = (pose.pose.position.z - (*g_stateOld_[agentID])[2]) / dt.toSec();
+        (*root_[agentID])[7] = ((*root_[agentID])[3] - (*g_stateOld_[agentID])[3]) / dt.toSec();
+        (*root_[agentID])[8] = pose.header.stamp.toSec();
       }
     }
   }
-  if (g_stateOld_)
-    *g_stateOld_ = *root_;
-  g_timeOld_ = pose.header.stamp;
+  if (g_stateOld_[agentID])
+    *g_stateOld_[agentID] = *root_[agentID];
+  g_timeOld_[agentID] = pose.header.stamp;
   static double throttleTime = ros::Time::now().toSec();
   const static double throttleConst = 0.25; // TODO: make parameter
   if(ros::Time::now().toSec() - throttleTime > throttleConst && mesh_) {
@@ -251,7 +265,9 @@ void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseS
     uninspected.id++;
     uninspected.ns = "meshUninspected";
     mesh_->assembleMarkerArray(inspected, uninspected);
-    ROS_WARN("Publishing the mesh, %i, %i", inspected.points.size(), uninspected.points.size());
+    //ROS_WARN("Publishing the mesh, %i, %i, total: %i",
+    //         (int)inspected.points.size(), (int)uninspected.points.size(),
+    //         (int)inspected.points.size() + (int)uninspected.points.size());
     if (inspected.points.size() > 0)
       inspectionPath_.publish(inspected);
     if (uninspected.points.size() > 0)
@@ -260,35 +276,60 @@ void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseS
 }
 
 template<typename stateVec>
+bool nbvInspection::nbvPlanner<stateVec>::plannerCallback0(nbvplanner::nbvp_srv::Request& req,
+                                                           nbvplanner::nbvp_srv::Response& res) {
+  nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 0);
+}
+
+template<typename stateVec>
+bool nbvInspection::nbvPlanner<stateVec>::plannerCallback1(nbvplanner::nbvp_srv::Request& req,
+                                                           nbvplanner::nbvp_srv::Response& res) {
+  nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 1);
+}
+
+template<typename stateVec>
 bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::Request& req,
-                                                          nbvplanner::nbvp_srv::Response& res) {
-  ROS_INFO_THROTTLE(1, "Starting NBV Planner");
+                                                          nbvplanner::nbvp_srv::Response& res, int agentID) {
+  if (root_.size()<=agentID) {
+    for (int it = root_.size(); it <= agentID; it ++) {
+      ROS_INFO("@plannerCallback: Adding new agent %i to NBV planner", it);
+      root_.push_back(NULL);
+      g_stateOld_.push_back(NULL);
+      std::stack<stateVec> newStack;
+      history_.push_back(newStack);
+      g_timeOld_.push_back(req.header.stamp - ros::Duration(0.0));
+      std::vector<stateVec> newVector;
+      bestBranchOld_.push_back(newVector);
+    }
+  }
+  
+  //ROS_INFO_THROTTLE(1, "Starting NBV Planner");
   if (!ros::ok()) {
     ROS_INFO_THROTTLE(1, "Exploration completed. Not planning any further moves.");
-    ros::Duration(5.0).sleep();
+    //ros::Duration(5.0).sleep();
   }
 
   int k = 0;
-  if (root_ == NULL || manager_ == NULL || manager_->getMapSize().norm() <= 0.0) {
-    ROS_ERROR_THROTTLE(1 , "Planner not set up");
+  if (root_[agentID] == NULL || manager_ == NULL || manager_->getMapSize().norm() <= 0.0) {
+    ROS_ERROR_THROTTLE(1 , "Planner not set up %i, %i, %i", (int)(long)root_[agentID], (int)(long)manager_, (int)manager_->getMapSize().norm());
     return true;
   }
   // estimate expected starting point of new piece of path
-  if  (root_->size() >= 9) {
+  if  (root_[agentID]->size() >= 9) {
     double dt = ros::Time::now().toSec() + dt_ +
-                average_computation_duration_ - (*root_)[8];
-    ROS_INFO("Adapting the root location for time %f (%f)", dt, average_computation_duration_);
-    (*root_)[0] += (*root_)[4] * dt;
-    (*root_)[1] += (*root_)[5] * dt;
-    (*root_)[2] += (*root_)[6] * dt;
-    (*root_)[3] += (*root_)[7] * dt;
+                average_computation_duration_ - (*root_[agentID])[8];
+    //ROS_INFO("Adapting the root location for time %f (%f)", dt, average_computation_duration_);
+    (*root_[agentID])[0] += (*root_[agentID])[4] * dt;
+    (*root_[agentID])[1] += (*root_[agentID])[5] * dt;
+    (*root_[agentID])[2] += (*root_[agentID])[6] * dt;
+    (*root_[agentID])[3] += (*root_[agentID])[7] * dt;
   }
   nbvInspection::Node<stateVec>::bestNode_ = NULL;
   nbvInspection::Node<stateVec>::bestInformationGain_ =
       nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_;
   manager_->publishAll();
   std::vector<stateVec> ro;
-  ro.push_back(*root_);
+  ro.push_back(*root_[agentID]);
   g_ID_ = 0;
   static const int depth = 2;
   static const int width = 16;
@@ -301,8 +342,8 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
       ROS_ERROR("Planning aborted. Parameter initial iterations is either missing or zero");
       return true;
     }
-    path = expandStructured(*this, initIter, *root_, IG,
-                            &nbvInspection::nbvPlanner<stateVec>::informationGainCone);
+    path = expandStructured(*this, initIter, *root_[agentID], IG,
+                            &nbvInspection::nbvPlanner<stateVec>::informationGainCone, agentID);
   }
   else {
     if (!nbvInspection::nbvPlanner<stateVec>::extensionRangeSet()) {
@@ -342,6 +383,20 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
     res.path.push_back(p.pose);
     //ROS_INFO("(%2.2f,%2.2f,%2.2f,%2.2f)", (*it)[0], (*it)[1], (*it)[2], (*it)[3]);
   }
+  
+  if (rootNode_) {
+    // save the best path
+    if (use_history_) {
+      nbvInspection::Node<stateVec> * nodeCurrent = nbvInspection::Node<stateVec>::bestNode_;
+      bestBranchOld_[agentID].clear();
+      while (nodeCurrent && nodeCurrent->parent_ && nodeCurrent->parent_->parent_) {
+        bestBranchOld_[agentID].push_back(nodeCurrent->state_);
+        nodeCurrent = nodeCurrent->parent_;
+      }
+    }
+    delete rootNode_;
+    rootNode_ = NULL;
+  }
   iteration_++;
   return true;
 }
@@ -379,7 +434,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
     nbvInspection::nbvPlanner<stateVec>::expandStructured(
     nbvInspection::nbvPlanner<stateVec>& instance,
     int I, stateVec s, double& IGout,
-    double (nbvInspection::nbvPlanner<stateVec>::*informationGain)(stateVec)) {
+    double (nbvInspection::nbvPlanner<stateVec>::*informationGain)(stateVec), int agentID) {
   assert(s.size() >= 4);
   nbvInspection::nbvPlanner<stateVec>::vector_t ret;
   if (rootNode_) {
@@ -402,8 +457,8 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
     	stateVec extension;
     	for (int i = 0; i < extension.size(); i++)
     	  extension[i] = 0.0;
-    	if (history_.size() > 0) {
-    	  extension = history_.top() - s;
+    	if (history_[agentID].size() > 0) {
+    	  extension = history_[agentID].top() - s;
   	  }
   	  else {
         IGout = nbvInspection::Node<stateVec>::bestInformationGain_;
@@ -419,7 +474,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
 			for (double i = 0.0; i < wp; i+=1.0)
 		  	ret.push_back(s + (1.0 - i / wp) * extension);
     
-		  history_.pop();
+		  history_[agentID].pop();
 			return ret;
     }
     // set up boundaries: increase size as number of iterations grows
@@ -434,8 +489,8 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
         newState[i] = 2.0 * radius * (((double)rand()) / ((double)RAND_MAX) - 0.5);
       dsq = SQ(newState[0]) + SQ(newState[1]) + SQ(newState[2]);
     } while (dsq > pow(radius, 2.0));
-    if (!bestBranchOld_.empty()) {
-      newState = bestBranchOld_.back();
+    if (!bestBranchOld_[agentID].empty()) {
+      newState = bestBranchOld_[agentID].back();
     } else {
       // offset new state by root
       newState += rootNode_->state_;
@@ -463,8 +518,8 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
       newState[1] = origin[1] + direction[1];
       newState[2] = origin[2] + direction[2];
       // sample the new orientation from the set of possible orientations
-      if (bestBranchOld_.empty() || direction.norm() / ANGABS(newState[3] - newParent->state_[3]) >
-          nbvInspection::nbvPlanner<stateVec>::v_max_ / nbvInspection::nbvPlanner<stateVec>::dyaw_max_) {
+      if (bestBranchOld_[agentID].empty()) { // || direction.norm() / ANGABS(newState[3] - newParent->state_[3]) >
+          // nbvInspection::nbvPlanner<stateVec>::v_max_ / nbvInspection::nbvPlanner<stateVec>::dyaw_max_) {
         double segmentTime = direction.norm() / nbvInspection::nbvPlanner<stateVec>::v_max_;
         newState[3] = 2.0 * (((double)rand()) / ((double)RAND_MAX) - 0.5) *
                       nbvInspection::nbvPlanner<stateVec>::dyaw_max_ * segmentTime;
@@ -478,8 +533,11 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
       nbvInspection::Node<stateVec> * newNode = new nbvInspection::Node<stateVec>;
       newNode->state_ = newState;
       newNode->parent_ = newParent;
+      newNode->distance_ = newParent->distance_ + direction.norm();
       newParent->children_.push_back(newNode);
-      newNode->informationGain_ = newParent->informationGain_ + (instance.*informationGain)(newNode->state_);
+      newNode->informationGain_ = newParent->informationGain_ +
+                                  (instance.*informationGain)(newNode->state_) *
+                                  exp(-degressiveCoeff_ * newNode->distance_);
       // display new node
       
       visualization_msgs::Marker p;
@@ -549,8 +607,8 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
         
       }
     }
-    if (!bestBranchOld_.empty()) {
-      bestBranchOld_.pop_back();
+    if (!bestBranchOld_[agentID].empty()) {
+      bestBranchOld_[agentID].pop_back();
     }
     localCount++;
   }
@@ -574,7 +632,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t
     ret.push_back(curr->state_);
   }
   IGout = nbvInspection::Node<stateVec>::bestInformationGain_;
-	this->history_.push(ret.back());
+	history_[agentID].push(ret.back());
   return ret;
 }
 
@@ -878,11 +936,8 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
     transform.setOrigin(tf::Vector3(s.x(), s.y(), s.z()));
     tf::Quaternion quaternion; quaternion.setEuler(0.0, 0.0, s[3]);
     transform.setRotation(quaternion);
-    static tf::TransformBroadcaster br;
-    br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "inspectionAreaFrame"));
     gain += nbvInspection::nbvPlanner<stateVec>::igArea_ *
             mesh_->computeInspectableArea(transform);
-    ROS_INFO("Computing the mesh inspection area: %f", mesh_->computeInspectableArea(transform));
   }
   
   return gain;
@@ -910,7 +965,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
         for (typename std::vector<Vector3d>::iterator itCBN = camBoundNormals_.begin();
              itCBN!=camBoundNormals_.end(); itCBN++) {
           Vector3d normal = AngleAxisd(s[3], Vector3d::UnitZ()) * (*itCBN);
-          double val = dir.dot(normal);
+          double val = dir.dot(normal.normalized());
           if (val < SQRT2 * disc) {
             bbreak = true;
             break;
@@ -919,18 +974,24 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
         if (bbreak)
           continue;
           
+        //ROS_INFO("Evaluate information gain, %2.2f", disc);
         volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellStatusPoint(vec);
         if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown) {
+        //ROS_INFO("Evaluate information gain kUnknown");
           // Rayshooting to evaluate inspectability of cell
           if (volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
               this->manager_->getVisibility(origin, vec, false)) {
+        //ROS_INFO("Evaluate information gain getVisibility true");
             gain+=nbvInspection::nbvPlanner<stateVec>::igUnmapped_;
+            //ROS_INFO("Adding gain for unmapped %f", gain);
           }
         }
         else if (node == volumetric_mapping::OctomapManager::CellStatus::kOccupied) {
+        //ROS_INFO("Evaluate information gain kOccupied");
           // Rayshooting to evaluate inspectability of cell
           if (volumetric_mapping::OctomapManager::CellStatus::kOccupied !=
               this->manager_->getVisibility(origin, vec, false)) {
+        //ROS_INFO("Evaluate information gain getVisibility true");
             gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
             // Add probabilistic gain
             gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
@@ -957,8 +1018,6 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
     transform.setOrigin(tf::Vector3(s.x(), s.y(), s.z()));
     tf::Quaternion quaternion; quaternion.setEuler(0.0, 0.0, s[3]);
     transform.setRotation(quaternion);
-    static tf::TransformBroadcaster br;
-    br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "inspectionAreaFrame"));
     gain += nbvInspection::nbvPlanner<stateVec>::igArea_ *
             mesh_->computeInspectableArea(transform);
   }
@@ -994,6 +1053,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
   p.frame_locked = false;
   inspectionPath_.publish(p);
   
+  ROS_INFO("Gain out: %f", gain);
   return gain;
 }
 

@@ -32,6 +32,7 @@ namespace nbvInspection {
     Node * parent_;
     std::vector<Node*> children_;
     double informationGain_;
+    double distance_;
     static double bestInformationGain_;
     static Node * bestNode_;
     static const double ZERO_INFORMATION_GAIN_;
@@ -67,28 +68,31 @@ namespace nbvInspection {
     static double maxZ_;
     static double probability_mean_clamp_;
     static double probability_deviation_clamp_;
-    std::stack<stateVec> history_;
+    std::vector<std::stack<stateVec> > history_;
     static bool use_history_;
   
     ros::NodeHandle nh_;
     ros::NodeHandle nh_private_;
-    stateVec * root_;
-    stateVec * g_stateOld_;
+    std::vector<stateVec *> root_;
+    std::vector<stateVec *> g_stateOld_;
     
     ros::Publisher inspectionPath_;
     ros::Publisher treePub_;
     ros::ServiceClient octomapClient_;
-    ros::Subscriber posClient_;
-    ros::ServiceServer plannerService_;
+    ros::Subscriber posClient0_;
+    ros::Subscriber posClient1_;
+    ros::ServiceServer plannerService0_;
+    ros::ServiceServer plannerService1_;
+    ros::Subscriber pointcloud_sub1_;
     
-    ros::Time g_timeOld_;
+    std::vector<ros::Time> g_timeOld_;
     double average_computation_duration_;
     int g_ID_;
     std::string pkgPath_;
     int iteration_;
     std::vector<Eigen::Vector3d> camBoundNormals_;
     Node<stateVec> * rootNode_;
-    std::vector<stateVec> bestBranchOld_;
+    std::vector<std::vector<stateVec> > bestBranchOld_;
     static volumetric_mapping::OctomapManager * manager_;
     static mesh::StlMesh * mesh_;
     static Eigen::Vector3d boundingBox_;
@@ -103,7 +107,7 @@ namespace nbvInspection {
                     double& IGout, vector_t (nbvPlanner<stateVec>::*sample)(stateVec),
                     double (nbvPlanner<stateVec>::*informationGain)(stateVec));
     vector_t expandStructured(nbvPlanner<stateVec>& instance, int I, stateVec s, double& IGout,
-                              double (nbvPlanner<stateVec>::*informationGain)(stateVec));
+                              double (nbvPlanner<stateVec>::*informationGain)(stateVec), int agentID);
     vector_t sampleHolonomic(stateVec s);
     vector_t sampleEuler(stateVec s);
     double informationGainRand(stateVec s);
@@ -116,9 +120,15 @@ namespace nbvInspection {
     static int getInitIterations();
     static bool extensionRangeSet();
 
-    void posCallback(const geometry_msgs::PoseStamped& pose);
-    bool plannerCallback(nbvplanner::nbvp_srv::Request& req,
+    void posCallback0(const geometry_msgs::PoseStamped& pose);
+    void posCallback1(const geometry_msgs::PoseStamped& pose);
+    void posCallback(const geometry_msgs::PoseStamped& pose, int agentID);
+    bool plannerCallback0(nbvplanner::nbvp_srv::Request& req,
                          nbvplanner::nbvp_srv::Response& res);
+    bool plannerCallback1(nbvplanner::nbvp_srv::Request& req,
+                         nbvplanner::nbvp_srv::Response& res);
+    bool plannerCallback(nbvplanner::nbvp_srv::Request& req,
+                         nbvplanner::nbvp_srv::Response& res, int agentID);
                          
   };
 }

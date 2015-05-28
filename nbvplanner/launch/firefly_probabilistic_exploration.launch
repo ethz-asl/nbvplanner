@@ -8,7 +8,7 @@
     <arg name="world_name" value="$(find nbvplanner)/worlds/test_scenario.world" />
     <!-- <arg name="debug" value="true"/> -->
     <arg name="paused" value="true"/>
-    <arg name="gui" value="true"/>
+    <arg name="gui" value="false"/>
   </include>
   
   <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 firefly/vi_sensor/ground_truth fcu 1" />
@@ -27,15 +27,18 @@
     <remap from="cam0/camera_info" to="/firefly/vi_sensor/left/camera_info"/>
     <remap from="cam1/camera_info" to="/firefly/vi_sensor/right/camera_info"/>
     <remap from="pointcloud" to="/firefly/vi_sensor/camera_depth/depth/points"/>
-    <remap from="pose" to="firefly/odometry_sensor1/pose"/>
-    <remap from="nbvplanner" to="firefly/nbvplanner"/>
-    <remap from="octomap_full" to="/octomap_manager/get_map"/>
+    <remap from="pose0" to="firefly/odometry_sensor1/pose"/>
+    <remap from="nbvplanner0" to="firefly/nbvplanner"/>
     <rosparam command="load" file="$(find nbvplanner)/resource/probabilistic.yaml" />
   </node>
 
   <group ns="$(arg mav_name)">
+    <rosparam param="wp_x">0.0</rosparam>
+    <rosparam param="wp_y">0.0</rosparam>
+    <rosparam param="wp_z">1.0</rosparam>
     <include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
       <arg name="mav_name" value="$(arg mav_name)" />
+      <arg name="x" value="5" />
       <arg name="model" value="$(find rotors_description)/urdf/$(arg mav_name)_vi_sensor.gazebo" />
       <arg name="enable_logging" value="$(arg enable_logging)" />
       <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />

@@ -7,7 +7,6 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
 #include <tf/transform_datatypes.h>
-#include <tf/transform_broadcaster.h>
 #include <octomap_world/octomap_manager.h>
 #include <nbvplanner/mesh_structure.h>
 
@@ -180,8 +179,6 @@ void mesh::StlMesh::incoorporateViewFromPoseMsg(const geometry_msgs::Pose& pose)
   tf::Quaternion quaternion;
   tf::quaternionMsgToTF(pose.orientation, quaternion);
   transform.setRotation(quaternion);
-  static tf::TransformBroadcaster br;
-  br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "incoorporationFrame"));
   incoorporateViewFromTf(transform);
   collapse();
 }
@@ -367,14 +364,15 @@ bool mesh::StlMesh::isVisible(const tf::Transform& transform, bool& partialVisib
   partialVisibility = false;
   // #1
   double yaw = -tf::getYaw(transform.getRotation());
+  tf::Vector3 origin(0.0, 0.0, 0.0);
   tf::Vector3 transformedNormal = tf::Vector3(normal_.x() * cos(yaw) + normal_.y() * sin(yaw),
                                              -normal_.x() * sin(yaw) + normal_.y() * cos(yaw), normal_.z());
   tf::Vector3 transformedX1 = transform * tf::Vector3(x1_.x(), x1_.y(), x1_.z());
   if (transformedNormal.dot(transformedX1) >= 0.0)
     return false;
-  if (transformedX1.length() > maxDist_ || false) {
-//      !manager_->getVisibility(Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
-//      Eigen::Vector3d(transformedX1.x(), transformedX1.y(), transformedX1.z()), false)) {
+  if (transformedX1.length() > maxDist_ ||
+      !manager_->getVisibility(Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
+      Eigen::Vector3d(transformedX1.x(), transformedX1.y(), transformedX1.z()), false)) {
     ret = false;
   } else {
     bool visibility1 = true;
@@ -398,9 +396,9 @@ bool mesh::StlMesh::isVisible(const tf::Transform& transform, bool& partialVisib
   }
   // #2
   tf::Vector3 transformedX2 = transform * tf::Vector3(x2_.x(), x2_.y(), x2_.z());
-  if (transformedX2.length() > maxDist_ || false) {
-//      !manager_->getVisibility(Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
-//      Eigen::Vector3d(transformedX2.x(), transformedX2.y(), transformedX2.z()), false)) {
+  if (transformedX2.length() > maxDist_ ||
+      !manager_->getVisibility(Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
+      Eigen::Vector3d(transformedX2.x(), transformedX2.y(), transformedX2.z()), false)) {
     ret = false;
   } else {
     bool visibility2 = true;
@@ -420,9 +418,9 @@ bool mesh::StlMesh::isVisible(const tf::Transform& transform, bool& partialVisib
     return ret;
   // #3
   tf::Vector3 transformedX3 = transform * tf::Vector3(x3_.x(), x3_.y(), x3_.z());
-  if (transformedX3.length() > maxDist_ || false) {
-//      !manager_->getVisibility(Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
-//      Eigen::Vector3d(transformedX3.x(), transformedX3.y(), transformedX3.z()), false)) {
+  if (transformedX3.length() > maxDist_ ||
+      !manager_->getVisibility(Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
+      Eigen::Vector3d(transformedX3.x(), transformedX3.y(), transformedX3.z()), false)) {
     ret = false;
   } else {
     bool visibility3 = true;
@@ -441,7 +439,7 @@ bool mesh::StlMesh::isVisible(const tf::Transform& transform, bool& partialVisib
   return ret;
 }
 
-double mesh::StlMesh::resolution_ = 0.5;
+double mesh::StlMesh::resolution_ = 0.001;
 double mesh::StlMesh::cameraPitch_ = 15.0;
 double mesh::StlMesh::cameraHorizontalFoV_ = 90.0;
 double mesh::StlMesh::cameraVerticalFoV_ = 60.0;

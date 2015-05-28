@@ -27,8 +27,8 @@
 #include <ros/package.h>
 #include <std_srvs/Empty.h>
 #include <mav_msgs/CommandTrajectoryPositionYaw.h>
-#include "nbvplanner/nbvp_srv.h"
-#include "tf/tf.h"
+#include <nbvplanner/nbvp_srv.h>
+#include <tf/tf.h>
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "exploration");
@@ -77,58 +77,49 @@ int main(int argc, char** argv){
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_msg.position.x, 1.0);
+  nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
   nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
   nh.param<double>("wp_z", trajectory_msg.position.z, 1.5);
   trajectory_msg.yaw = 1.0;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_msg.position.x, 3.0);
+  nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
   nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 2.5);
+  nh.param<double>("wp_z", trajectory_msg.position.z, 3.0);
   trajectory_msg.yaw =2.0;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_msg.position.x, 5.0);
+  nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
   nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 4.0);
+  nh.param<double>("wp_z", trajectory_msg.position.z, 3.0);
+  trajectory_msg.yaw = 1.0;
+  trajectory_msg.header.stamp = ros::Time::now();
+  trajectory_pub.publish(trajectory_msg);
+  ros::Duration(2.0).sleep();
+  nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
+  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
+  nh.param<double>("wp_z", trajectory_msg.position.z, 3.0);
+  trajectory_msg.yaw = 2.0;
+  trajectory_msg.header.stamp = ros::Time::now();
+  trajectory_pub.publish(trajectory_msg);
+  ros::Duration(2.0).sleep();
+  nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
+  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
+  nh.param<double>("wp_z", trajectory_msg.position.z, 3.0);
   trajectory_msg.yaw = 3.0;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_msg.position.x, 7.0);
+  nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
   nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 4.0);
+  nh.param<double>("wp_z", trajectory_msg.position.z, 3.0);
   trajectory_msg.yaw = 3.0;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
-  ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_msg.position.x, 7.0);
-  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 5.0);
-  trajectory_msg.yaw = 3.0;
-  trajectory_msg.header.stamp = ros::Time::now();
-  trajectory_pub.publish(trajectory_msg);
-  ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_msg.position.x, 7.0);
-  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 6.0);
-  trajectory_msg.yaw = 3.0;
-  trajectory_msg.header.stamp = ros::Time::now();
-  for (int i = 0; i < 20; i++) {
-    trajectory_pub.publish(trajectory_msg);
-    ros::Duration(1.0).sleep();
-    nh.param<double>("wp_x", trajectory_msg.position.x, 7.0);
-    nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-    nh.param<double>("wp_z", trajectory_msg.position.z, 7.0 + ((double)i) * 0.5);
-    trajectory_msg.yaw = 3.0;
-    trajectory_msg.header.stamp = ros::Time::now();
-  }
-  trajectory_pub.publish(trajectory_msg);
-  ros::Duration(10.0).sleep();
-  ROS_INFO("Commands sent");
+  
+  ros::Duration(5.0).sleep();
   
   std::string pkgPath = ros::package::getPath("nbvplanner");
   std::fstream file;
@@ -136,19 +127,23 @@ int main(int argc, char** argv){
   if (!file.is_open())
     ROS_WARN("could not open path file");
   file << "pathMatrix = [";
+  int iteration = 0;
   while (ros::ok()) {
     ROS_INFO_THROTTLE(1 , "Initiating replanning");
     nbvplanner::nbvp_srv planSrv;
+    planSrv.request.header.stamp = ros::Time::now();
+    planSrv.request.header.seq = iteration;
+    planSrv.request.header.frame_id = ros::this_node::getNamespace();
     if (ros::service::call("nbvplanner",planSrv)) {
       for (int i = 0; i < 100 && i < planSrv.response.path.size(); i++) {
         tf::Pose pose;
         tf::poseMsgToTF(planSrv.response.path[i], pose);
         double yaw = tf::getYaw(pose.getRotation());
-        nh.param<double>("wp_x", trajectory_msg.position.x, planSrv.response.path[i].position.x);
-        nh.param<double>("wp_y", trajectory_msg.position.y, planSrv.response.path[i].position.y);
+        trajectory_msg.position.x = planSrv.response.path[i].position.x;
+        trajectory_msg.position.y = planSrv.response.path[i].position.y;
         // adding offset 0.3 to account for tracking error of lee_position_controller
-        nh.param<double>("wp_z", trajectory_msg.position.z, planSrv.response.path[i].position.z + 0.3);
-        nh.param<double>("wp_yaw", trajectory_msg.yaw, yaw);
+        trajectory_msg.position.z = planSrv.response.path[i].position.z + 0.3;
+        trajectory_msg.yaw = yaw;
         
         trajectory_msg.header.stamp = ros::Time::now();
         trajectory_pub.publish(trajectory_msg);
@@ -162,6 +157,7 @@ int main(int argc, char** argv){
     else {
       ROS_WARN_THROTTLE(1 , "Planner not reachable");
     }
+    iteration++;
   }
   file << "];";
   file.close();
