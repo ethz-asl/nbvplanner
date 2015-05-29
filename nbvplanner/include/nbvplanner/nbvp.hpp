@@ -964,7 +964,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
         if (dsq > pow(R, 2.0))
           continue;
         
-        double probability = 0.5;
+        double * probability = new double;
         volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellProbabilityPoint(vec, probability);
         if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown) {
           // Rayshooting to evaluate inspectability of cell
@@ -973,7 +973,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
             gain += nbvInspection::nbvPlanner<stateVec>::igUnmapped_;
             // Add probabilistic gain
             gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-                    PROBABILISTIC_MODEL(probability);
+                    PROBABILISTIC_MODEL(probability_mean_clamp_);
         }
         else if (node == volumetric_mapping::OctomapManager::CellStatus::kOccupied) { 
           // Rayshooting to evaluate inspectability of cell
@@ -982,7 +982,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
             gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
             // Add probabilistic gain
             gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-                    PROBABILISTIC_MODEL(probability);
+                    PROBABILISTIC_MODEL(*probability);
           }
         }
         else { 
@@ -992,7 +992,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainSimple(stateVec s) {
             gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
             // Add probabilistic gain
             gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-                    PROBABILISTIC_MODEL(probability);
+                    PROBABILISTIC_MODEL(*probability);
           }
         }
       }
@@ -1043,7 +1043,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
         if (bbreak)
           continue;
           
-        double probability = 0.5;
+        double * probability = new double;
         volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellProbabilityPoint(vec, probability);
         if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown) {
           // Rayshooting to evaluate inspectability of cell
@@ -1052,7 +1052,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
             gain+=nbvInspection::nbvPlanner<stateVec>::igUnmapped_;
             // Add probabilistic gain
             gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-                    PROBABILISTIC_MODEL(probability);
+                    PROBABILISTIC_MODEL(probability_mean_clamp_);
           }
         }
         else if (node == volumetric_mapping::OctomapManager::CellStatus::kOccupied) {
@@ -1062,7 +1062,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
             gain += nbvInspection::nbvPlanner<stateVec>::igOccupied_;
             // Add probabilistic gain
             gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-                    PROBABILISTIC_MODEL(probability);
+                    PROBABILISTIC_MODEL(*probability);
           }
         }
         else {
@@ -1072,7 +1072,7 @@ double nbvInspection::nbvPlanner<stateVec>::informationGainCone(stateVec s) {
             gain += nbvInspection::nbvPlanner<stateVec>::igFree_;
             // Add probabilistic gain
             gain += nbvInspection::nbvPlanner<stateVec>::igProbabilistic_ *
-                    PROBABILISTIC_MODEL(probability);
+                    PROBABILISTIC_MODEL(*probability);
           }
         }
       }
