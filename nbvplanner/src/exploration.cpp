@@ -30,12 +30,13 @@
 #include <nbvplanner/nbvp_srv.h>
 #include <tf/tf.h>
 
-int main(int argc, char** argv){
+int main(int argc, char** argv)
+{
   ros::init(argc, argv, "exploration");
   ros::NodeHandle nh;
-  ros::Publisher trajectory_pub = nh.advertise<mav_msgs::CommandTrajectoryPositionYaw>("command/trajectory_position_yaw", 10);
-  ros::ServiceClient pathPlanner = nh.serviceClient<nbvplanner::nbvp_srv>("pathplanning/nbvplanner",10);
-  ROS_INFO("Started exploration.");
+  ros::Publisher trajectory_pub = nh.advertise<mav_msgs::CommandTrajectoryPositionYaw>(
+      "command/trajectory_position_yaw", 10);
+  ROS_INFO("Started exploration");
 
   std_srvs::Empty srv;
   bool unpaused = ros::service::call("/gazebo/unpause_physics", srv);
@@ -52,15 +53,15 @@ int main(int argc, char** argv){
   if (!unpaused) {
     ROS_FATAL("Could not wake up Gazebo.");
     return -1;
-  }
-  else {
+  } else {
     ROS_INFO("Unpaused the Gazebo simulation.");
   }
-  
+
   double dt = 1.0;
   std::string ns = ros::this_node::getName();
-  if (!ros::param::get(ns+"/nbvp/dt", dt)) {
-    ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", (ns + "/nbvp/dt").c_str());
+  if (!ros::param::get(ns + "/nbvp/dt", dt)) {
+    ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s",
+              (ns + "/nbvp/dt").c_str());
     return -1;
   }
 
@@ -87,7 +88,7 @@ int main(int argc, char** argv){
   nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
   nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
   nh.param<double>("wp_z", trajectory_msg.position.z, 3.0);
-  trajectory_msg.yaw =2.0;
+  trajectory_msg.yaw = 2.0;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
   ros::Duration(2.0).sleep();
@@ -118,24 +119,28 @@ int main(int argc, char** argv){
   trajectory_msg.yaw = 3.0;
   trajectory_msg.header.stamp = ros::Time::now();
   trajectory_pub.publish(trajectory_msg);
-  
+
   ros::Duration(5.0).sleep();
-  
+
   std::string pkgPath = ros::package::getPath("nbvplanner");
   std::fstream file;
   file.open((pkgPath + "/data/path.m").c_str(), std::ios::out);
-  if (!file.is_open())
+  if (!file.is_open()) {
     ROS_WARN("could not open path file");
+  }
   file << "pathMatrix = [";
   int iteration = 0;
   while (ros::ok()) {
-    ROS_INFO_THROTTLE(1 , "Initiating replanning");
+    ROS_INFO_THROTTLE(1, "Initiating replanning");
     nbvplanner::nbvp_srv planSrv;
     planSrv.request.header.stamp = ros::Time::now();
     planSrv.request.header.seq = iteration;
     planSrv.request.header.frame_id = ros::this_node::getNamespace();
-    if (ros::service::call("nbvplanner",planSrv)) {
+    ROS_INFO("calling 1");
+    if (ros::service::call("nbvplanner", planSrv)) {
+      ROS_INFO("calling 2");
       for (int i = 0; i < 100 && i < planSrv.response.path.size(); i++) {
+        ROS_INFO("calling 3");
         tf::Pose pose;
         tf::poseMsgToTF(planSrv.response.path[i], pose);
         double yaw = tf::getYaw(pose.getRotation());
@@ -144,18 +149,16 @@ int main(int argc, char** argv){
         // adding offset 0.3 to account for tracking error of lee_position_controller
         trajectory_msg.position.z = planSrv.response.path[i].position.z + 0.3;
         trajectory_msg.yaw = yaw;
-        
+
         trajectory_msg.header.stamp = ros::Time::now();
         trajectory_pub.publish(trajectory_msg);
-        file << planSrv.response.path[i].position.x << ", " <<
-                planSrv.response.path[i].position.y << ", " <<
-                planSrv.response.path[i].position.z << ", " << yaw << ", " <<
-                trajectory_msg.header.stamp.toSec() << ";\n";
+        file << planSrv.response.path[i].position.x << ", " << planSrv.response.path[i].position.y
+             << ", " << planSrv.response.path[i].position.z << ", " << yaw << ", "
+             << trajectory_msg.header.stamp.toSec() << ";\n";
         ros::Duration(dt).sleep();
       }
-    }
-    else {
-      ROS_WARN_THROTTLE(1 , "Planner not reachable");
+    } else {
+      ROS_WARN_THROTTLE(1, "Planner not reachable");
     }
     iteration++;
   }
