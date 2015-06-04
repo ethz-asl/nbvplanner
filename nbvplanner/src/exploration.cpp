@@ -136,11 +136,8 @@ int main(int argc, char** argv)
     planSrv.request.header.stamp = ros::Time::now();
     planSrv.request.header.seq = iteration;
     planSrv.request.header.frame_id = ros::this_node::getNamespace();
-    ROS_INFO("calling 1");
     if (ros::service::call("nbvplanner", planSrv)) {
-      ROS_INFO("calling 2");
       for (int i = 0; i < 100 && i < planSrv.response.path.size(); i++) {
-        ROS_INFO("calling 3");
         tf::Pose pose;
         tf::poseMsgToTF(planSrv.response.path[i], pose);
         double yaw = tf::getYaw(pose.getRotation());
