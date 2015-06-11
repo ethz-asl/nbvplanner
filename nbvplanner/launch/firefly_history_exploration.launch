@@ -8,7 +8,7 @@
     <arg name="world_name" value="$(find nbvplanner)/worlds/test_scenario.world" />
     <!-- <arg name="debug" value="true"/> -->
     <arg name="paused" value="true"/>
-    <arg name="gui" value="true"/>
+    <arg name="gui" value="false"/>
   </include>
   
   <node name="rviz" pkg="rviz" type="rviz" output="screen"/>
@@ -17,7 +17,7 @@
     <param name="tf_frame" type="string" value="world" />
     <param name="resolution" type="double" value="0.4" />
     <param name="use_history" type="bool" value="true" />
-    <param name="sensor_max_range" type="double" value="8.0" />
+    <param name="sensor_max_range" type="double" value="2.0" />
     <remap from="cam0/camera_info" to="/$(arg mav_name)_1/vi_sensor/left/camera_info"/>
     <remap from="cam1/camera_info" to="/$(arg mav_name)_1/vi_sensor/right/camera_info"/>
     <remap from="pointcloud0" to="/$(arg mav_name)_1/vi_sensor/camera_depth/depth/points"/>
@@ -30,7 +30,7 @@
     <arg name="mav_name" value="firefly" />
     <arg name="subscript" value="1" />
     <arg name="waypoint_x" value="5.0" />
-    <arg name="waypoint_y" value="0.0" />
+    <arg name="waypoint_y" value="5.0" />
     <arg name="waypoint_z" value="1.0" />
     <arg name="param_file" value="$(find nbvplanner)/resource/history.yaml" />
     <arg name="enable_logging" value="$(arg enable_logging)" />

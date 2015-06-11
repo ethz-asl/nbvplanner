@@ -96,7 +96,7 @@ void nbvInspection::Node<stateVec>::printToFile(std::fstream& file)
 }
 
 template<typename stateVec>
-const double nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_ = 1.0;
+const double nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_ = 0.001;
 template<typename stateVec>
 double nbvInspection::Node<stateVec>::bestInformationGain_ =
     nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_;
@@ -389,7 +389,6 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
                                                           nbvplanner::nbvp_srv::Response& res,
                                                           int agentID)
 {
-  ROS_INFO("got the planner call!");
   if (root_.size() <= agentID) {
     for (int it = root_.size(); it <= agentID; it++) {
       ROS_INFO("Adding new agent %i to NBV planner", it);
@@ -416,7 +415,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   }
   // estimate expected starting point of new piece of path
   if (root_[agentID]->size() >= 9) {
-    double dt = ros::Time::now().toSec() + dt_ + average_computation_duration_
+    double dt = ros::Time::now().toSec() + dt_
         - (*root_[agentID])[8];
     //ROS_INFO("Adapting the root location for time %f (%f)", dt, average_computation_duration_);
     (*root_[agentID])[0] += (*root_[agentID])[4] * dt;
@@ -484,7 +483,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
     p.pose.orientation.w = quat.w();
     res.path.push_back(p.pose);
     //ROS_INFO("(%2.2f,%2.2f,%2.2f,%2.2f)", (*it)[0], (*it)[1], (*it)[2], (*it)[3]);
-  }
+  }  
 
   if (rootNode_) {
     // save the best path
@@ -755,13 +754,27 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
     }
 
     double d = SQ(curr->state_[0] - curr->parent_->state_[0]) +
-    SQ(curr->state_[1] - curr->parent_->state_[1]) +
-    SQ(curr->state_[2] - curr->parent_->state_[2]);
+               SQ(curr->state_[1] - curr->parent_->state_[1]) +
+               SQ(curr->state_[2] - curr->parent_->state_[2]);
     d = sqrt(d);
-    double disc = nbvInspection::nbvPlanner<stateVec>::dt_
-        * nbvInspection::nbvPlanner<stateVec>::v_max_ / d;
+    double yaw_direction = curr->parent_->state_[3] - curr->state_[3];
+    if (yaw_direction > M_PI) {
+      yaw_direction -= 2.0 * M_PI;
+    }
+    if (yaw_direction < -M_PI) {
+      yaw_direction += 2.0 * M_PI;
+    }
+    double disc = std::max(nbvInspection::nbvPlanner<stateVec>::dt_
+        * nbvInspection::nbvPlanner<stateVec>::v_max_ / d,
+        nbvInspection::nbvPlanner<stateVec>::dt_
+        * nbvInspection::nbvPlanner<stateVec>::dyaw_max_ / abs(yaw_direction));
     for (double it = 0.0; it < 1.0; it += disc) {
       ret.push_back((1.0 - it) * curr->state_ + it * curr->parent_->state_);
+      ret.back()[3] = curr->state_[3] + yaw_direction * it;
+      if (ret.back()[3] > M_PI)
+        ret.back()[3] -= 2.0 * M_PI;
+      if (ret.back()[3] < -M_PI)
+        ret.back()[3] += 2.0 * M_PI;
     }
   } else {
     ret.push_back(curr->state_);
