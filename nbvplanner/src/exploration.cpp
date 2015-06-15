@@ -144,7 +144,7 @@ int main(int argc, char** argv)
         trajectory_msg.position.x = planSrv.response.path[i].position.x;
         trajectory_msg.position.y = planSrv.response.path[i].position.y;
         // adding offset 0.3 to account for tracking error of lee_position_controller
-        trajectory_msg.position.z = planSrv.response.path[i].position.z;
+        trajectory_msg.position.z = planSrv.response.path[i].position.z+0.25;
         trajectory_msg.yaw = yaw;
 
         trajectory_msg.header.stamp = ros::Time::now();

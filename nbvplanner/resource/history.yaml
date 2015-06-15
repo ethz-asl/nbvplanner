@@ -1,6 +1,6 @@
 
-system/v_max: 0.05
-system/dyaw_max: 0.1
+system/v_max: 0.5
+system/dyaw_max: 0.5
 system/dv_max: 0.5
 system/ddyaw_max: 0.5
 system/camera/pitch: 15.0
@@ -24,10 +24,10 @@ nbvp/RRT_extension: true
 
 # bounding box: necessary to limit the simulation 
 # scenario (smaller than actual gazebo scenario)
-bbx/minX: 3.0
-bbx/minY: 2.5
+bbx/minX: -10.0
+bbx/minY: -10.0
 bbx/minZ: 0.0
-bbx/maxX: 7.0
-bbx/maxY: 7.5
-bbx/maxZ: 2.0
+bbx/maxX: 10.0
+bbx/maxY: 10.0
+bbx/maxZ: 2.8
 bbx/softBounds: false
