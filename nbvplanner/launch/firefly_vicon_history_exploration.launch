@@ -3,17 +3,6 @@
   <arg name="flight_manager_ns" default="/flightManager" />
   <arg name="tf_planning_frame" default="world" />
   
-  <!-- group ns="stereo">
-    <node pkg="stereo_image_proc" name="stereo_image_proc" type="stereo_image_proc" output="screen">
-      <remap from="left/image_raw" to="/cam0/image_raw" />
-      <remap from="left/camera_info" to="/cam0/camera_info" />
-      <remap from="right/image_raw" to="/cam1/image_raw" />
-      <remap from="right/camera_info" to="/cam0/camera_info" />
-      <param name="approximate_sync" type="bool" value="true" />
-      <param name="queue_size" type="int" value="5" />
-    </node>
-  </group -->
-  
   <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
     <param name="tf_frame" type="string" value="$(arg tf_planning_frame)" />
     <param name="resolution" type="double" value="0.4" />
@@ -21,8 +10,8 @@
     <param name="sensor_max_range" type="double" value="2.0" />
     <remap from="cam0/camera_info" to="/cam0/camera_info" />
     <remap from="cam1/camera_info" to="/cam1/camera_info" />
-    <remap from="pointcloud0" to="/cam0/depth_camera/points2" />
-    <remap from="pose0" to="$(arg mav_name)_1/fcu/pose" />
+    <remap from="pointcloud0" to="/stereo_dense_reconstruction/pcl" />
+    <remap from="pose0" to="$(arg mav_name)/fcu/pose" />
     <remap from="nbvplanner0" to="$(arg flight_manager_ns)/nbvplanner" />
     <rosparam command="load" file="$(find nbvplanner)/resource/vicon.yaml" />
   </node>
