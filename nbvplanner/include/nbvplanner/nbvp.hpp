@@ -207,6 +207,11 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
                            nbvInspection::nbvPlanner<stateVec>::camVertical_,
                            nbvInspection::nbvPlanner<stateVec>::informationGainRange_);
   }
+  std::string pkgPath = ros::package::getPath("nbvplanner");
+  std::fstream file;
+  file.open((pkgPath + "/data/track.m").c_str(), std::ios::out);
+  file << "";
+  file.close();
 }
 
 template<typename stateVec>
@@ -214,7 +219,7 @@ nbvInspection::nbvPlanner<stateVec>::~nbvPlanner()
 {
   delete rootNode_;
   rootNode_ = NULL;
-  kd_free(kdTree_);
+  kd_free (kdTree_);
 
   if (manager_) {
     delete manager_;
@@ -313,42 +318,55 @@ void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseS
   }
   g_timeOld_[agentID] = pose.header.stamp;
   static double throttleTime = ros::Time::now().toSec();
-  const static double throttleConst = 0.25;  // TODO: make parameter
-  if (ros::Time::now().toSec() - throttleTime > throttleConst && mesh_) {
-    mesh_->incoorporateViewFromPoseMsg(pose.pose);
+  const static double throttleConst = 0.1;  // TODO: make parameter
+  if (ros::Time::now().toSec() - throttleTime > throttleConst) {
+    std::string pkgPath = ros::package::getPath("nbvplanner");
+    std::fstream file;
+    file.open((pkgPath + "/data/track.m").c_str(), std::ios::app | std::ios::out);
+    if (!file.is_open())
+      ROS_INFO_THROTTLE(1, "Could not open track file!");
+    tf::Pose poseTF;
+    tf::poseMsgToTF(pose.pose, poseTF);
+    file << pose.pose.position.x << "," << pose.pose.position.y << "," << pose.pose.position.z
+         << "," << tf::getYaw(poseTF.getRotation()) << "\n";
+    file.close();
     throttleTime += throttleConst;
-    visualization_msgs::Marker inspected;
-    inspected.ns = "meshInspected";
-    inspected.id = 0;
-    inspected.header.seq = inspected.id;
-    inspected.header.stamp = pose.header.stamp;
-    inspected.header.frame_id = "world";
-    inspected.type = visualization_msgs::Marker::TRIANGLE_LIST;
-    inspected.lifetime = ros::Duration(10);
-    inspected.action = visualization_msgs::Marker::ADD;
-    inspected.pose.position.x = 0.0;
-    inspected.pose.position.y = 0.0;
-    inspected.pose.position.z = 0.0;
-    inspected.pose.orientation.x = 0.0;
-    inspected.pose.orientation.y = 0.0;
-    inspected.pose.orientation.z = 0.0;
-    inspected.pose.orientation.w = 1.0;
-    inspected.scale.x = 1.0;
-    inspected.scale.y = 1.0;
-    inspected.scale.z = 1.0;
-    visualization_msgs::Marker uninspected = inspected;
-    uninspected.header.seq++;
-    uninspected.id++;
-    uninspected.ns = "meshUninspected";
-    mesh_->assembleMarkerArray(inspected, uninspected);
-    //ROS_WARN("Publishing the mesh, %i, %i, total: %i",
-    //         (int)inspected.points.size(), (int)uninspected.points.size(),
-    //         (int)inspected.points.size() + (int)uninspected.points.size());
-    if (inspected.points.size() > 0) {
-      inspectionPath_.publish(inspected);
-    }
-    if (uninspected.points.size() > 0) {
-      inspectionPath_.publish(uninspected);
+    if (mesh_) {
+
+      mesh_->incoorporateViewFromPoseMsg(pose.pose);
+      visualization_msgs::Marker inspected;
+      inspected.ns = "meshInspected";
+      inspected.id = 0;
+      inspected.header.seq = inspected.id;
+      inspected.header.stamp = pose.header.stamp;
+      inspected.header.frame_id = "world";
+      inspected.type = visualization_msgs::Marker::TRIANGLE_LIST;
+      inspected.lifetime = ros::Duration(10);
+      inspected.action = visualization_msgs::Marker::ADD;
+      inspected.pose.position.x = 0.0;
+      inspected.pose.position.y = 0.0;
+      inspected.pose.position.z = 0.0;
+      inspected.pose.orientation.x = 0.0;
+      inspected.pose.orientation.y = 0.0;
+      inspected.pose.orientation.z = 0.0;
+      inspected.pose.orientation.w = 1.0;
+      inspected.scale.x = 1.0;
+      inspected.scale.y = 1.0;
+      inspected.scale.z = 1.0;
+      visualization_msgs::Marker uninspected = inspected;
+      uninspected.header.seq++;
+      uninspected.id++;
+      uninspected.ns = "meshUninspected";
+      mesh_->assembleMarkerArray(inspected, uninspected);
+      //ROS_WARN("Publishing the mesh, %i, %i, total: %i",
+      //         (int)inspected.points.size(), (int)uninspected.points.size(),
+      //         (int)inspected.points.size() + (int)uninspected.points.size());
+      if (inspected.points.size() > 0) {
+        inspectionPath_.publish(inspected);
+      }
+      if (uninspected.points.size() > 0) {
+        inspectionPath_.publish(uninspected);
+      }
     }
   }
 }
@@ -421,10 +439,10 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   if (root_[agentID]->size() >= 9) {
     double dt = ros::Time::now().toSec() + dt_ - (*root_[agentID])[8];
     //ROS_INFO("Adapting the root location for time %f (%f)", dt, average_computation_duration_);
-    (*root_[agentID])[0] += (*root_[agentID])[4] * dt;
-    (*root_[agentID])[1] += (*root_[agentID])[5] * dt;
-    (*root_[agentID])[2] += (*root_[agentID])[6] * dt;
-    (*root_[agentID])[3] += (*root_[agentID])[7] * dt;
+    //(*root_[agentID])[0] += (*root_[agentID])[4] * dt;
+    //(*root_[agentID])[1] += (*root_[agentID])[5] * dt;
+    //(*root_[agentID])[2] += (*root_[agentID])[6] * dt;
+    //(*root_[agentID])[3] += (*root_[agentID])[7] * dt;
   }
   nbvInspection::Node<stateVec>::bestNode_ = NULL;
   nbvInspection::Node<stateVec>::bestInformationGain_ =
@@ -549,7 +567,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
   if (rootNode_) {
     delete rootNode_;
   }
-  kd_clear(kdTree_);
+  kd_clear (kdTree_);
   rootNode_ = new nbvInspection::Node<stateVec>;
   kd_insert3(kdTree_, s.x(), s.y(), s.z(), rootNode_);
   rootNode_->state_ = s;
@@ -631,15 +649,15 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
       } while (dsq > pow(radius, 2.0) || !inBounds);
     }
     kdres * nearest = kd_nearest3(kdTree_, newState.x(), newState.y(), newState.z());
-    ROS_INFO("size: %i", kd_res_size(nearest));
+    //ROS_INFO("size: %i", kd_res_size(nearest));
     if (kd_res_size(nearest) <= 0) {
       continue;
     }
     nbvInspection::Node<stateVec> * newParent = (nbvInspection::Node<stateVec> *) kd_res_item_data(
         nearest);
     kd_res_free(nearest);
-    ROS_INFO("Connecting (%2.2f,%2.2f,%2.2f) with (%2.2f,%2.2f,%2.2f)", newParent->state_[0],
-             newParent->state_[1], newParent->state_[2], newState[0], newState[1], newState[2])
+    //ROS_INFO("Connecting (%2.2f,%2.2f,%2.2f) with (%2.2f,%2.2f,%2.2f)", newParent->state_[0],
+    //         newParent->state_[1], newParent->state_[2], newState[0], newState[1], newState[2]);
 
     // check for collision
     Eigen::Vector3d origin;
@@ -667,10 +685,10 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
         // nbvInspection::nbvPlanner<stateVec>::v_max_ / nbvInspection::nbvPlanner<stateVec>::dyaw_max_) {
         double segmentTime = direction.norm() / nbvInspection::nbvPlanner<stateVec>::v_max_;
         newState[3] = 2.0 * (((double) rand()) / ((double) RAND_MAX) - 0.5)
-            * nbvInspection::nbvPlanner<stateVec>::dyaw_max_ * segmentTime;
+            * std::min(nbvInspection::nbvPlanner<stateVec>::dyaw_max_ * segmentTime, M_PI);
         newState[3] += newParent->state_[3];
         if (newState[3] > M_PI) {
-          newState[3] -= 2.0 * M_PI;
+          newState[3] = 2.0 * M_PI;
         }
         if (newState[3] < -M_PI) {
           newState[3] += 2.0 * M_PI;
@@ -774,12 +792,14 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
     SQ(curr->state_[2] - curr->parent_->state_[2]);
     d = sqrt(d);
     double yaw_direction = curr->parent_->state_[3] - curr->state_[3];
+    ROS_INFO("Yaw direction1: %2.2f", yaw_direction);
     if (yaw_direction > M_PI) {
       yaw_direction -= 2.0 * M_PI;
     }
     if (yaw_direction < -M_PI) {
       yaw_direction += 2.0 * M_PI;
     }
+    ROS_INFO("Yaw direction2: %2.2f", yaw_direction);
     double disc = std::max(
         nbvInspection::nbvPlanner<stateVec>::dt_ * nbvInspection::nbvPlanner<stateVec>::v_max_ / d,
         nbvInspection::nbvPlanner<stateVec>::dt_ * nbvInspection::nbvPlanner<stateVec>::dyaw_max_
