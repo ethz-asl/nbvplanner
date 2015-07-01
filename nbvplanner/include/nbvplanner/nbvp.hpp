@@ -572,16 +572,18 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
         break;
       }
       double wp =
-          extension.norm()
+          sqrt(SQ(extension.x()) + SQ(extension.y()) + SQ(extension.z()))
               / (nbvInspection::nbvPlanner<stateVec>::v_max_
                   * nbvInspection::nbvPlanner<stateVec>::dt_);
       if (extension[3] < -M_PI) {
         extension[3] += 2.0 * M_PI;
       }
       if (extension[3] > M_PI) {
-        extension[3] += 2.0 * M_PI;
+        extension[3] -= 2.0 * M_PI;
       }
-      for (double i = 0.0; i < wp; i += 1.0) {
+      if (wp > 1000)
+        wp = 1.0;
+      for (double i = 0.0; i <= wp; i += 1.0) {
         ret.push_back(s + (1.0 - i / wp) * extension);
       }
 
@@ -653,7 +655,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
         // nbvInspection::nbvPlanner<stateVec>::v_max_ / nbvInspection::nbvPlanner<stateVec>::dyaw_max_) {
         double segmentTime = direction.norm() / nbvInspection::nbvPlanner<stateVec>::v_max_;
         newState[3] = 2.0 * (((double) rand()) / ((double) RAND_MAX) - 0.5)
-            * nbvInspection::nbvPlanner<stateVec>::dyaw_max_ * segmentTime;
+            * std::min(nbvInspection::nbvPlanner<stateVec>::dyaw_max_ * segmentTime, M_PI);
         newState[3] += newParent->state_[3];
         if (newState[3] > M_PI) {
           newState[3] -= 2.0 * M_PI;
@@ -764,7 +766,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
     if (yaw_direction < -M_PI) {
       yaw_direction += 2.0 * M_PI;
     }
-    double disc = std::max(nbvInspection::nbvPlanner<stateVec>::dt_
+    double disc = std::min(nbvInspection::nbvPlanner<stateVec>::dt_
         * nbvInspection::nbvPlanner<stateVec>::v_max_ / d,
         nbvInspection::nbvPlanner<stateVec>::dt_
         * nbvInspection::nbvPlanner<stateVec>::dyaw_max_ / abs(yaw_direction));
