@@ -109,6 +109,10 @@ namespace nbvInspection {
     static volumetric_mapping::OctomapManager * manager_;
     static mesh::StlMesh * mesh_;
     static Eigen::Vector3d boundingBox_;
+
+    std::vector<double> mappedOccupied_;
+    std::vector<double> mappedFree_;
+    std::vector<double> unMapped_;
   public:
     typedef std::vector<stateVec> vector_t;
     typedef octomap::OcTree octomap_t;
