@@ -10,6 +10,7 @@
 #include <octomap/OcTreeNode.h>
 #include <octomap/OcTree.h>
 #include <octomap_world/octomap_manager.h>
+#include <kdtree/kdtree.h>
 #include <nbvplanner/nbvp_srv.h>
 #include <nbvplanner/mesh_structure.h>
 
@@ -103,10 +104,15 @@ namespace nbvInspection {
     int iteration_;
     std::vector<Eigen::Vector3d> camBoundNormals_;
     Node<stateVec> * rootNode_;
+    kdtree * kdTree_;
     std::vector<std::vector<stateVec> > bestBranchOld_;
     static volumetric_mapping::OctomapManager * manager_;
     static mesh::StlMesh * mesh_;
     static Eigen::Vector3d boundingBox_;
+
+    std::vector<double> mappedOccupied_;
+    std::vector<double> mappedFree_;
+    std::vector<double> unMapped_;
   public:
     typedef std::vector<stateVec> vector_t;
     typedef octomap::OcTree octomap_t;

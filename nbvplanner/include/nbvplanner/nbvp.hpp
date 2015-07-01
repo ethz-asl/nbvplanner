@@ -22,6 +22,8 @@
 #include <octomap_msgs/Octomap.h>
 #include <octomap_ros/conversions.h>
 
+#include <kdtree/kdtree.h>
+
 #include <nbvplanner/nbvp.h>
 #include <nbvplanner/nbvp_srv.h>
 #include <nbvplanner/mesh_structure.h>
@@ -96,7 +98,7 @@ void nbvInspection::Node<stateVec>::printToFile(std::fstream& file)
 }
 
 template<typename stateVec>
-const double nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_ = 0.001;
+const double nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_ = 0.000;
 template<typename stateVec>
 double nbvInspection::Node<stateVec>::bestInformationGain_ =
     nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_;
@@ -187,6 +189,7 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   camBoundNormals_.push_back(leftR);
 
   rootNode_ = NULL;
+  kdTree_ = kd_create(3);
 
   std::string ns = ros::this_node::getName();
   std::string stlPath = "";
@@ -204,6 +207,11 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
                            nbvInspection::nbvPlanner<stateVec>::camVertical_,
                            nbvInspection::nbvPlanner<stateVec>::informationGainRange_);
   }
+  std::string pkgPath = ros::package::getPath("nbvplanner");
+  std::fstream file;
+  file.open((pkgPath + "/data/track.m").c_str(), std::ios::out);
+  file << "";
+  file.close();
 }
 
 template<typename stateVec>
@@ -211,6 +219,7 @@ nbvInspection::nbvPlanner<stateVec>::~nbvPlanner()
 {
   delete rootNode_;
   rootNode_ = NULL;
+  kd_free(kdTree_);
 
   if (manager_) {
     delete manager_;
@@ -309,42 +318,55 @@ void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseS
   }
   g_timeOld_[agentID] = pose.header.stamp;
   static double throttleTime = ros::Time::now().toSec();
-  const static double throttleConst = 0.25;  // TODO: make parameter
-  if (ros::Time::now().toSec() - throttleTime > throttleConst && mesh_) {
-    mesh_->incoorporateViewFromPoseMsg(pose.pose);
+  const static double throttleConst = 0.1;  // TODO: make parameter
+  if (ros::Time::now().toSec() - throttleTime > throttleConst) {
+    std::string pkgPath = ros::package::getPath("nbvplanner");
+    std::fstream file;
+    file.open((pkgPath + "/data/track.m").c_str(), std::ios::app | std::ios::out);
+    if (!file.is_open())
+      ROS_INFO_THROTTLE(1, "Could not open track file!");
+    tf::Pose poseTF;
+    tf::poseMsgToTF(pose.pose, poseTF);
+    file << pose.pose.position.x << "," << pose.pose.position.y << "," << pose.pose.position.z
+         << "," << tf::getYaw(poseTF.getRotation()) << "\n";
+    file.close();
     throttleTime += throttleConst;
-    visualization_msgs::Marker inspected;
-    inspected.ns = "meshInspected";
-    inspected.id = 0;
-    inspected.header.seq = inspected.id;
-    inspected.header.stamp = pose.header.stamp;
-    inspected.header.frame_id = "world";
-    inspected.type = visualization_msgs::Marker::TRIANGLE_LIST;
-    inspected.lifetime = ros::Duration(10);
-    inspected.action = visualization_msgs::Marker::ADD;
-    inspected.pose.position.x = 0.0;
-    inspected.pose.position.y = 0.0;
-    inspected.pose.position.z = 0.0;
-    inspected.pose.orientation.x = 0.0;
-    inspected.pose.orientation.y = 0.0;
-    inspected.pose.orientation.z = 0.0;
-    inspected.pose.orientation.w = 1.0;
-    inspected.scale.x = 1.0;
-    inspected.scale.y = 1.0;
-    inspected.scale.z = 1.0;
-    visualization_msgs::Marker uninspected = inspected;
-    uninspected.header.seq++;
-    uninspected.id++;
-    uninspected.ns = "meshUninspected";
-    mesh_->assembleMarkerArray(inspected, uninspected);
-    //ROS_WARN("Publishing the mesh, %i, %i, total: %i",
-    //         (int)inspected.points.size(), (int)uninspected.points.size(),
-    //         (int)inspected.points.size() + (int)uninspected.points.size());
-    if (inspected.points.size() > 0) {
-      inspectionPath_.publish(inspected);
-    }
-    if (uninspected.points.size() > 0) {
-      inspectionPath_.publish(uninspected);
+    if (mesh_) {
+
+      mesh_->incoorporateViewFromPoseMsg(pose.pose);
+      visualization_msgs::Marker inspected;
+      inspected.ns = "meshInspected";
+      inspected.id = 0;
+      inspected.header.seq = inspected.id;
+      inspected.header.stamp = pose.header.stamp;
+      inspected.header.frame_id = "world";
+      inspected.type = visualization_msgs::Marker::TRIANGLE_LIST;
+      inspected.lifetime = ros::Duration(10);
+      inspected.action = visualization_msgs::Marker::ADD;
+      inspected.pose.position.x = 0.0;
+      inspected.pose.position.y = 0.0;
+      inspected.pose.position.z = 0.0;
+      inspected.pose.orientation.x = 0.0;
+      inspected.pose.orientation.y = 0.0;
+      inspected.pose.orientation.z = 0.0;
+      inspected.pose.orientation.w = 1.0;
+      inspected.scale.x = 1.0;
+      inspected.scale.y = 1.0;
+      inspected.scale.z = 1.0;
+      visualization_msgs::Marker uninspected = inspected;
+      uninspected.header.seq++;
+      uninspected.id++;
+      uninspected.ns = "meshUninspected";
+      mesh_->assembleMarkerArray(inspected, uninspected);
+      //ROS_WARN("Publishing the mesh, %i, %i, total: %i",
+      //         (int)inspected.points.size(), (int)uninspected.points.size(),
+      //         (int)inspected.points.size() + (int)uninspected.points.size());
+      if (inspected.points.size() > 0) {
+        inspectionPath_.publish(inspected);
+      }
+      if (uninspected.points.size() > 0) {
+        inspectionPath_.publish(uninspected);
+      }
     }
   }
 }
@@ -415,13 +437,12 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   }
   // estimate expected starting point of new piece of path
   if (root_[agentID]->size() >= 9) {
-    double dt = ros::Time::now().toSec() + dt_
-        - (*root_[agentID])[8];
+    double dt = ros::Time::now().toSec() + dt_ - (*root_[agentID])[8];
     //ROS_INFO("Adapting the root location for time %f (%f)", dt, average_computation_duration_);
-    (*root_[agentID])[0] += (*root_[agentID])[4] * dt;
-    (*root_[agentID])[1] += (*root_[agentID])[5] * dt;
-    (*root_[agentID])[2] += (*root_[agentID])[6] * dt;
-    (*root_[agentID])[3] += (*root_[agentID])[7] * dt;
+    //(*root_[agentID])[0] += (*root_[agentID])[4] * dt;
+    //(*root_[agentID])[1] += (*root_[agentID])[5] * dt;
+    //(*root_[agentID])[2] += (*root_[agentID])[6] * dt;
+    //(*root_[agentID])[3] += (*root_[agentID])[7] * dt;
   }
   nbvInspection::Node<stateVec>::bestNode_ = NULL;
   nbvInspection::Node<stateVec>::bestInformationGain_ =
@@ -461,7 +482,28 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   // calculate explored space
   int mappedFree = 0;
   int mappedOccupied = 0;
+  int unmapped = 0;
   double vol = 0.0;
+  Eigen::Vector3d vec;
+  ros::Time now = ros::Time::now();
+  for (vec[0] = -4.2; vec[0] <= 4.2; vec[0] += 0.4) {
+    for (vec[1] = -8.6; vec[1] <= 8.6; vec[1] += 0.4) {
+      for (vec[2] = 0.2; vec[2] <= 2.8; vec[2] += 0.4) {
+        volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellStatusPoint(vec);
+        if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown) {
+          unmapped++;
+        } else if (node == volumetric_mapping::OctomapManager::CellStatus::kOccupied) {
+          mappedOccupied++;
+        } else {
+          mappedFree++;
+        }
+      }
+    }
+  }
+  mappedOccupied_.push_back(mappedOccupied);
+  mappedFree_.push_back(mappedFree);
+  unMapped_.push_back(unmapped);
+  //ROS_INFO("statistics time = %es", (ros::Time::now() - now).toSec());
 
   ROS_INFO("Replanning lasted %fs and has a Gain of %2.2f, with %i iterations", duration.toSec(),
            IG, nbvInspection::Node<stateVec>::getCounter());
@@ -483,7 +525,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
     p.pose.orientation.w = quat.w();
     res.path.push_back(p.pose);
     //ROS_INFO("(%2.2f,%2.2f,%2.2f,%2.2f)", (*it)[0], (*it)[1], (*it)[2], (*it)[3]);
-  }  
+  }
 
   if (rootNode_) {
     // save the best path
@@ -546,15 +588,61 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
   if (rootNode_) {
     delete rootNode_;
   }
+  kd_clear(kdTree_);
   rootNode_ = new nbvInspection::Node<stateVec>;
+  kd_insert3(kdTree_, s.x(), s.y(), s.z(), rootNode_);
   rootNode_->state_ = s;
   // iterate as long as no information is found
   int localCount = 0;
+  std::string pkgPath = ros::package::getPath("nbvplanner");
+  std::fstream fileTree;
+  static int itCount = 0;
+  fileTree.open((pkgPath + "/data/tree" + std::to_string(itCount) + ".m").c_str(), std::ios::out);
+  itCount++;
+  fileTree << "treeMatrix = [";
   while (nbvInspection::Node<stateVec>::bestInformationGain_
       <= nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_
       || nbvInspection::Node<stateVec>::getCounter() < I) {
     if (nbvInspection::Node<stateVec>::getCounter() > 500) {
       ROS_INFO("No information gain found, shutting down");
+      std::fstream file;
+      file.open((pkgPath + "/data/statistics.m").c_str(), std::ios::out);
+      file << "mappedOccupied = [";
+      for (int i = 0; i < mappedOccupied_.size(); i++) {
+        file << mappedOccupied_[i] << ",";
+      }
+      file << "];\n";
+      file << "mappedFree = [";
+      for (int i = 0; i < mappedFree_.size(); i++) {
+        file << mappedFree_[i] << ",";
+      }
+      file << "];\n";
+      file << "unMapped = [";
+      for (int i = 0; i < unMapped_.size(); i++) {
+        file << unMapped_[i] << ",";
+      }
+      file << "];\n";
+      int k = 1;
+      Eigen::Vector3d vec;
+      for (vec[0] = -4.6; vec[0] <= 4.6; vec[0] += 0.4) {
+        file << "octomap{" << k << "} = [";
+        k++;
+        for (vec[1] = -9.0; vec[1] <= 9.4; vec[1] += 0.4) {
+          for (vec[2] = -0.2; vec[2] <= 3.2; vec[2] += 0.4) {
+            volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellStatusPoint(vec);
+            if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown) {
+              file << -1 << " ";
+            } else if (node == volumetric_mapping::OctomapManager::CellStatus::kOccupied) {
+              file << 1 << " ";
+            } else {
+              file << 0 << " ";
+            }
+          }
+          file << ";\n";
+        }
+        file << "];\n";
+      }
+      file.close();
       ros::shutdown();
       return ret;
     }
@@ -581,8 +669,9 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
       if (extension[3] > M_PI) {
         extension[3] -= 2.0 * M_PI;
       }
-      if (wp > 1000)
+      if (wp > 1000) {
         wp = 1.0;
+      }
       for (double i = 0.0; i <= wp; i += 1.0) {
         ret.push_back(s + (1.0 - i / wp) * extension);
       }
@@ -601,7 +690,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
     if (!bestBranchOld_[agentID].empty()) {
       newState = bestBranchOld_[agentID].back();
     } else {
-      // sample uniformly over space and throw away those samples that lie outside ot the sampling area
+      // sample uniformly over space and throw away those samples that lie outside of the sampling area
       do {
         for (int i = 0; i < 3; i++) {
           newState[i] = 2.0 * radius * (((double) rand()) / ((double) RAND_MAX) - 0.5);
@@ -627,7 +716,16 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
         }
       } while (dsq > pow(radius, 2.0) || !inBounds);
     }
-    nbvInspection::Node<stateVec> * newParent = rootNode_->minDist(newState);
+    kdres * nearest = kd_nearest3(kdTree_, newState.x(), newState.y(), newState.z());
+    //ROS_INFO("size: %i", kd_res_size(nearest));
+    if (kd_res_size(nearest) <= 0) {
+      continue;
+    }
+    nbvInspection::Node<stateVec> * newParent = (nbvInspection::Node<stateVec> *) kd_res_item_data(
+        nearest);
+    kd_res_free(nearest);
+    //ROS_INFO("Connecting (%2.2f,%2.2f,%2.2f) with (%2.2f,%2.2f,%2.2f)", newParent->state_[0],
+    //         newParent->state_[1], newParent->state_[2], newState[0], newState[1], newState[2]);
 
     // check for collision
     Eigen::Vector3d origin;
@@ -673,6 +771,8 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
       newNode->informationGain_ = newParent->informationGain_
           + (instance.*informationGain)(newNode->state_)
               * exp(-degressiveCoeff_ * newNode->distance_);
+
+      kd_insert3(kdTree_, newState.x(), newState.y(), newState.z(), newNode);
       // display new node
 
       visualization_msgs::Marker p;
@@ -733,7 +833,10 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
       p.lifetime = ros::Duration(10.0);
       p.frame_locked = false;
       inspectionPath_.publish(p);
-
+      fileTree << newNode->state_[0] << "," << newNode->state_[1] << "," << newNode->state_[2]
+          << "," << newNode->state_[3] << "," << newNode->parent_->state_[0] << ","
+          << newNode->parent_->state_[1] << "," << newNode->parent_->state_[2] << ","
+          << newNode->parent_->state_[3] << "," << newNode->informationGain_ << "\n";
       // update best IG and node if applicable
       // ROS_INFO("newNode->informationGain_ %f", newNode->informationGain_);
       // ROS_INFO("bestInformationGain_ %f", nbvInspection::Node<stateVec>::bestInformationGain_);
@@ -748,6 +851,8 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
     }
     localCount++;
   }
+  fileTree << "];";
+  fileTree.close();
   // extract best path
   nbvInspection::Node<stateVec> * curr = nbvInspection::Node<stateVec>::bestNode_;
   if (curr->parent_ != NULL) {
@@ -756,8 +861,8 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
     }
 
     double d = SQ(curr->state_[0] - curr->parent_->state_[0]) +
-               SQ(curr->state_[1] - curr->parent_->state_[1]) +
-               SQ(curr->state_[2] - curr->parent_->state_[2]);
+    SQ(curr->state_[1] - curr->parent_->state_[1]) +
+    SQ(curr->state_[2] - curr->parent_->state_[2]);
     d = sqrt(d);
     double yaw_direction = curr->parent_->state_[3] - curr->state_[3];
     if (yaw_direction > M_PI) {

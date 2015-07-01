@@ -130,21 +130,26 @@ int main(int argc, char** argv)
   }
   file << "pathMatrix = [";
   int iteration = 0;
+  std::vector<double> execution;
+  std::vector<double> computation;
   while (ros::ok()) {
     ROS_INFO_THROTTLE(1, "Initiating replanning");
     nbvplanner::nbvp_srv planSrv;
     planSrv.request.header.stamp = ros::Time::now();
     planSrv.request.header.seq = iteration;
     planSrv.request.header.frame_id = ros::this_node::getNamespace();
+    ros::Time start = ros::Time::now();
     if (ros::service::call("nbvplanner", planSrv)) {
+      computation.push_back((ros::Time::now() - start).toSec());
+      start = ros::Time::now();
       for (int i = 0; i < 100 && i < planSrv.response.path.size(); i++) {
         tf::Pose pose;
         tf::poseMsgToTF(planSrv.response.path[i], pose);
         double yaw = tf::getYaw(pose.getRotation());
         trajectory_msg.position.x = planSrv.response.path[i].position.x;
         trajectory_msg.position.y = planSrv.response.path[i].position.y;
-        // adding offset 0.3 to account for tracking error of lee_position_controller
-        trajectory_msg.position.z = planSrv.response.path[i].position.z;
+        // adding offset 0.25 to account for tracking error of lee_position_controller
+        trajectory_msg.position.z = planSrv.response.path[i].position.z+0.25;
         trajectory_msg.yaw = yaw;
 
         trajectory_msg.header.stamp = ros::Time::now();
@@ -154,10 +159,20 @@ int main(int argc, char** argv)
              << trajectory_msg.header.stamp.toSec() << ";\n";
         ros::Duration(dt).sleep();
       }
+      execution.push_back((ros::Time::now() - start).toSec());
     } else {
       ROS_WARN_THROTTLE(1, "Planner not reachable");
+      ros::Duration(1.0).sleep();
     }
     iteration++;
+  }
+  file << "];\nexecutionTime = [";
+  for (int i = 0; i < execution.size(); i++) {
+    file << execution[i] << ", ";
+  }
+  file << "];\ncomputationTime = [";
+  for (int i = 0; i < computation.size(); i++) {
+    file << computation[i] << ", ";
   }
   file << "];";
   file.close();

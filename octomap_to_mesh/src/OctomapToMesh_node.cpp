@@ -24,8 +24,8 @@ int main(int argc, char **argv) {
   ros::ServiceClient octomapClient = n.serviceClient<OctomapSrv>("octomap_full");
   std::string pkgPath = ros::package::getPath("octomap_to_mesh");
   
-  ros::Duration(1.0).sleep();
-  
+  // Wait a moment, without relying on the clock (for cases use_sim_time = true)
+  for (int i = 0; i < 999999; i++);
   OctomapSrv srv;
   
   if (octomapClient.call(srv)) {
@@ -52,8 +52,9 @@ int main(int argc, char **argv) {
         ROS_WARN("No mesh file name specified. Using default (meshOut.stl)");
   
       struct_T * MeshedOctomap = NULL;
-      char_T * fileName = new char_T[50];
-      strcpy(fileName, (pkgPath + "/data/" + meshFile).c_str());
+      std::string fullFile = pkgPath + "/data/" + meshFile;
+      char_T * fileName = new char_T[(int)fullFile.size()+5];
+      strcpy(fileName, fullFile.c_str());
       OctomapToMesh(&data, fileName, MeshedOctomap);
     }
   }
@@ -63,5 +64,6 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  ROS_INFO("Successfully converted octomap to mesh");
   return 0;
 }
