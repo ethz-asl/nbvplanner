@@ -140,7 +140,6 @@ int main(int argc, char** argv)
     planSrv.request.header.frame_id = ros::this_node::getNamespace();
     ros::Time start = ros::Time::now();
     if (ros::service::call("nbvplanner", planSrv)) {
-      ROS_INFO("Path size = %i", planSrv.response.path.size());
       computation.push_back((ros::Time::now() - start).toSec());
       start = ros::Time::now();
       for (int i = 0; i < 100 && i < planSrv.response.path.size(); i++) {

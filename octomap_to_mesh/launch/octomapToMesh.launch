@@ -1,12 +1,12 @@
 <launch>
   <node name="OctomapToMesh" pkg="octomap_to_mesh" type="octomap_to_mesh_node" output="screen">
-    <param name="mesh_file_name" type="string" value="meshOut.stl" />
-    <param name="bbx/minX" type="double" value="-39" />
-    <param name="bbx/maxX" type="double" value="-20" />
-    <param name="bbx/minY" type="double" value="-4" />
-    <param name="bbx/maxY" type="double" value="11" />
-    <param name="bbx/minZ" type="double" value="-32" />
-    <param name="bbx/maxZ" type="double" value="-15" />
+    <param name="mesh_file_name" type="string" value="meshBaseline.stl" />
+    <param name="bbx/minX" type="double" value="-10" />
+    <param name="bbx/maxX" type="double" value="-10" />
+    <param name="bbx/minY" type="double" value="-0.5" />
+    <param name="bbx/maxY" type="double" value="10" />
+    <param name="bbx/minZ" type="double" value="10" />
+    <param name="bbx/maxZ" type="double" value="-3.0" />
     <remap from="octomap_full" to="/server/octomap_manager/get_map"/>
   </node>
 </launch>

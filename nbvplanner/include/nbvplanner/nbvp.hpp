@@ -98,7 +98,7 @@ void nbvInspection::Node<stateVec>::printToFile(std::fstream& file)
 }
 
 template<typename stateVec>
-const double nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_ = 0.001;
+const double nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_ = 0.000;
 template<typename stateVec>
 double nbvInspection::Node<stateVec>::bestInformationGain_ =
     nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_;
@@ -486,9 +486,9 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   double vol = 0.0;
   Eigen::Vector3d vec;
   ros::Time now = ros::Time::now();
-  for (vec[0] = -4.2; vec[0] < 4.2; vec[0] += 0.4) {
-    for (vec[1] = -8.6; vec[1] < 8.6; vec[1] += 0.4) {
-      for (vec[2] = 0.2; vec[2] < 2.8; vec[2] += 0.4) {
+  for (vec[0] = -4.2; vec[0] <= 4.2; vec[0] += 0.4) {
+    for (vec[1] = -8.6; vec[1] <= 8.6; vec[1] += 0.4) {
+      for (vec[2] = 0.2; vec[2] <= 2.8; vec[2] += 0.4) {
         volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellStatusPoint(vec);
         if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown) {
           unmapped++;
@@ -503,7 +503,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   mappedOccupied_.push_back(mappedOccupied);
   mappedFree_.push_back(mappedFree);
   unMapped_.push_back(unmapped);
-  ROS_INFO("statistics time = %es", (ros::Time::now() - now).toSec());
+  //ROS_INFO("statistics time = %es", (ros::Time::now() - now).toSec());
 
   ROS_INFO("Replanning lasted %fs and has a Gain of %2.2f, with %i iterations", duration.toSec(),
            IG, nbvInspection::Node<stateVec>::getCounter());
@@ -624,11 +624,11 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
       file << "];\n";
       int k = 1;
       Eigen::Vector3d vec;
-      for (vec[0] = -4.6; vec[0] < 4.6; vec[0] += 0.4) {
+      for (vec[0] = -4.6; vec[0] <= 4.6; vec[0] += 0.4) {
         file << "octomap{" << k << "} = [";
         k++;
-        for (vec[1] = -9.0; vec[1] < 9.0; vec[1] += 0.4) {
-          for (vec[2] = -0.2; vec[2] < 3.2; vec[2] += 0.4) {
+        for (vec[1] = -9.0; vec[1] <= 9.4; vec[1] += 0.4) {
+          for (vec[2] = -0.2; vec[2] <= 3.2; vec[2] += 0.4) {
             volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellStatusPoint(vec);
             if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown) {
               file << -1 << " ";
@@ -660,7 +660,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
         break;
       }
       double wp =
-          extension.norm()
+          sqrt(SQ(extension.x()) + SQ(extension.y()) + SQ(extension.z()))
               / (nbvInspection::nbvPlanner<stateVec>::v_max_
                   * nbvInspection::nbvPlanner<stateVec>::dt_);
       if (extension[3] < -M_PI) {
@@ -669,10 +669,10 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
       if (extension[3] > M_PI) {
         extension[3] -= 2.0 * M_PI;
       }
-      if (wp == 0.0) {
+      if (wp > 1000) {
         wp = 1.0;
       }
-      for (double i = 0.0; i < wp; i += 1.0) {
+      for (double i = 0.0; i <= wp; i += 1.0) {
         ret.push_back(s + (1.0 - i / wp) * extension);
       }
 
