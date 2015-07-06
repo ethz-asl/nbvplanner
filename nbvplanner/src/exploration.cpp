@@ -1,5 +1,4 @@
 /*
- * Copyright 2015 Andreas Bircher, ASL, ETH Zurich, Switzerland
  * Copyright 2015 Fadri Furrer, ASL, ETH Zurich, Switzerland
  * Copyright 2015 Michael Burri, ASL, ETH Zurich, Switzerland
  * Copyright 2015 Mina Kamel, ASL, ETH Zurich, Switzerland
@@ -25,10 +24,10 @@
 
 #include <ros/ros.h>
 #include <ros/package.h>
+#include <tf/tf.h>
 #include <std_srvs/Empty.h>
 #include <mav_msgs/CommandTrajectoryPositionYaw.h>
 #include <nbvplanner/nbvp_srv.h>
-#include <tf/tf.h>
 
 int main(int argc, char** argv)
 {
