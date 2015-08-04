@@ -600,6 +600,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
   fileTree.open((pkgPath + "/data/tree" + std::to_string(itCount) + ".m").c_str(), std::ios::out);
   itCount++;
   fileTree << "treeMatrix = [";
+  static stateVec lastEndpoint = s;
   while (nbvInspection::Node<stateVec>::bestInformationGain_
       <= nbvInspection::Node<stateVec>::ZERO_INFORMATION_GAIN_
       || nbvInspection::Node<stateVec>::getCounter() < I) {
@@ -649,9 +650,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
     if (localCount > 10000) {
       ROS_INFO("Exceeding local count, return!");
       stateVec extension;
-      for (int i = 0; i < extension.size(); i++) {
-        extension[i] = 0.0;
-      }
+      extension = lastEndpoint - s;
       if (history_[agentID].size() > 0) {
         extension = history_[agentID].top() - s;
       } else {
@@ -871,10 +870,10 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
     if (yaw_direction < -M_PI) {
       yaw_direction += 2.0 * M_PI;
     }
-    double disc = std::min(nbvInspection::nbvPlanner<stateVec>::dt_
-        * nbvInspection::nbvPlanner<stateVec>::v_max_ / d,
-        nbvInspection::nbvPlanner<stateVec>::dt_
-        * nbvInspection::nbvPlanner<stateVec>::dyaw_max_ / abs(yaw_direction));
+    double disc = std::min(
+        nbvInspection::nbvPlanner<stateVec>::dt_ * nbvInspection::nbvPlanner<stateVec>::v_max_ / d,
+        nbvInspection::nbvPlanner<stateVec>::dt_ * nbvInspection::nbvPlanner<stateVec>::dyaw_max_
+            / abs(yaw_direction));
     for (double it = 0.0; it < 1.0; it += disc) {
       ret.push_back((1.0 - it) * curr->state_ + it * curr->parent_->state_);
       ret.back()[3] = curr->state_[3] + yaw_direction * it;
@@ -884,7 +883,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
         ret.back()[3] += 2.0 * M_PI;
     }
   } else {
-    ret.push_back(curr->state_);
+    ret.push_back(lastEndpoint);
   }
   IGout = nbvInspection::Node<stateVec>::bestInformationGain_;
   history_[agentID].push(ret.back());

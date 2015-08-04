@@ -19,7 +19,7 @@ nbvp/information_gain/range: 1.5
 nbvp/information_gain/degressive_coeff: 1.0
 nbvp/sampleHolonomic/extension_range: 2.0
 nbvp/RRT/initial_iterations: 15
-nbvp/dt: 0.05
+nbvp/dt: 0.01
 nbvp/RRT_extension: true
 
 # bounding box: necessary to limit the simulation 
