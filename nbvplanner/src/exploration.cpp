@@ -26,15 +26,17 @@
 #include <ros/package.h>
 #include <tf/tf.h>
 #include <std_srvs/Empty.h>
-#include <mav_msgs/CommandTrajectoryPositionYaw.h>
+#include <mav_msgs/conversions.h>
+#include <mav_msgs/default_topics.h>
+//#include <mav_msgs/CommandTrajectoryPositionYaw.h>
 #include <nbvplanner/nbvp_srv.h>
 
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "exploration");
   ros::NodeHandle nh;
-  ros::Publisher trajectory_pub = nh.advertise<mav_msgs::CommandTrajectoryPositionYaw>(
-      "command/trajectory_position_yaw", 10);
+  ros::Publisher trajectory_pub = nh.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
+      mav_msgs::default_topics::COMMAND_TRAJECTORY, 5);
   ROS_INFO("Started exploration");
 
   std_srvs::Empty srv;
@@ -64,61 +66,106 @@ int main(int argc, char** argv)
     return -1;
   }
 
+  static int n_seq = 0;
+
+  trajectory_msgs::MultiDOFJointTrajectory samples_array;
+  mav_msgs::EigenTrajectoryPoint trajectory_point;
+  trajectory_msgs::MultiDOFJointTrajectoryPoint trajectory_point_msg;
+
   // Wait for 5 seconds to let the Gazebo GUI show up.
   ros::Duration(5.0).sleep();
 
-  mav_msgs::CommandTrajectoryPositionYaw trajectory_msg;
-
   ROS_INFO("Starting the planner");
-  nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
-  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 0.2);
-  trajectory_msg.yaw = 0.0;
-  trajectory_msg.header.stamp = ros::Time::now();
-  trajectory_pub.publish(trajectory_msg);
+  nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
+  nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
+  nh.param<double>("wp_z", trajectory_point.position_W.z(), 0.2);
+  samples_array.header.seq = n_seq;
+  samples_array.header.stamp = ros::Time::now();
+  samples_array.points.clear();
+  n_seq++;
+  tf::Quaternion quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 0.0);
+  trajectory_point.setFromYaw(tf::getYaw(quat));
+  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+  samples_array.points.push_back(trajectory_point_msg);
+  trajectory_pub.publish(samples_array);
   ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
-  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 1.5);
-  trajectory_msg.yaw = 1.0;
-  trajectory_msg.header.stamp = ros::Time::now();
-  trajectory_pub.publish(trajectory_msg);
+  nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
+  nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
+  nh.param<double>("wp_z", trajectory_point.position_W.z(), 1.5);
+  samples_array.header.seq = n_seq;
+  samples_array.header.stamp = ros::Time::now();
+  samples_array.points.clear();
+  n_seq++;
+  quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 1.0);
+  trajectory_point.setFromYaw(tf::getYaw(quat));
+  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+  samples_array.points.push_back(trajectory_point_msg);
+  trajectory_pub.publish(samples_array);
   ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
-  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 3.0);
-  trajectory_msg.yaw = 2.0;
-  trajectory_msg.header.stamp = ros::Time::now();
-  trajectory_pub.publish(trajectory_msg);
+  nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
+  nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
+  nh.param<double>("wp_z", trajectory_point.position_W.z(), 3.0);
+  samples_array.header.seq = n_seq;
+  samples_array.header.stamp = ros::Time::now();
+  samples_array.points.clear();
+  n_seq++;
+  quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 2.0);
+  trajectory_point.setFromYaw(tf::getYaw(quat));
+  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+  samples_array.points.push_back(trajectory_point_msg);
+  trajectory_pub.publish(samples_array);
   ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
-  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 3.0);
-  trajectory_msg.yaw = 1.0;
-  trajectory_msg.header.stamp = ros::Time::now();
-  trajectory_pub.publish(trajectory_msg);
+  nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
+  nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
+  nh.param<double>("wp_z", trajectory_point.position_W.z(), 3.0);
+  samples_array.header.seq = n_seq;
+  samples_array.header.stamp = ros::Time::now();
+  samples_array.points.clear();
+  n_seq++;
+  quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 1.0);
+  trajectory_point.setFromYaw(tf::getYaw(quat));
+  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+  samples_array.points.push_back(trajectory_point_msg);
+  trajectory_pub.publish(samples_array);
   ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
-  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 3.0);
-  trajectory_msg.yaw = 2.0;
-  trajectory_msg.header.stamp = ros::Time::now();
-  trajectory_pub.publish(trajectory_msg);
+  nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
+  nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
+  nh.param<double>("wp_z", trajectory_point.position_W.z(), 3.0);
+  samples_array.header.seq = n_seq;
+  samples_array.header.stamp = ros::Time::now();
+  samples_array.points.clear();
+  n_seq++;
+  quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 2.0);
+  trajectory_point.setFromYaw(tf::getYaw(quat));
+  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+  samples_array.points.push_back(trajectory_point_msg);
+  trajectory_pub.publish(samples_array);
   ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
-  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 3.0);
-  trajectory_msg.yaw = 3.0;
-  trajectory_msg.header.stamp = ros::Time::now();
-  trajectory_pub.publish(trajectory_msg);
+  nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
+  nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
+  nh.param<double>("wp_z", trajectory_point.position_W.z(), 3.0);
+  samples_array.header.seq = n_seq;
+  samples_array.header.stamp = ros::Time::now();
+  samples_array.points.clear();
+  n_seq++;
+  quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 3.0);
+  trajectory_point.setFromYaw(tf::getYaw(quat));
+  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+  samples_array.points.push_back(trajectory_point_msg);
+  trajectory_pub.publish(samples_array);
   ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_msg.position.x, 0.0);
-  nh.param<double>("wp_y", trajectory_msg.position.y, 0.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 3.0);
-  trajectory_msg.yaw = 3.0;
-  trajectory_msg.header.stamp = ros::Time::now();
-  trajectory_pub.publish(trajectory_msg);
-
+  nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
+  nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
+  nh.param<double>("wp_z", trajectory_point.position_W.z(), 3.0);
+  samples_array.header.seq = n_seq;
+  samples_array.header.stamp = ros::Time::now();
+  samples_array.points.clear();
+  n_seq++;
+  quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 3.0);
+  trajectory_point.setFromYaw(tf::getYaw(quat));
+  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+  samples_array.points.push_back(trajectory_point_msg);
+  trajectory_pub.publish(samples_array);
   ros::Duration(5.0).sleep();
 
   std::string pkgPath = ros::package::getPath("nbvplanner");
@@ -141,23 +188,27 @@ int main(int argc, char** argv)
     if (ros::service::call("nbvplanner", planSrv)) {
       computation.push_back((ros::Time::now() - start).toSec());
       start = ros::Time::now();
+      samples_array.header.seq = n_seq;
+      samples_array.header.stamp = ros::Time::now();
+      samples_array.points.clear();
+      n_seq++;
       for (int i = 0; i < 100 && i < planSrv.response.path.size(); i++) {
         tf::Pose pose;
         tf::poseMsgToTF(planSrv.response.path[i], pose);
         double yaw = tf::getYaw(pose.getRotation());
-        trajectory_msg.position.x = planSrv.response.path[i].position.x;
-        trajectory_msg.position.y = planSrv.response.path[i].position.y;
-        // adding offset 0.25 to account for tracking error of lee_position_controller
-        trajectory_msg.position.z = planSrv.response.path[i].position.z+0.25;
-        trajectory_msg.yaw = yaw;
-
-        trajectory_msg.header.stamp = ros::Time::now();
-        trajectory_pub.publish(trajectory_msg);
+        trajectory_point.position_W.x() = planSrv.response.path[i].position.x;
+        trajectory_point.position_W.y() = planSrv.response.path[i].position.y;
+        trajectory_point.position_W.z() = planSrv.response.path[i].position.z + 0.25;
+        quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), yaw);
+        trajectory_point.setFromYaw(tf::getYaw(quat));
+        mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+        samples_array.points.push_back(trajectory_point_msg);
         file << planSrv.response.path[i].position.x << ", " << planSrv.response.path[i].position.y
              << ", " << planSrv.response.path[i].position.z << ", " << yaw << ", "
-             << trajectory_msg.header.stamp.toSec() << ";\n";
+             << samples_array.header.stamp.toSec() << ";\n";
         ros::Duration(dt).sleep();
       }
+      trajectory_pub.publish(samples_array);
       execution.push_back((ros::Time::now() - start).toSec());
     } else {
       ROS_WARN_THROTTLE(1, "Planner not reachable");

@@ -27,19 +27,24 @@
 #include <ros/package.h>
 #include <eigen3/Eigen/Dense>
 #include <std_srvs/Empty.h>
-#include <mav_msgs/CommandTrajectoryPositionYaw.h>
+#include <mav_msgs/conversions.h>
+#include <mav_msgs/default_topics.h>
+//#include <mav_msgs/CommandTrajectoryPositionYaw.h>
 #include "nbvplanner/nbvp_srv.h"
 #include "tf/tf.h"
 
 /* record:
-rosbag record /clock /firefly/vi_sensor/cera_left/image_raw /firefly/ground_truth/pose
-*/
+ rosbag record /clock /firefly/vi_sensor/cera_left/image_raw /firefly/ground_truth/pose
+ */
 
-int main(int argc, char** argv){
+int main(int argc, char** argv)
+{
   ros::init(argc, argv, "wpFollower");
   ros::NodeHandle nh;
-  ros::Publisher trajectory_pub = nh.advertise<mav_msgs::CommandTrajectoryPositionYaw>("command/trajectory_position_yaw", 10);
-  ros::ServiceClient pathPlanner = nh.serviceClient<nbvplanner::nbvp_srv>("pathplanning/nbvplanner",10);
+  ros::Publisher trajectory_pub = nh.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
+      mav_msgs::default_topics::COMMAND_TRAJECTORY, 5);
+  ros::ServiceClient pathPlanner = nh.serviceClient<nbvplanner::nbvp_srv>("pathplanning/nbvplanner",
+                                                                          10);
   ROS_INFO("Started hovering example.");
 
   std_srvs::Empty srv;
@@ -57,23 +62,27 @@ int main(int argc, char** argv){
   if (!unpaused) {
     ROS_FATAL("Could not wake up Gazebo.");
     return -1;
-  }
-  else {
+  } else {
     ROS_INFO("Unpaused the Gazebo simulation.");
   }
-  
+
   double dt = 1.0;
   std::string ns = ros::this_node::getName();
   if (!ros::param::get(ns + "/dt", dt)) {
-    ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", (ns + "/nbvp/dt").c_str());
+    ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s",
+              (ns + "/nbvp/dt").c_str());
     return -1;
   }
+
+  static int n_seq = 0;
+
+  trajectory_msgs::MultiDOFJointTrajectory samples_array;
+  mav_msgs::EigenTrajectoryPoint trajectory_point;
+  trajectory_msgs::MultiDOFJointTrajectoryPoint trajectory_point_msg;
 
   // Wait for 5 seconds to let the Gazebo GUI show up.
   ros::Duration(5.0).sleep();
 
-  mav_msgs::CommandTrajectoryPositionYaw trajectory_msg;
-  
   std::string pkgPath = ros::package::getPath("nbvplanner");
   std::ifstream wp_file((pkgPath + "/resource/wind_turbine_path.txt").c_str());
 
@@ -86,21 +95,27 @@ int main(int argc, char** argv){
       waypoints.push_back(Eigen::Vector4f(x, y, z, yaw));
     }
     wp_file.close();
-    ROS_INFO("Read %d waypoints.", (int )waypoints.size());
+    ROS_INFO("Read %d waypoints.", (int) waypoints.size());
   }
 
   ROS_INFO("Starting the planner");
-  nh.param<double>("wp_x", trajectory_msg.position.x, 1.0);
-  nh.param<double>("wp_y", trajectory_msg.position.y, 10.0);
-  nh.param<double>("wp_z", trajectory_msg.position.z, 0.1);
-  trajectory_msg.yaw = 0.0;
-  trajectory_msg.header.stamp = ros::Time::now();
-  trajectory_pub.publish(trajectory_msg);
+  nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
+  nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
+  nh.param<double>("wp_z", trajectory_point.position_W.z(), 0.2);
+  samples_array.header.seq = n_seq;
+  samples_array.header.stamp = ros::Time::now();
+  samples_array.points.clear();
+  n_seq++;
+  tf::Quaternion quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 0.0);
+  trajectory_point.setFromYaw(tf::getYaw(quat));
+  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+  samples_array.points.push_back(trajectory_point_msg);
+  trajectory_pub.publish(samples_array);
   ros::Duration(10.0).sleep();
-  
-  double VMAX = 0.5; // TODO: change every time!
-  double YAWMAX = 0.75; // TODO: change every time!
-  
+
+  double VMAX = 0.5;  // TODO: change every time!
+  double YAWMAX = 0.75;  // TODO: change every time!
+
   std::fstream file;
   file.open((pkgPath + "/data/path.m").c_str(), std::ios::out);
   if (!file.is_open())
@@ -108,29 +123,35 @@ int main(int argc, char** argv){
   file << "pathMatrix = [";
   int l = 0;
   while (ros::ok() && waypoints.size() > l + 1) {
-    Eigen::Vector4f dvec = waypoints[l+1] - waypoints[l];
+    Eigen::Vector4f dvec = waypoints[l + 1] - waypoints[l];
     dvec[3] = 0.0;
-    double dyaw = waypoints[l+1][3] - waypoints[l][3];
+    double dyaw = waypoints[l + 1][3] - waypoints[l][3];
     if (dyaw > M_PI)
-      dyaw-=2.0 * M_PI;
+      dyaw -= 2.0 * M_PI;
     if (dyaw < -M_PI)
       dyaw += 2.0 * M_PI;
     ROS_INFO("Progress: %i/%i", l, waypoints.size());
     double dtime = std::max(sqrt(dvec.dot(dvec)) / VMAX, abs(dyaw) / YAWMAX);
     int iter = dtime / dt;
+    samples_array.header.seq = n_seq;
+    samples_array.header.stamp = ros::Time::now();
+    samples_array.points.clear();
+    n_seq++;
     for (int i = 0; i < iter; i++) {
-      double p = ((double)i) / ((double)iter);
-      nh.param<double>("wp_x", trajectory_msg.position.x, waypoints[l][0]+p*dvec[0]);
-      nh.param<double>("wp_y", trajectory_msg.position.y, waypoints[l][1]+p*dvec[1]);
-      nh.param<double>("wp_z", trajectory_msg.position.z, waypoints[l][2]+p*dvec[2]);
-      nh.param<double>("wp_yaw", trajectory_msg.yaw, waypoints[l][3]+p*dyaw);
-      trajectory_msg.header.stamp = ros::Time::now();
-      trajectory_pub.publish(trajectory_msg);
-      file << waypoints[l][0] + p * dvec[0] << ", " << waypoints[l][1] + p * dvec[1] << ", " <<
-              waypoints[l][2] + p * dvec[2] << ", " << waypoints[l][3] + p * dyaw << ", " <<
-              trajectory_msg.header.stamp.toSec() << ";\n";
-      ros::Duration(dt).sleep();
+      double p = ((double) i) / ((double) iter);tf::Pose pose;
+      trajectory_point.position_W.x() = waypoints[l][0] + p * dvec[0];
+      trajectory_point.position_W.y() = waypoints[l][1] + p * dvec[1];
+      trajectory_point.position_W.z() = waypoints[l][2] + p * dvec[2] + 0.25;
+      quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), waypoints[l][3] + p * dyaw);
+      trajectory_point.setFromYaw(tf::getYaw(quat));
+      mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+      samples_array.points.push_back(trajectory_point_msg);
+      file << waypoints[l][0] + p * dvec[0] << ", " << waypoints[l][1] + p * dvec[1] << ", "
+          << waypoints[l][2] + p * dvec[2] << ", " << waypoints[l][3] + p * dyaw << ", "
+          << samples_array.header.stamp.toSec() << ";\n";
     }
+    trajectory_pub.publish(samples_array);
+    ros::Duration(dtime).sleep();
     l++;
   }
   file << "];";
