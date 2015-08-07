@@ -290,12 +290,13 @@ void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseS
   }
   ros::Duration dt = pose.header.stamp - g_timeOld_[agentID];
   if (dt.toSec() > 0.0) {
-    (*root_[agentID])[0] = pose.pose.position.x;
-    (*root_[agentID])[1] = pose.pose.position.y;
-    (*root_[agentID])[2] = pose.pose.position.z;
     tf::Pose poseTF;
     tf::poseMsgToTF(pose.pose, poseTF);
     (*root_[agentID])[3] = tf::getYaw(poseTF.getRotation());
+    static const double offsetSensorPose = 0.14;
+    (*root_[agentID])[0] = pose.pose.position.x - cos((*root_[agentID])[3]) * offsetSensorPose;
+    (*root_[agentID])[1] = pose.pose.position.y - sin((*root_[agentID])[3]) * offsetSensorPose;
+    (*root_[agentID])[2] = pose.pose.position.z;
     if (root_[agentID]->size() >= 8) {
       if (g_stateOld_[agentID] == NULL) {
         g_stateOld_[agentID] = new stateVec;
@@ -681,7 +682,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
     // set up boundaries: increase size as number of iterations grows
     // double radius = extensionRange_ * sqrt(pow((double)nbvInspection::Node<stateVec>::getCounter(), 2.0) /
     //                 ((double)localCount + 1.0));
-    double radius = extensionRange_ * sqrt((double) nbvInspection::Node<stateVec>::getCounter());
+    double radius = 20; //extensionRange_ * sqrt((double) nbvInspection::Node<stateVec>::getCounter());
     // sample position of new state
     stateVec newState;
     double dsq = 0.0;
@@ -735,7 +736,7 @@ typename nbvInspection::nbvPlanner<stateVec>::vector_t nbvInspection::nbvPlanner
     direction[0] = newState[0] - origin[0];
     direction[1] = newState[1] - origin[1];
     direction[2] = newState[2] - origin[2];
-    const static double max_dist = 3.0;
+    const static double max_dist = 1.0;
     if (direction.norm() > max_dist) {
       direction = max_dist * direction.normalized();
     }

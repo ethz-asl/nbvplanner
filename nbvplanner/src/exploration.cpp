@@ -78,7 +78,10 @@ int main(int argc, char** argv)
   ROS_INFO("Starting the planner");
   nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
   nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
-  nh.param<double>("wp_z", trajectory_point.position_W.z(), 0.2);
+  nh.param<double>("wp_z", trajectory_point.position_W.z(), 1.0);
+  //trajectory_point.position_W.x() = 0.0;
+  //trajectory_point.position_W.y() = 0.0;
+  //trajectory_point.position_W.z() = 1.0;
   samples_array.header.seq = n_seq;
   samples_array.header.stamp = ros::Time::now();
   samples_array.points.clear();
@@ -188,27 +191,27 @@ int main(int argc, char** argv)
     if (ros::service::call("nbvplanner", planSrv)) {
       computation.push_back((ros::Time::now() - start).toSec());
       start = ros::Time::now();
-      samples_array.header.seq = n_seq;
-      samples_array.header.stamp = ros::Time::now();
-      samples_array.points.clear();
       n_seq++;
-      for (int i = 0; i < 100 && i < planSrv.response.path.size(); i++) {
+      for (int i = 0; i < planSrv.response.path.size(); i++) {
+        samples_array.header.seq = n_seq;
+        samples_array.header.stamp = ros::Time::now();
+        samples_array.points.clear();
         tf::Pose pose;
         tf::poseMsgToTF(planSrv.response.path[i], pose);
         double yaw = tf::getYaw(pose.getRotation());
         trajectory_point.position_W.x() = planSrv.response.path[i].position.x;
         trajectory_point.position_W.y() = planSrv.response.path[i].position.y;
         trajectory_point.position_W.z() = planSrv.response.path[i].position.z + 0.25;
-        quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), yaw);
+        tf::Quaternion quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), yaw);
         trajectory_point.setFromYaw(tf::getYaw(quat));
         mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
         samples_array.points.push_back(trajectory_point_msg);
         file << planSrv.response.path[i].position.x << ", " << planSrv.response.path[i].position.y
              << ", " << planSrv.response.path[i].position.z << ", " << yaw << ", "
              << samples_array.header.stamp.toSec() << ";\n";
+        trajectory_pub.publish(samples_array);
         ros::Duration(dt).sleep();
       }
-      trajectory_pub.publish(samples_array);
       execution.push_back((ros::Time::now() - start).toSec());
     } else {
       ROS_WARN_THROTTLE(1, "Planner not reachable");
