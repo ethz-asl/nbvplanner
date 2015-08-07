@@ -59,7 +59,6 @@ namespace nbvInspection {
     static double extensionRange_;
     static int initIterations_;
     static double dt_;
-    static bool RRTextension_;
     
     static double minX_;
     static double minY_;
@@ -120,18 +119,10 @@ namespace nbvInspection {
     nbvPlanner(const ros::NodeHandle& nh,
                const ros::NodeHandle& nh_private);
     ~nbvPlanner();
-    vector_t expand(nbvPlanner<stateVec>& instance, int N, int M, vector_t s,
-                    double& IGout, vector_t (nbvPlanner<stateVec>::*sample)(stateVec),
-                    double (nbvPlanner<stateVec>::*informationGain)(stateVec));
-    vector_t expandStructured(nbvPlanner<stateVec>& instance, int I, stateVec s, double& IGout,
+    vector_t buildTree(nbvPlanner<stateVec>& instance, int I, stateVec s, double& IGout,
                               double (nbvPlanner<stateVec>::*informationGain)(stateVec), int agentID);
-    vector_t sampleHolonomic(stateVec s);
     vector_t sampleEuler(stateVec s);
-    double informationGainRand(stateVec s);
-    double informationGainSimple(stateVec s);
-    double informationGainCone(stateVec s);
-    bool castRay(octomath::Vector3 origin, octomath::Vector3 direction,
-                 octomath::Vector3& end, bool ignoreUnknownCells, double d);
+    double informationGain(stateVec s);
     static bool setParams();
     static bool getRRTextension();
     static int getInitIterations();
