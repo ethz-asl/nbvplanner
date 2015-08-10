@@ -50,7 +50,7 @@ include_directories(
   ${OCTOMAP_INCLUDE_DIRS}
 )
 
-add_executable(nbvPlanner src/nbv_planner_node.cpp src/mesh_structure.cpp src/nbvp.cpp)
+add_executable(nbvPlanner src/nbv_planner_node.cpp src/mesh_structure.cpp src/nbvp.cpp src/rrt.cpp src/tree.cpp)
 add_executable(exploration src/exploration.cpp)
 add_executable(wpFollower src/wpFollower.cpp)
 
