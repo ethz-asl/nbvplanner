@@ -4,7 +4,7 @@
 #include <nbvplanner/tree.h>
 
 template<typename stateVec>
-nbvInspectoin::Node<stateVec>::Node()
+nbvInspection::Node<stateVec>::Node()
 {
   parent_ = NULL;
   distance_ = DBL_MAX;
@@ -12,7 +12,7 @@ nbvInspectoin::Node<stateVec>::Node()
 }
 
 template<typename stateVec>
-nbvInspectoin::Node<stateVec>::~Node()
+nbvInspection::Node<stateVec>::~Node()
 {
   for (typename std::vector<Node<StateVec> *>::iterator it = children_.begin();
       it != children_.end(); it++) {

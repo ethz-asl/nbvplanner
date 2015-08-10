@@ -123,7 +123,7 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
       ROS_WARN("STL mesh file path specified but mesh resolution parameter missing!");
     }
   }
-  tree_ = new Tree(mesh_, manager_);
+  tree_ = new RrtTree(mesh_, manager_);
   tree_->setParams(params_);
 
   ready_ = false;
@@ -258,107 +258,124 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
 {
   std::string ns = ros::this_node::getName();
   bool ret = true;
-  if (!nh_.param(ns + "/system/v_max", v_max_, 0.25)) {
+  params_.v_max_ = 0.25;
+  if (!nh_.param(ns + "/system/v_max", params_.v_max_)) {
     ROS_WARN("No maximal system speed specified. Looking for %s. Default is 0.25.",
              (ns + "/system/v_max").c_str());
   }
-  if (!nh_.param(ns + "/system/dyaw_max", dyaw_max_, 0.5)) {
+  params_.dyaw_max_ = 0.5;
+  if (!nh_.param(ns + "/system/dyaw_max", params_.dyaw_max_)) {
     ROS_WARN("No maximal yaw speed specified. Looking for %s. Default is 0.5.",
              (ns + "/system/yaw_max").c_str());
   }
-  if (!nh_.param(ns + "/system/camera/pitch", camPitch_, 15)) {
+  params_.camPitch_ = 15;
+  if (!nh_.param(ns + "/system/camera/pitch", params_.camPitch_)) {
     ROS_WARN("No camera pitch specified. Looking for %s. Default is 15deg.",
              (ns + "/system/camera/pitch").c_str());
   }
-  if (!nh_.param(ns + "/system/camera/horizontal", camHorizontal_, 90)) {
+  params_.camHorizontal_ = 90;
+  if (!nh_.param(ns + "/system/camera/horizontal", params_.camHorizontal_)) {
     ROS_WARN("No camera horizontal opening specified. Looking for %s. Default is 90deg.",
              (ns + "/system/camera/horizontal").c_str());
   }
-  if (!nh_.param(ns + "/system/camera/vertical", camVertical_)) {
+  params_.camVertical_ = 60;
+  if (!nh_.param(ns + "/system/camera/vertical", params_.camVertical_)) {
     ROS_WARN("No camera vertical opening specified. Looking for %s. Default is 60.",
              (ns + "/system/camera/vertical").c_str());
   }
-
-  if (!nh_.param(ns + "/nbvp/gain/probabilistic", igProbabilistic_, 0.0)) {
+  params_.igProbabilistic_ = 0.0;
+  if (!nh_.param(ns + "/nbvp/gain/probabilistic", params_.igProbabilistic_)) {
     ROS_WARN("No gain coefficient for free cells specified. Looking for %s. Default is 0.0.",
              (ns + "/nbvp/gain/probabilistic").c_str());
   }
-
-  if (!nh_.param(ns + "/nbvp/information_gain/free", igFree_, 0.0)) {
+  params_.igFree_ = 0.0;
+  if (!nh_.param(ns + "/nbvp/information_gain/free", params_.igFree_)) {
     ROS_WARN("No gain coefficient for free cells specified. Looking for %s. Default is 0.0.",
              (ns + "/nbvp/gain/free").c_str());
   }
-  if (!nh_.param(ns + "/nbvp/gain/occupied", igOccupied_, 0.0)) {
+  params_.igOccupied_ = 0.0;
+  if (!nh_.param(ns + "/nbvp/gain/occupied", params_.igOccupied_)) {
     ROS_WARN("No gain coefficient for occupied cells specified. Looking for %s. Default is 0.0.",
              (ns + "/nbvp/gain/occupied").c_str());
   }
-  if (!nh_.param(ns + "/nbvp/gain/unmapped", igUnmapped_, 1.0)) {
+  params_.igUnmapped_ = 1.0;
+  if (!nh_.param(ns + "/nbvp/gain/unmapped", params_.igUnmapped_)) {
     ROS_WARN("No gain coefficient for unmapped cells specified. Looking for %s. Default is 1.0.",
              (ns + "/nbvp/gain/unmapped").c_str());
   }
-  if (!nh_.param(ns + "/nbvp/information_gain/area", igArea_, 1.0)) {
+  params_.igArea_ = 1.0;
+  if (!nh_.param(ns + "/nbvp/information_gain/area", params_.igArea_)) {
     ROS_WARN("No gain coefficient for mesh area specified. Looking for %s. Default is 1.0.",
              (ns + "/nbvp/information_gain/area").c_str());
   }
-  if (!nh_.param(ns + "/nbvp/gain/degressive_coeff", degressiveCoeff_, 0.25)) {
+  params_.degressiveCoeff_ = 0.25;
+  if (!nh_.param(ns + "/nbvp/gain/degressive_coeff", params_.degressiveCoeff_)) {
     ROS_WARN(
         "No degressive factor for gain accumulation specified. Looking for %s. Default is 0.25.",
         (ns + "/nbvp/gain/degressive_coeff").c_str());
   }
-  if (!nh_.param(ns + "/nbvp/tree/extension_range", extensionRange_, 1.0)) {
+  params_.extensionRange_ = 1.0;
+  if (!nh_.param(ns + "/nbvp/tree/extension_range", params_.extensionRange_)) {
     ROS_WARN("No value for maximal extension range specified. Looking for %s. Default is 1.0m.",
              (ns + "/nbvp/tree/extension_range").c_str());
   }
-  if (!nh_.param(ns + "/nbvp/tree/initial_iterations", initIterations_, 15)) {
+  params_.initIterations_ = 15;
+  if (!nh_.param(ns + "/nbvp/tree/initial_iterations", params_.initIterations_)) {
     ROS_WARN("No number of initial tree iterations specified. Looking for %s. Default is 15.",
              (ns + "/nbvp/tree/initial_iterations").c_str());
   }
-  if (!nh_.param(ns + "/nbvp/dt", dt_, 0.1)) {
+  params_.dt_ = 0.1;
+  if (!nh_.param(ns + "/nbvp/dt", params_.dt_)) {
     ROS_WARN("No sampling time step specified. Looking for %s. Default is 0.1s.",
              (ns + "/nbvp/dt").c_str());
   }
-  if (!nh_.param(ns + "/nbvp/gain/range", gainRange_, 1.0)) {
+  params_.gainRange_ = 1.0;
+  if (!nh_.param(ns + "/nbvp/gain/range", params_.gainRange_)) {
     ROS_WARN("No gain range specified. Looking for %s. Default is 1.0m.",
              (ns + "/nbvp/gain/range").c_str());
   }
-  if (!nh_.param(ns + "/bbx/minX", minX_)) {
+  if (!nh_.param(ns + "/bbx/minX", params_.minX_)) {
     ROS_WARN("No x-min value specified. Looking for %s", (ns + "/bbx/minX").c_str());
     ret = false;
   }
-  if (!nh_.param(ns + "/bbx/minY", minY_)) {
+  if (!nh_.param(ns + "/bbx/minY", params_.minY_)) {
     ROS_WARN("No y-min value specified. Looking for %s", (ns + "/bbx/minY").c_str());
     ret = false;
   }
-  if (!nh_.param(ns + "/bbx/minZ", minZ_)) {
+  if (!nh_.param(ns + "/bbx/minZ", params_.minZ_)) {
     ROS_WARN("No z-min value specified. Looking for %s", (ns + "/bbx/minZ").c_str());
     ret = false;
   }
-  if (!nh_.param(ns + "/bbx/maxX", maxX_)) {
+  if (!nh_.param(ns + "/bbx/maxX", params_.maxX_)) {
     ROS_WARN("No x-max value specified. Looking for %s", (ns + "/bbx/maxX").c_str());
     ret = false;
   }
-  if (!nh_.param(ns + "/bbx/maxY", maxY_)) {
+  if (!nh_.param(ns + "/bbx/maxY", params_.maxY_)) {
     ROS_WARN("No y-max value specified. Looking for %s", (ns + "/bbx/maxY").c_str());
     ret = false;
   }
-  if (!nh_.param(ns + "/bbx/maxZ", maxZ_)) {
+  if (!nh_.param(ns + "/bbx/maxZ", params_.maxZ_)) {
     ROS_WARN("No z-max value specified. Looking for %s", (ns + "/bbx/maxZ").c_str());
     ret = false;
   }
-  if (!nh_.param(ns + "/bbx/softBounds", softBounds_, false)) {
+  params_.softBounds_ = false;
+  if (!nh_.param(ns + "/bbx/softBounds", params_.softBounds_)) {
     ROS_WARN(
         "Not specified whether scenario bounds are soft or hard. Looking for %s. Default is 'false'",
         (ns + "/bbx/softBounds").c_str());
   }
-  if (!nh_.param(ns + "/system/bbx/x", boundingBox_[0], 0.5)) {
+  params_.boundingBox_[0] = 0.5;
+  if (!nh_.param(ns + "/system/bbx/x", params_.boundingBox_[0])) {
     ROS_WARN("No x size value specified. Looking for %s. Default is 0.5m.",
              (ns + "/system/bbx/x").c_str());
   }
-  if (!nh_.param(ns + "/system/bbx/y", boundingBox_[1], 0.5)) {
+  params_.boundingBox_[1] = 0.5;
+  if (!nh_.param(ns + "/system/bbx/y", params_.boundingBox_[1])) {
     ROS_WARN("No y size value specified. Looking for %s. Default is 0.5m.",
              (ns + "/system/bbx/y").c_str());
   }
-  if (!nh_.param(ns + "/system/bbx/z", boundingBox_[2], 0.3)) {
+  params_.boundingBox_[2] = 0.3;
+  if (!nh_.param(ns + "/system/bbx/z", params_.boundingBox_[2])) {
     ROS_WARN("No z size value specified. Looking for %s. Default is 0.3m.",
              (ns + "/system/bbx/z").c_str());
   }

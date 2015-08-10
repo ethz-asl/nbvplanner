@@ -2,20 +2,19 @@
 #define RRTTREE_H_
 
 #include <nbvplanner/tree.h>
+#include <eigen3/Eigen/Dense>
+#include <nbvplanner/mesh_structure.h>
+#include <kdtree/kdtree.h>
 
 namespace nbvInspection {
 
-class RrtTree : public Tree<Eigen::Vector4d>
+class RrtTree : public TreeBase<Eigen::Vector4d>
 {
-  kdtree * kdTree_;
-  std::stack<stateVec> history_;
-  std::vector<StateVec> bestBranchMemory_;
-  int g_ID_;
  public:
   typedef Eigen::Vector4d StateVec;
 
   RrtTree();
-  virtual RrtTree(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager);
+  RrtTree(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager);
   ~RrtTree();
   virtual void setStateFromPoseMsg(const geometry_msgs::PoseStamped& pose);
   virtual void initialize();
@@ -24,9 +23,14 @@ class RrtTree : public Tree<Eigen::Vector4d>
   virtual void clear();
   virtual std::vector<geometry_msgs::Pose> getPathBackToPrevious();
   virtual void memorizeBestBranch();
-  void publishNode(Node<StateVec> node);
-  double gain(stateVec state);
+  void publishNode(Node<StateVec> * node);
+  double gain(StateVec state);
   std::vector<geometry_msgs::Pose> samplePath(StateVec start, StateVec end);
+ protected:
+  kdtree * kdTree_;
+  std::stack<StateVec> history_;
+  std::vector<StateVec> bestBranchMemory_;
+  int g_ID_;
 };
 }
 

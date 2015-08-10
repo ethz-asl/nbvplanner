@@ -1,6 +1,10 @@
 #ifndef TREE_H_
 #define TREE_H_
 
+#include <vector>
+#include <eigen3/Eigen/Dense>
+#include <nbvplanner/mesh_structure.h>
+
 namespace nbvInspection {
 
 struct Params
@@ -58,17 +62,18 @@ class Node
 template<typename stateVec>
 class TreeBase
 {
+ protected:
   Params params_;
   int counter_;
   double bestGain_;
-  Node * bestNode_;
+  Node<stateVec> * bestNode_;
   Node<stateVec> * rootNode_;
   mesh::StlMesh * mesh_;
   volumetric_mapping::OctomapManager * manager_;
  public:
-  Tree();
-  virtual Tree(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager);
-  ~Tree();
+  TreeBase();
+  TreeBase(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager);
+  ~TreeBase();
   virtual void setStateFromPoseMsg(const geometry_msgs::PoseStamped& pose) = 0;
   virtual void iterate(int iterations) = 0;
   virtual void initialize() = 0;

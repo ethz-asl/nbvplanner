@@ -14,19 +14,18 @@
 #include <nbvplanner/nbvp_srv.h>
 #include <nbvplanner/mesh_structure.h>
 #include <nbvplanner/tree.h>
+#include <nbvplanner/rrt.h>
 
 #define SQ(x) ((x)*(x))
 #define SQRT2 0.70711
 
 namespace nbvInspection {
 
-  template<typename stateVec, class Tree>
+  template<typename stateVec>
   class nbvPlanner {
   
     ros::NodeHandle nh_;
     ros::NodeHandle nh_private_;
-    stateVec root_;
-    stateVec g_stateOld_;
     
     ros::ServiceClient octomapClient_;
     ros::Subscriber posClient0_;
