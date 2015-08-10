@@ -12,9 +12,10 @@ nbvInspection::RrtTree::RrtTree()
 }
 
 nbvInspection::RrtTree::RrtTree(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager)
-    : nbvInspection::RrtTree::RrtTree(),
-      nbvInspection::TreeBase<StateVec>::TreeBase(mesh, manager)
 {
+  mesh_ = mesh;
+  manager_ = manager;
+  kdTree_ = kd_create(3);
 }
 
 nbvInspection::RrtTree::~RrtTree()
@@ -26,10 +27,10 @@ nbvInspection::RrtTree::~RrtTree()
 void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseStamped& pose)
 {
   //static const double offsetSensorPose = 0.14;
-  //root_[0] = pose.pose.position.x - cos((*root_[agentID])[3]) * offsetSensorPose;
-  //root_[1] = pose.pose.position.y - sin((*root_[agentID])[3]) * offsetSensorPose;
-  root_[0] = pose.pose.position.x - cos((*root_[agentID])[3]) * offsetSensorPose;
-  root_[1] = pose.pose.position.y - sin((*root_[agentID])[3]) * offsetSensorPose;
+  //root_[0] = pose.pose.position.x - cos(root_[3]) * offsetSensorPose;
+  //root_[1] = pose.pose.position.y - sin(root_[3]) * offsetSensorPose;
+  root_[0] = pose.pose.position.x;
+  root_[1] = pose.pose.position.y;
   root_[2] = pose.pose.position.z;
   tf::Pose poseTF;
   tf::poseMsgToTF(pose.pose, poseTF);
@@ -108,13 +109,16 @@ void nbvInspection::RrtTree::iterate(int iterations)
       solutionFound = true;
     }
   } else {
-    newState[0] = 2.0 * (params_.maxX_ - params_.minX_) * (((double) rand()) / ((double) RAND_MAX) - 0.5) + params_.minX_;
-    newState[1] = 2.0 * (params_.maxY_ - params_.minY_) * (((double) rand()) / ((double) RAND_MAX) - 0.5) + params_.minY_;
-    newState[2] = 2.0 * (params_.maxZ_ - params_.minZ_) * (((double) rand()) / ((double) RAND_MAX) - 0.5) + params_.minZ_;
+    newState[0] = 2.0 * (params_.maxX_ - params_.minX_)
+        * (((double) rand()) / ((double) RAND_MAX) - 0.5) + params_.minX_;
+    newState[1] = 2.0 * (params_.maxY_ - params_.minY_)
+        * (((double) rand()) / ((double) RAND_MAX) - 0.5) + params_.minY_;
+    newState[2] = 2.0 * (params_.maxZ_ - params_.minZ_)
+        * (((double) rand()) / ((double) RAND_MAX) - 0.5) + params_.minZ_;
   }
   kdres * nearest = kd_nearest3(kdTree_, newState.x(), newState.y(), newState.z());
   if (kd_res_size(nearest) <= 0) {
-    kd_res_free (kdres);
+    kd_res_free(nearest);
     return;
   }
   nbvInspection::Node<StateVec> * newParent = (nbvInspection::Node<StateVec> *) kd_res_item_data(
@@ -125,12 +129,13 @@ void nbvInspection::RrtTree::iterate(int iterations)
   Eigen::Vector3d origin(newParent->state_[0], newParent->state_[1], newParent->state_[2]);
   Eigen::Vector3d direction(newState[0] - origin[0], newState[1] - origin[1],
                             newState[2] - origin[2]);
-  if (direction.norm() > extensionRange_) {
-    direction = extensionRange_ * direction.normalized();
+  if (direction.norm() > params_.extensionRange_) {
+    direction = params_.extensionRange_ * direction.normalized();
   }
   if (volumetric_mapping::OctomapManager::CellStatus::kFree
       == manager_->getLineStatusBoundingBox(
-          origin, direction + origin + direction.normalized() * dOvershoot_, params_.boundingBox_)) {
+          origin, direction + origin + direction.normalized() * params_.dOvershoot_,
+          params_.boundingBox_)) {
     newState[0] = origin[0] + direction[0];
     newState[1] = origin[1] + direction[1];
     newState[2] = origin[2] + direction[2];
@@ -143,7 +148,7 @@ void nbvInspection::RrtTree::iterate(int iterations)
     newNode->distance_ = newParent->distance_ + direction.norm();
     newParent->children_.push_back(newNode);
     newNode->gain_ = newParent->gain_
-        + gain(newNode->state_) * exp(-degressiveCoeff_ * newNode->distance_);
+        + gain(newNode->state_) * exp(-params_.degressiveCoeff_ * newNode->distance_);
 
     kd_insert3(kdTree_, newState.x(), newState.y(), newState.z(), newNode);
 
@@ -168,17 +173,17 @@ void nbvInspection::RrtTree::initialize()
   rootNode_ = new Node<StateVec>;
   rootNode_->state_ = root_;
   rootNode_->distance_ = 0.0;
-  rootNode_->gain = params_.zero_gain_;
+  rootNode_->gain_ = params_.zero_gain_;
   rootNode_->parent_ = NULL;
 
-  kd_insert3(kdTree_, rootNode_.x(), rootNode_.y(), rootNode_.z(), rootNode_);
+  kd_insert3(kdTree_, root_.x(), root_.y(), root_.z(), rootNode_);
 
-  for (typename std::vector<StateVec>::reverse_iterator iter = bestBranchMemory.end();
-      iter != bestBranchMemory_.begin(); iter--) {
+  for (typename std::vector<StateVec>::reverse_iterator iter = bestBranchMemory_.rbegin();
+      iter != bestBranchMemory_.rend(); ++iter) {
     StateVec newState = *iter;
     kdres * nearest = kd_nearest3(kdTree_, newState.x(), newState.y(), newState.z());
     if (kd_res_size(nearest) <= 0) {
-      kd_res_free (kdres);
+      kd_res_free(nearest);
       continue;
     }
     nbvInspection::Node<StateVec> * newParent = (nbvInspection::Node<StateVec> *) kd_res_item_data(
@@ -189,12 +194,13 @@ void nbvInspection::RrtTree::initialize()
     Eigen::Vector3d origin(newParent->state_[0], newParent->state_[1], newParent->state_[2]);
     Eigen::Vector3d direction(newState[0] - origin[0], newState[1] - origin[1],
                               newState[2] - origin[2]);
-    if (direction.norm() > extensionRange_) {
-      direction = extensionRange_ * direction.normalized();
+    if (direction.norm() > params_.extensionRange_) {
+      direction = params_.extensionRange_ * direction.normalized();
     }
     if (volumetric_mapping::OctomapManager::CellStatus::kFree
         == manager_->getLineStatusBoundingBox(
-            origin, direction + origin + direction.normalized() * dOvershoot_, params_.boundingBox_)) {
+            origin, direction + origin + direction.normalized() * params_.dOvershoot_,
+            params_.boundingBox_)) {
       newState[0] += origin[0] + direction[0];
       newState[1] += origin[1] + direction[1];
       newState[2] += origin[2] + direction[2];
@@ -205,7 +211,7 @@ void nbvInspection::RrtTree::initialize()
       newNode->distance_ = newParent->distance_ + direction.norm();
       newParent->children_.push_back(newNode);
       newNode->gain_ = newParent->gain_
-          + gain(newNode->state_) * exp(-degressiveCoeff_ * newNode->distance_);
+          + gain(newNode->state_) * exp(-params_.degressiveCoeff_ * newNode->distance_);
 
       kd_insert3(kdTree_, newState.x(), newState.y(), newState.z(), newNode);
 
@@ -267,26 +273,27 @@ std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::getBestEdge()
   return ret;
 }
 
-nbvInspection::RrtTree::gain(StateVec state)
+double nbvInspection::RrtTree::gain(StateVec state)
 {
   double gain = 0.0;
   const double disc = manager_->getResolution();
   Eigen::Vector3d origin(state[0], state[1], state[2]);
   Eigen::Vector3d vec;
-  for (vec[0] = std::max(s[0] - gainRange_, params_.minX_);
-      vec[0] < std::min(s[0] + gainRange_, params_.maxX_); vec[0] += disc) {
-    for (vec[1] = std::max(s[1] - gainRange_, params_.minY_);
-        vec[1] < std::min(s[1] + gainRange_, params_.maxY_); vec[1] += disc) {
-      for (vec[2] = std::max(s[2] - gainRange_, params_.minZ_);
-          vec[2] < std::min(s[2] + gainRange_, params_.maxZ_); vec[2] += disc) {
-        Vector3d dir = vec - origin;
-        if (dir.norm() > pow(R, 2.0)) {
+  double rangeSq = pow(params_.gainRange_, 2.0);
+  for (vec[0] = std::max(state[0] - params_.gainRange_, params_.minX_);
+      vec[0] < std::min(state[0] + params_.gainRange_, params_.maxX_); vec[0] += disc) {
+    for (vec[1] = std::max(state[1] - params_.gainRange_, params_.minY_);
+        vec[1] < std::min(state[1] + params_.gainRange_, params_.maxY_); vec[1] += disc) {
+      for (vec[2] = std::max(state[2] - params_.gainRange_, params_.minZ_);
+          vec[2] < std::min(state[2] + params_.gainRange_, params_.maxZ_); vec[2] += disc) {
+        Eigen::Vector3d dir = vec - origin;
+        if (dir.norm() > rangeSq) {
           continue;
         }
         bool bbreak = false;
-        for (typename std::vector<Vector3d>::iterator itCBN = params_.camBoundNormals_.begin();
-            itCBN != params_.camBoundNormals_.end(); itCBN++) {
-          Vector3d normal = AngleAxisd(s[3], Vector3d::UnitZ()) * (*itCBN);
+        for (typename std::vector<Eigen::Vector3d>::iterator itCBN =
+            params_.camBoundNormals_.begin(); itCBN != params_.camBoundNormals_.end(); itCBN++) {
+          Eigen::Vector3d normal = Eigen::AngleAxisd(state[3], Eigen::Vector3d::UnitZ()) * (*itCBN);
           double val = dir.dot(normal.normalized());
           if (val < SQRT2 * disc) {
             bbreak = true;
@@ -331,9 +338,9 @@ nbvInspection::RrtTree::gain(StateVec state)
 
   if (mesh_) {
     tf::Transform transform;
-    transform.setOrigin(tf::Vector3(s.x(), s.y(), s.z()));
+    transform.setOrigin(tf::Vector3(state.x(), state.y(), state.z()));
     tf::Quaternion quaternion;
-    quaternion.setEuler(0.0, 0.0, s[3]);
+    quaternion.setEuler(0.0, 0.0, state[3]);
     transform.setRotation(quaternion);
     gain += params_.igArea_ * mesh_->computeInspectableArea(transform);
   }
@@ -343,7 +350,7 @@ nbvInspection::RrtTree::gain(StateVec state)
 std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::getPathBackToPrevious()
 {
   std::vector<geometry_msgs::Pose> ret;
-  if (history_.isenpty()) {
+  if (history_.empty()) {
     return ret;
   }
   ret = samplePath(root_, history_.top());
@@ -354,7 +361,7 @@ std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::getPathBackToPrevious()
 void nbvInspection::RrtTree::memorizeBestBranch()
 {
   bestBranchMemory_.clear();
-  Node<StateVec> current = bestNode_;
+  Node<StateVec> * current = bestNode_;
   while (current) {
     bestBranchMemory_.push_back(current->state_);
     current = current->parent_;
@@ -426,7 +433,7 @@ void nbvInspection::RrtTree::publishNode(Node<StateVec> * node)
   p.pose.orientation.y = q.y();
   p.pose.orientation.z = q.z();
   p.pose.orientation.w = q.w();
-  p.scale.x = direction.norm();
+  p.scale.x = dir.norm();
   p.scale.y = 0.03;
   p.scale.z = 0.03;
   p.color.r = 100.0 / 255.0;
@@ -441,7 +448,7 @@ void nbvInspection::RrtTree::publishNode(Node<StateVec> * node)
 std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::samplePath(StateVec start, StateVec end)
 {
   std::vector<geometry_msgs::Pose> ret;
-  Eigen::Vector3d distance = (end[0] - start[0], end[1] - start[1], end[2] - start[2]);
+  Eigen::Vector3d distance(end[0] - start[0], end[1] - start[1], end[2] - start[2]);
   double yaw_direction = end[3] - start[3];
   if (yaw_direction > M_PI) {
     yaw_direction -= 2.0 * M_PI;

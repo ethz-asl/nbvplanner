@@ -107,7 +107,7 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   std::string stlPath = "";
   mesh_ = NULL;
   if (ros::param::get(ns + "/stl_file_path", stlPath)) {
-    if (ros::param::get(ns + "/mesh_resolution", param.meshResolution_)) {
+    if (ros::param::get(ns + "/mesh_resolution", params_.meshResolution_)) {
       std::fstream stlFile;
       stlFile.open(stlPath.c_str());
       if (stlFile.is_open()) {
@@ -233,21 +233,21 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   tree_->initialize();
   vector_t path;
   int loopCount = 0;
-  while ((!tree->gainFound() || tree_->getCounter() < params_.initIterations_) && ros::ok()) {
+  while ((!tree_->gainFound() || tree_->getCounter() < params_.initIterations_) && ros::ok()) {
     if (tree_->getCounter() > params_.cuttoffIterations_) {
       ROS_INFO("No information gain found, shutting down");
       ros::shutdown();
       return true;
     }
-    if (loopCount > 1000 * (tree->getCounter() + 1)) {
+    if (loopCount > 1000 * (tree_->getCounter() + 1)) {
       ROS_INFO("Exceeding maximum failed iterations, return to previous point!");
-      res.path = tree_.getPathBackToPrevious();
+      res.path = tree_->getPathBackToPrevious();
       return true;
     }
     tree_->iterate(1);
     loopCount++;
   }
-  res.path = tree_.getBestEdge();
+  res.path = tree_->getBestEdge();
 
   tree_->memorizeBestBranch();
   return true;

@@ -53,7 +53,7 @@ namespace nbvInspection {
   public:
     typedef std::vector<stateVec> vector_t;
     typedef octomap::OcTree octomap_t;
-    TreeBase * tree_;
+    TreeBase<stateVec> * tree_;
     
     nbvPlanner(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
     ~nbvPlanner();

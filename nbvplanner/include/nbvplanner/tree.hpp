@@ -14,7 +14,7 @@ nbvInspection::Node<stateVec>::Node()
 template<typename stateVec>
 nbvInspection::Node<stateVec>::~Node()
 {
-  for (typename std::vector<Node<StateVec> *>::iterator it = children_.begin();
+  for (typename std::vector<Node<stateVec> *>::iterator it = children_.begin();
       it != children_.end(); it++) {
     delete (*it);
     (*it) = NULL;
@@ -24,8 +24,8 @@ nbvInspection::Node<stateVec>::~Node()
 template<typename stateVec>
 nbvInspection::TreeBase<stateVec>::TreeBase()
 {
-  bestGain = params_.zero_gain_;
-  bestNode = NULL;
+  bestGain_ = params_.zero_gain_;
+  bestNode_ = NULL;
   counter_ = 0;
   rootNode_ = NULL;
 }
@@ -33,10 +33,13 @@ nbvInspection::TreeBase<stateVec>::TreeBase()
 template<typename stateVec>
 nbvInspection::TreeBase<stateVec>::TreeBase(mesh::StlMesh * mesh,
                                             volumetric_mapping::OctomapManager * manager)
-    : nbvInspection::TreeBase<stateVec>::TreeBase(),
-      mesh_(mesh),
-      manager_(manager)
 {
+  mesh_ = mesh;
+  manager_ = manager;
+  bestGain_ = params_.zero_gain_;
+  bestNode_ = NULL;
+  counter_ = 0;
+  rootNode_ = NULL;
 }
 
 template<typename stateVec>
@@ -45,7 +48,7 @@ nbvInspection::TreeBase<stateVec>::~TreeBase()
 }
 
 template<typename stateVec>
-void nbvInspection::TreeBase<stateVec>::setParams(Params params);
+void nbvInspection::TreeBase<stateVec>::setParams(Params params)
 {
   params_ = params;
 }
@@ -61,8 +64,5 @@ bool nbvInspection::TreeBase<stateVec>::gainFound()
 {
   return bestGain_ > params_.zero_gain_;
 }
-
-template<typename stateVec>
-nbvInspection::TreeBase<stateVec>::zero_gain_ = 0.0;
 
 #endif

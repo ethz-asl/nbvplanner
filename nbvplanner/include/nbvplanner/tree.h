@@ -70,6 +70,7 @@ class TreeBase
   Node<stateVec> * rootNode_;
   mesh::StlMesh * mesh_;
   volumetric_mapping::OctomapManager * manager_;
+  stateVec root_;
  public:
   TreeBase();
   TreeBase(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager);

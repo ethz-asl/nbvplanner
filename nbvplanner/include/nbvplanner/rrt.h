@@ -6,6 +6,9 @@
 #include <nbvplanner/mesh_structure.h>
 #include <kdtree/kdtree.h>
 
+#define SQ(x) ((x)*(x))
+#define SQRT2 0.70711
+
 namespace nbvInspection {
 
 class RrtTree : public TreeBase<Eigen::Vector4d>
