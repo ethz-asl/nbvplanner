@@ -28,7 +28,6 @@
 #include <std_srvs/Empty.h>
 #include <mav_msgs/conversions.h>
 #include <mav_msgs/default_topics.h>
-//#include <mav_msgs/CommandTrajectoryPositionYaw.h>
 #include <nbvplanner/nbvp_srv.h>
 
 int main(int argc, char** argv)
@@ -75,122 +74,33 @@ int main(int argc, char** argv)
   // Wait for 5 seconds to let the Gazebo GUI show up.
   ros::Duration(5.0).sleep();
 
-  ROS_INFO("Starting the planner");
-  nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
-  nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
-  nh.param<double>("wp_z", trajectory_point.position_W.z(), 1.0);
-  //trajectory_point.position_W.x() = 0.0;
-  //trajectory_point.position_W.y() = 0.0;
-  //trajectory_point.position_W.z() = 1.0;
-  samples_array.header.seq = n_seq;
-  samples_array.header.stamp = ros::Time::now();
-  samples_array.points.clear();
-  n_seq++;
-  tf::Quaternion quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 0.0);
-  trajectory_point.setFromYaw(tf::getYaw(quat));
-  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
-  samples_array.points.push_back(trajectory_point_msg);
-  trajectory_pub.publish(samples_array);
-  ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
-  nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
-  nh.param<double>("wp_z", trajectory_point.position_W.z(), 1.5);
-  samples_array.header.seq = n_seq;
-  samples_array.header.stamp = ros::Time::now();
-  samples_array.points.clear();
-  n_seq++;
-  quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 1.0);
-  trajectory_point.setFromYaw(tf::getYaw(quat));
-  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
-  samples_array.points.push_back(trajectory_point_msg);
-  trajectory_pub.publish(samples_array);
-  ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
-  nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
-  nh.param<double>("wp_z", trajectory_point.position_W.z(), 3.0);
-  samples_array.header.seq = n_seq;
-  samples_array.header.stamp = ros::Time::now();
-  samples_array.points.clear();
-  n_seq++;
-  quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 2.0);
-  trajectory_point.setFromYaw(tf::getYaw(quat));
-  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
-  samples_array.points.push_back(trajectory_point_msg);
-  trajectory_pub.publish(samples_array);
-  ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
-  nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
-  nh.param<double>("wp_z", trajectory_point.position_W.z(), 3.0);
-  samples_array.header.seq = n_seq;
-  samples_array.header.stamp = ros::Time::now();
-  samples_array.points.clear();
-  n_seq++;
-  quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 1.0);
-  trajectory_point.setFromYaw(tf::getYaw(quat));
-  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
-  samples_array.points.push_back(trajectory_point_msg);
-  trajectory_pub.publish(samples_array);
-  ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
-  nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
-  nh.param<double>("wp_z", trajectory_point.position_W.z(), 3.0);
-  samples_array.header.seq = n_seq;
-  samples_array.header.stamp = ros::Time::now();
-  samples_array.points.clear();
-  n_seq++;
-  quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 2.0);
-  trajectory_point.setFromYaw(tf::getYaw(quat));
-  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
-  samples_array.points.push_back(trajectory_point_msg);
-  trajectory_pub.publish(samples_array);
-  ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
-  nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
-  nh.param<double>("wp_z", trajectory_point.position_W.z(), 3.0);
-  samples_array.header.seq = n_seq;
-  samples_array.header.stamp = ros::Time::now();
-  samples_array.points.clear();
-  n_seq++;
-  quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 3.0);
-  trajectory_point.setFromYaw(tf::getYaw(quat));
-  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
-  samples_array.points.push_back(trajectory_point_msg);
-  trajectory_pub.publish(samples_array);
-  ros::Duration(2.0).sleep();
-  nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
-  nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
-  nh.param<double>("wp_z", trajectory_point.position_W.z(), 3.0);
-  samples_array.header.seq = n_seq;
-  samples_array.header.stamp = ros::Time::now();
-  samples_array.points.clear();
-  n_seq++;
-  quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 3.0);
-  trajectory_point.setFromYaw(tf::getYaw(quat));
-  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
-  samples_array.points.push_back(trajectory_point_msg);
-  trajectory_pub.publish(samples_array);
+  ROS_INFO("Starting the planner: Performing initialization motion");
+  for (double i = 0; i <= 1.0; i = i + 0.1) {
+    nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
+    nh.param<double>("wp_y", trajectory_point.position_W.y(), 0.0);
+    nh.param<double>("wp_z", trajectory_point.position_W.z(), 1.0);
+    samples_array.header.seq = n_seq;
+    samples_array.header.stamp = ros::Time::now();
+    samples_array.points.clear();
+    n_seq++;
+    tf::Quaternion quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), M_PI * i);
+    trajectory_point.setFromYaw(tf::getYaw(quat));
+    mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+    samples_array.points.push_back(trajectory_point_msg);
+    trajectory_pub.publish(samples_array);
+    ros::Duration(1.0).sleep();
+  }
   ros::Duration(5.0).sleep();
 
-  std::string pkgPath = ros::package::getPath("nbvplanner");
-  std::fstream file;
-  file.open((pkgPath + "/data/path.m").c_str(), std::ios::out);
-  if (!file.is_open()) {
-    ROS_WARN("could not open path file");
-  }
-  file << "pathMatrix = [";
   int iteration = 0;
-  std::vector<double> execution;
-  std::vector<double> computation;
   while (ros::ok()) {
-    ROS_INFO_THROTTLE(1, "Initiating replanning");
+    ROS_INFO("Planning iteration %i", iteration);
     nbvplanner::nbvp_srv planSrv;
     planSrv.request.header.stamp = ros::Time::now();
     planSrv.request.header.seq = iteration;
     planSrv.request.header.frame_id = ros::this_node::getNamespace();
     ros::Time start = ros::Time::now();
     if (ros::service::call("nbvplanner", planSrv)) {
-      computation.push_back((ros::Time::now() - start).toSec());
-      start = ros::Time::now();
       n_seq++;
       for (int i = 0; i < planSrv.response.path.size(); i++) {
         samples_array.header.seq = n_seq;
@@ -201,32 +111,19 @@ int main(int argc, char** argv)
         double yaw = tf::getYaw(pose.getRotation());
         trajectory_point.position_W.x() = planSrv.response.path[i].position.x;
         trajectory_point.position_W.y() = planSrv.response.path[i].position.y;
+        // add offset to account for constant tracking error of controller
         trajectory_point.position_W.z() = planSrv.response.path[i].position.z + 0.25;
         tf::Quaternion quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), yaw);
         trajectory_point.setFromYaw(tf::getYaw(quat));
         mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
         samples_array.points.push_back(trajectory_point_msg);
-        file << planSrv.response.path[i].position.x << ", " << planSrv.response.path[i].position.y
-             << ", " << planSrv.response.path[i].position.z << ", " << yaw << ", "
-             << samples_array.header.stamp.toSec() << ";\n";
         trajectory_pub.publish(samples_array);
         ros::Duration(dt).sleep();
       }
-      execution.push_back((ros::Time::now() - start).toSec());
     } else {
       ROS_WARN_THROTTLE(1, "Planner not reachable");
       ros::Duration(1.0).sleep();
     }
     iteration++;
   }
-  file << "];\nexecutionTime = [";
-  for (int i = 0; i < execution.size(); i++) {
-    file << execution[i] << ", ";
-  }
-  file << "];\ncomputationTime = [";
-  for (int i = 0; i < computation.size(); i++) {
-    file << computation[i] << ", ";
-  }
-  file << "];";
-  file.close();
 }

@@ -33,39 +33,26 @@ mesh::StlMesh::StlMesh(std::fstream& file)
       x1_(0.0, 0.0, 0.0),
       x2_(0.0, 0.0, 0.0),
       x3_(0.0, 0.0, 0.0) {
-  //ROS_INFO("Loading STL");
   assert(file.is_open());
-  //ROS_INFO("Loading STL 1.1");
   int MaxLine = 0;
   char* line;
-  //ROS_INFO("Loading STL 1.2");
   double maxX = -DBL_MAX;
   double maxY = -DBL_MAX;
   double maxZ = -DBL_MAX;
   double minX = DBL_MAX;
   double minY = DBL_MAX;
   double minZ = DBL_MAX;
-  //ROS_INFO("Loading STL 1.3");
   assert(line = (char *) malloc(MaxLine = 80));
-  //ROS_INFO("Loading STL 1.4");
   file.getline(line, MaxLine);
-  //ROS_INFO("Loading STL 1.5");
-  //ROS_INFO("Loading STL 1.5.1, %s", line);
-  //ROS_INFO("Loading STL 1.5.2, %s", strtok(line, " "));
   if (0 != strcmp(strtok(line, " "), "solid")) {
     ROS_ERROR("Invalid mesh file! Make sure the STL file is given in ascii-format.");
     return;
   }
-  //ROS_INFO("Loading STL 1.6");
   assert(line = (char *) realloc(line, MaxLine));
-  //ROS_INFO("Loading STL 1.7");
   file.getline(line, MaxLine);
-  //ROS_INFO("Loading STL 1.8");
   int k = 0;
-  //ROS_INFO("Loading STL 1.9");
   while (0 != strcmp(strtok(line, " "), "endsolid") && !ros::isShuttingDown()) {
     int q = 0;
-  //ROS_INFO("Loading STL 2");
     mesh::StlMesh* newNode = new mesh::StlMesh;
     newNode->isHead_ = true;
     std::vector<Eigen::Vector3d*> vertices;
@@ -74,24 +61,18 @@ mesh::StlMesh::StlMesh(std::fstream& file)
     vertices.push_back(&(newNode->x3_));
     int vertexCount = 0;
     for (int i = 0; i<7; i++) {
-  //ROS_INFO("Loading STL 3");
       while (line[q] == ' ')
         q++;
-  //ROS_INFO("Loading STL 4");
       if (line[q] == 'v') {
-  //ROS_INFO("Loading STL 5");
         // used to rotate the mesh before processing
         const double yawTrafo = 0.0;
         // used to scale the mesh before processing
         const double scaleFactor = 100.0;
         // used to offset the mesh before processing
         const double offsetX = 0.0;       
-        // used to offset the mesh before processing
         const double offsetY = 0.0;
-        // used to offset the mesh before processing
         const double offsetZ = 0.0;
 
-  //ROS_INFO("Loading STL 6");
         char* v = strtok(line+q," ");
         v = strtok(NULL," ");
         double xtmp = atof(v)/scaleFactor;
@@ -105,7 +86,6 @@ mesh::StlMesh::StlMesh(std::fstream& file)
         vertices[vertexCount]->y() -= offsetY;
         vertices[vertexCount]->z() -= offsetZ;
         
-  //ROS_INFO("Loading STL 7");
         if (maxX<vertices[vertexCount]->x())
           maxX=vertices[vertexCount]->x();
         if (maxY<vertices[vertexCount]->y())
@@ -121,16 +101,13 @@ mesh::StlMesh::StlMesh(std::fstream& file)
           
         vertexCount++;
       }
-  //ROS_INFO("Loading STL 8");
       assert(line = (char *) realloc(line, MaxLine));
       file.getline(line, MaxLine);
     }
     newNode->normal_ = ((newNode->x3_ - newNode->x2_).cross(newNode->x1_ - newNode->x2_) / 2.0);
     children_.push_back(newNode);
-  //ROS_INFO("Loading STL 9");
     k++;
   }
-  //ROS_INFO("Loading STL 10");
   free(line);
   file.close();
   if (k > 0)
@@ -325,7 +302,6 @@ void mesh::StlMesh::split() {
   tmpNode->isHead_ = false;
   tmpNode->isInspected_ = false;
   children_.push_back(tmpNode);
-  //ROS_INFO("split leaf");
 }
 
 bool mesh::StlMesh::collapse() {
@@ -378,17 +354,11 @@ bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialV
     bool visibility1 = true;
     for (typename std::vector<tf::Vector3>::iterator it = camBoundNormals_.begin();
          it != camBoundNormals_.end(); it++) {
-      //ROS_INFO("camBoundNormals_: (%2.2f,%2.2f,%2.2f)", (*it).x(), (*it).y(), (*it).z());
       if (it->dot(transformedX1) < 0.0) {
         visibility1 = false;
         break;
       }
     }
-    //ROS_INFO("Transform: (%2.2f,%2.2f,%2.2f,%2.2f)", transform.getOrigin().x(), transform.getOrigin().y(), transform.getOrigin().z(), yaw);
-    //ROS_INFO("x1_: (%2.2f,%2.2f,%2.2f)", x1_.x(), x1_.y(), x1_.z());
-    //ROS_INFO("transformedX1: (%2.2f,%2.2f,%2.2f) %s", transformedX1.x(), transformedX1.y(), transformedX1.z(), visibility1?"True":"False");
-    //ROS_INFO("normal_: (%2.2f,%2.2f,%2.2f)", normal_.x(), normal_.y(), normal_.z());
-    //ROS_INFO("transformedNormal: (%2.2f,%2.2f,%2.2f)", transformedNormal.x(), transformedNormal.y(), transformedNormal.z());
     if (visibility1)
       partialVisibility = true;
     else

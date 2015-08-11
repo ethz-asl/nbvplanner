@@ -17,7 +17,6 @@ class StlMesh {
   StlMesh(std::fstream& file);
   StlMesh(const Eigen::Vector3d x1, const Eigen::Vector3d x2, const Eigen::Vector3d x3);
   ~StlMesh();
-  
   static void setCameraParams(double cameraPitch, double cameraHorizontalFoV, double cameraVerticalFoV, double maxDist);
   static void setResolution(double resolution) {
     resolution_ = resolution;
@@ -25,11 +24,8 @@ class StlMesh {
   static void setOctomapManager(volumetric_mapping::OctomapManager * manager) {
     manager_ = manager;
   }
-  
   void incoorporateViewFromPoseMsg(const geometry_msgs::Pose& pose);
-  
   double computeInspectableArea(const tf::Transform& transform);
-  
   void assembleMarkerArray(visualization_msgs::Marker& inspected,
                            visualization_msgs::Marker& uninspected) const;
   
@@ -55,9 +51,7 @@ class StlMesh {
   static double maxDist_;
   static std::vector<tf::Vector3> camBoundNormals_;
   static volumetric_mapping::OctomapManager * manager_;
-
 };
-
 }
 
 #endif // _MESH_STRUCTURE_H_
