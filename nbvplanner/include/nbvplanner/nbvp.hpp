@@ -43,27 +43,32 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   manager_ = new volumetric_mapping::OctomapManager(nh_, nh_private_);
 
   // set up the topics and services
-  params_.inspectionPath_ = nh_.advertise < visualization_msgs::Marker > ("inspectionPath", 1000);
-  params_.treePub_ = nh_.advertise < geometry_msgs::PolygonStamped > ("treePol", 1000);
-  plannerService0_ = nh_.advertiseService(
-      "nbvplanner0", &nbvInspection::nbvPlanner < stateVec > ::plannerCallback0, this);
-  plannerService1_ = nh_.advertiseService(
-      "nbvplanner1", &nbvInspection::nbvPlanner < stateVec > ::plannerCallback1, this);
-  plannerService2_ = nh_.advertiseService(
-      "nbvplanner2", &nbvInspection::nbvPlanner < stateVec > ::plannerCallback2, this);
-  plannerService3_ = nh_.advertiseService(
-      "nbvplanner3", &nbvInspection::nbvPlanner < stateVec > ::plannerCallback3, this);
-  plannerService4_ = nh_.advertiseService(
-      "nbvplanner4", &nbvInspection::nbvPlanner < stateVec > ::plannerCallback4, this);
-  posClient0_ = nh_.subscribe("pose0", 10, &nbvInspection::nbvPlanner < stateVec > ::posCallback0,
+  params_.inspectionPath_ = nh_.advertise<visualization_msgs::Marker>("inspectionPath", 1000);
+  params_.treePub_ = nh_.advertise<geometry_msgs::PolygonStamped>("treePol", 1000);
+  plannerService0_ = nh_.advertiseService("nbvplanner0",
+                                          &nbvInspection::nbvPlanner<stateVec>::plannerCallback0,
+                                          this);
+  plannerService1_ = nh_.advertiseService("nbvplanner1",
+                                          &nbvInspection::nbvPlanner<stateVec>::plannerCallback1,
+                                          this);
+  plannerService2_ = nh_.advertiseService("nbvplanner2",
+                                          &nbvInspection::nbvPlanner<stateVec>::plannerCallback2,
+                                          this);
+  plannerService3_ = nh_.advertiseService("nbvplanner3",
+                                          &nbvInspection::nbvPlanner<stateVec>::plannerCallback3,
+                                          this);
+  plannerService4_ = nh_.advertiseService("nbvplanner4",
+                                          &nbvInspection::nbvPlanner<stateVec>::plannerCallback4,
+                                          this);
+  posClient0_ = nh_.subscribe("pose0", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback0,
                               this);
-  posClient1_ = nh_.subscribe("pose1", 10, &nbvInspection::nbvPlanner < stateVec > ::posCallback1,
+  posClient1_ = nh_.subscribe("pose1", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback1,
                               this);
-  posClient2_ = nh_.subscribe("pose2", 10, &nbvInspection::nbvPlanner < stateVec > ::posCallback2,
+  posClient2_ = nh_.subscribe("pose2", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback2,
                               this);
-  posClient3_ = nh_.subscribe("pose3", 10, &nbvInspection::nbvPlanner < stateVec > ::posCallback3,
+  posClient3_ = nh_.subscribe("pose3", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback3,
                               this);
-  posClient4_ = nh_.subscribe("pose4", 10, &nbvInspection::nbvPlanner < stateVec > ::posCallback4,
+  posClient4_ = nh_.subscribe("pose4", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback4,
                               this);
   pointcloud_sub0_ = nh_.subscribe("pointcloud0", 40,
                                    &volumetric_mapping::OctomapManager::insertPointcloudWithTf,
@@ -143,31 +148,31 @@ nbvInspection::nbvPlanner<stateVec>::~nbvPlanner()
 template<typename stateVec>
 void nbvInspection::nbvPlanner<stateVec>::posCallback0(const geometry_msgs::PoseStamped& pose)
 {
-  nbvInspection::nbvPlanner < stateVec > ::posCallback(pose, 0);
+  nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 0);
 }
 
 template<typename stateVec>
 void nbvInspection::nbvPlanner<stateVec>::posCallback1(const geometry_msgs::PoseStamped& pose)
 {
-  nbvInspection::nbvPlanner < stateVec > ::posCallback(pose, 1);
+  nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 1);
 }
 
 template<typename stateVec>
 void nbvInspection::nbvPlanner<stateVec>::posCallback2(const geometry_msgs::PoseStamped& pose)
 {
-  nbvInspection::nbvPlanner < stateVec > ::posCallback(pose, 2);
+  nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 2);
 }
 
 template<typename stateVec>
 void nbvInspection::nbvPlanner<stateVec>::posCallback3(const geometry_msgs::PoseStamped& pose)
 {
-  nbvInspection::nbvPlanner < stateVec > ::posCallback(pose, 3);
+  nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 3);
 }
 
 template<typename stateVec>
 void nbvInspection::nbvPlanner<stateVec>::posCallback4(const geometry_msgs::PoseStamped& pose)
 {
-  nbvInspection::nbvPlanner < stateVec > ::posCallback(pose, 4);
+  nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 4);
 }
 
 template<typename stateVec>
@@ -182,35 +187,35 @@ template<typename stateVec>
 bool nbvInspection::nbvPlanner<stateVec>::plannerCallback0(nbvplanner::nbvp_srv::Request& req,
                                                            nbvplanner::nbvp_srv::Response& res)
 {
-  nbvInspection::nbvPlanner < stateVec > ::plannerCallback(req, res, 0);
+  nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 0);
 }
 
 template<typename stateVec>
 bool nbvInspection::nbvPlanner<stateVec>::plannerCallback1(nbvplanner::nbvp_srv::Request& req,
                                                            nbvplanner::nbvp_srv::Response& res)
 {
-  nbvInspection::nbvPlanner < stateVec > ::plannerCallback(req, res, 1);
+  nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 1);
 }
 
 template<typename stateVec>
 bool nbvInspection::nbvPlanner<stateVec>::plannerCallback2(nbvplanner::nbvp_srv::Request& req,
                                                            nbvplanner::nbvp_srv::Response& res)
 {
-  nbvInspection::nbvPlanner < stateVec > ::plannerCallback(req, res, 2);
+  nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 2);
 }
 
 template<typename stateVec>
 bool nbvInspection::nbvPlanner<stateVec>::plannerCallback3(nbvplanner::nbvp_srv::Request& req,
                                                            nbvplanner::nbvp_srv::Response& res)
 {
-  nbvInspection::nbvPlanner < stateVec > ::plannerCallback(req, res, 3);
+  nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 3);
 }
 
 template<typename stateVec>
 bool nbvInspection::nbvPlanner<stateVec>::plannerCallback4(nbvplanner::nbvp_srv::Request& req,
                                                            nbvplanner::nbvp_srv::Response& res)
 {
-  nbvInspection::nbvPlanner < stateVec > ::plannerCallback(req, res, 4);
+  nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 4);
 }
 
 template<typename stateVec>
@@ -218,6 +223,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
                                                           nbvplanner::nbvp_srv::Response& res,
                                                           int agentID)
 {
+  ros::Time computationTime = ros::Time::now();
   if (!ros::ok()) {
     ROS_INFO_THROTTLE(1, "Exploration finished. Not planning any further moves.");
     return true;
@@ -250,6 +256,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   res.path = tree_->getBestEdge();
 
   tree_->memorizeBestBranch();
+  ROS_INFO("Path computation lasted %2.2fms", 1.0e3 * (ros::Time::now() - computationTime).toSec());
   return true;
 }
 
@@ -285,8 +292,9 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
   }
   params_.igProbabilistic_ = 0.0;
   if (!ros::param::get(ns + "/nbvp/gain/probabilistic", params_.igProbabilistic_)) {
-    ROS_WARN("No gain coefficient for probability of cells specified. Looking for %s. Default is 0.0.",
-             (ns + "/nbvp/gain/probabilistic").c_str());
+    ROS_WARN(
+        "No gain coefficient for probability of cells specified. Looking for %s. Default is 0.0.",
+        (ns + "/nbvp/gain/probabilistic").c_str());
   }
   params_.igFree_ = 0.0;
   if (!ros::param::get(ns + "/nbvp/gain/free", params_.igFree_)) {
@@ -361,7 +369,7 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
   params_.softBounds_ = false;
   if (!ros::param::get(ns + "/bbx/softBounds", params_.softBounds_)) {
     ROS_WARN(
-        "Not specified whether scenario bounds are soft or hard. Looking for %s. Default is 'false'",
+        "Not specified whether scenario bounds are soft or hard. Looking for %s. Default is false",
         (ns + "/bbx/softBounds").c_str());
   }
   params_.boundingBox_[0] = 0.5;
@@ -391,8 +399,18 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
   }
   params_.dOvershoot_ = 0.5;
   if (!ros::param::get(ns + "/system/bbx/overshoot", params_.dOvershoot_)) {
-    ROS_WARN("No estimated overshoot value for collision avoidance specified. Looking for %s. Default is 0.5m.",
-             (ns + "/system/bbx/overshoot").c_str());
+    ROS_WARN(
+        "No estimated overshoot value for collision avoidance specified. Looking for %s. Default is 0.5m.",
+        (ns + "/system/bbx/overshoot").c_str());
+  }
+  params_.log_ = false;
+  if (!ros::param::get(ns + "/nbvp/log/on", params_.log_)) {
+    ROS_WARN("Logging is off by default. Turn on with %s: true", (ns + "/nbvp/log/on").c_str());
+  }
+  params_.log_throttle_ = 0.5;
+  if (!ros::param::get(ns + "/nbvp/log/throttle", params_.log_throttle_)) {
+    ROS_WARN("No throttle time for logging specified. Looking for %s. Default is 0.5s.",
+             (ns + "/nbvp/log/throttle").c_str());
   }
   return ret;
 }

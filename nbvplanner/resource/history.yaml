@@ -24,6 +24,9 @@ nbvp/tree/initial_iterations: 15
 nbvp/tree/cuttoff_iterations: 200
 nbvp/dt: 0.1
 
+nbvp/log/throttle: 0.25
+nbvp/log/on: true
+
 # bounding box: necessary to limit the simulation 
 # scenario (smaller than actual gazebo scenario)
 bbx/minX: -5.0
@@ -33,4 +36,3 @@ bbx/maxX: 5.0
 bbx/maxY: 10.0
 bbx/maxZ: 3.0
 bbx/softBounds: false
-

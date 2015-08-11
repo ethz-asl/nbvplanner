@@ -1,6 +1,7 @@
 #ifndef RRTTREE_HPP_
 #define RRTTREE_HPP_
 
+#include <boost/filesystem.hpp>
 #include <nbvplanner/rrt.h>
 #include <nbvplanner/tree.h>
 #include <nbvplanner/tree.hpp>
@@ -10,6 +11,27 @@ nbvInspection::RrtTree::RrtTree()
     : nbvInspection::TreeBase<StateVec>::TreeBase()
 {
   kdTree_ = kd_create(3);
+  iterationCount_ = 0;
+
+  if (params_.log_) {
+    time_t rawtime;
+    struct tm * ptm;
+    time(&rawtime);
+    ptm = gmtime(&rawtime);
+    logFilePath_ = ros::package::getPath("nbvplanner") + "/data/"
+        + std::to_string(ptm->tm_year + 1900) + "_" + std::to_string(ptm->tm_mon + 1) + "_"
+        + std::to_string(ptm->tm_mday) + "_" + std::to_string(ptm->tm_hour) + "_"
+        + std::to_string(ptm->tm_min) + "_" + std::to_string(ptm->tm_sec);
+    boost::filesystem::path dir(logFilePath_.c_str());
+    if (boost::filesystem::create_directory(dir)) {
+      ROS_INFO("directory '%s' has been created", logFilePath_.c_str());
+    }else {
+      ROS_INFO("directory '%s' has NOT been created", logFilePath_.c_str());
+    }
+    logFilePath_ += "/";
+    fileResponse_.open((logFilePath_ + "response.txt").c_str(), std::ios::out);
+    filePath_.open((logFilePath_ + "path.txt").c_str(), std::ios::out);
+  }
 }
 
 nbvInspection::RrtTree::RrtTree(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager)
@@ -17,12 +39,42 @@ nbvInspection::RrtTree::RrtTree(mesh::StlMesh * mesh, volumetric_mapping::Octoma
   mesh_ = mesh;
   manager_ = manager;
   kdTree_ = kd_create(3);
+  iterationCount_ = 0;
+
+  if (params_.log_) {
+    time_t rawtime;
+    struct tm * ptm;
+    time(&rawtime);
+    ptm = gmtime(&rawtime);
+    logFilePath_ = ros::package::getPath("nbvplanner") + "/data/"
+        + std::to_string(ptm->tm_year + 1900) + "_" + std::to_string(ptm->tm_mon + 1) + "_"
+        + std::to_string(ptm->tm_mday) + "_" + std::to_string(ptm->tm_hour) + "_"
+        + std::to_string(ptm->tm_min) + "_" + std::to_string(ptm->tm_sec);
+    boost::filesystem::path dir(logFilePath_.c_str());
+    if (boost::filesystem::create_directory(dir)) {
+      ROS_INFO("directory '%s' has been created", logFilePath_.c_str());
+    }else {
+      ROS_INFO("directory '%s' has NOT been created", logFilePath_.c_str());
+    }
+    logFilePath_ += "/";
+    fileResponse_.open((logFilePath_ + "response.txt").c_str(), std::ios::out);
+    filePath_.open((logFilePath_ + "path.txt").c_str(), std::ios::out);
+  }
 }
 
 nbvInspection::RrtTree::~RrtTree()
 {
   delete rootNode_;
   kd_free(kdTree_);
+  if (fileResponse_.is_open()) {
+    fileResponse_.close();
+  }
+  if (fileTree_.is_open()) {
+    fileTree_.close();
+  }
+  if (filePath_.is_open()) {
+    filePath_.close();
+  }
 }
 
 void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseStamped& pose)
@@ -38,9 +90,14 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseStampe
   root_[3] = tf::getYaw(poseTF.getRotation());
 
   static double throttleTime = ros::Time::now().toSec();
-  const static double throttleConst = 0.1;  // TODO: make parameter
-  if (ros::Time::now().toSec() - throttleTime > throttleConst) {
-    throttleTime += throttleConst;
+  if (ros::Time::now().toSec() - throttleTime > params_.log_throttle_) {
+    throttleTime += params_.log_throttle_;
+    if (params_.log_) {
+      for (int i = 0; i < root_.size() - 1; i++) {
+        fileResponse_ << root_[i] << ",";
+      }
+      fileResponse_ << root_[root_.size() - 1] << "\n";
+    }
     if (mesh_) {
       mesh_->incoorporateViewFromPoseMsg(pose.pose);
       visualization_msgs::Marker inspected;
@@ -171,6 +228,15 @@ void nbvInspection::RrtTree::initialize()
 
   kdTree_ = kd_create(3);
 
+  if (params_.log_) {
+    if (fileTree_.is_open()) {
+      fileTree_.close();
+    }
+    fileTree_.open((logFilePath_ + "tree" + std::to_string(iterationCount_) + ".txt").c_str(),
+                   std::ios::out);
+  }
+  iterationCount_++;
+
   rootNode_ = new Node<StateVec>;
   rootNode_->state_ = root_;
   rootNode_->distance_ = 0.0;
@@ -202,9 +268,9 @@ void nbvInspection::RrtTree::initialize()
         == manager_->getLineStatusBoundingBox(
             origin, direction + origin + direction.normalized() * params_.dOvershoot_,
             params_.boundingBox_)) {
-      newState[0] += origin[0] + direction[0];
-      newState[1] += origin[1] + direction[1];
-      newState[2] += origin[2] + direction[2];
+      newState[0] = origin[0] + direction[0];
+      newState[1] = origin[1] + direction[1];
+      newState[2] = origin[2] + direction[2];
       // create new node and insert into tree
       nbvInspection::Node<StateVec> * newNode = new nbvInspection::Node<StateVec>;
       newNode->state_ = newState;
@@ -235,6 +301,7 @@ void nbvInspection::RrtTree::initialize()
   p.header.seq = g_ID_;
   p.header.frame_id = "/world";
   p.id = g_ID_;
+  g_ID_++;
   p.ns = "workspace";
   p.type = visualization_msgs::Marker::CUBE;
   p.action = visualization_msgs::Marker::ADD;
@@ -261,6 +328,7 @@ void nbvInspection::RrtTree::initialize()
 
 std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::getBestEdge()
 {
+  // TODO: logging
   std::vector<geometry_msgs::Pose> ret;
   nbvInspection::Node<StateVec> * current = bestNode_;
   if (current->parent_ != NULL) {
@@ -363,7 +431,7 @@ void nbvInspection::RrtTree::memorizeBestBranch()
 {
   bestBranchMemory_.clear();
   Node<StateVec> * current = bestNode_;
-  while (current) {
+  while (current->parent_ && current->parent_->parent_) {
     bestBranchMemory_.push_back(current->state_);
     current = current->parent_;
   }
@@ -383,6 +451,7 @@ void nbvInspection::RrtTree::clear()
 
 void nbvInspection::RrtTree::publishNode(Node<StateVec> * node)
 {
+  // TODO: logging
   visualization_msgs::Marker p;
   p.header.stamp = ros::Time::now();
   p.header.seq = g_ID_;
@@ -444,6 +513,17 @@ void nbvInspection::RrtTree::publishNode(Node<StateVec> * node)
   p.lifetime = ros::Duration(10.0);
   p.frame_locked = false;
   params_.inspectionPath_.publish(p);
+
+  if (params_.log_) {
+    for (int i = 0; i < node->state_.size(); i++) {
+      fileTree_ << node->state_[i] << ",";
+    }
+    fileTree_ << node->gain_ << ",";
+    for (int i = 0; i < node->parent_->state_.size(); i++) {
+      fileTree_ << node->parent_->state_[i] << ",";
+    }
+    fileTree_ << node->parent_->gain_ << "\n";
+  }
 }
 
 std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::samplePath(StateVec start, StateVec end)
@@ -477,6 +557,12 @@ std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::samplePath(StateVec sta
     pose.orientation.z = quat.z();
     pose.orientation.w = quat.w();
     ret.push_back(pose);
+    if (params_.log_) {
+      filePath_ << pose.position.x << ",";
+      filePath_ << pose.position.y << ",";
+      filePath_ << pose.position.z << ",";
+      filePath_ << yaw << "\n";
+    }
   }
   return ret;
 }

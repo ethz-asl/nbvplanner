@@ -44,6 +44,9 @@ struct Params
 
   ros::Publisher inspectionPath_;
   ros::Publisher treePub_;
+  
+  bool log_;
+  double log_throttle_;
 };
 
 template<typename stateVec>

@@ -1,6 +1,9 @@
 #ifndef RRTTREE_H_
 #define RRTTREE_H_
 
+#include <ros/ros.h>
+#include <ros/package.h>
+#include <sstream>
 #include <nbvplanner/tree.h>
 #include <eigen3/Eigen/Dense>
 #include <nbvplanner/mesh_structure.h>
@@ -34,6 +37,11 @@ class RrtTree : public TreeBase<Eigen::Vector4d>
   std::stack<StateVec> history_;
   std::vector<StateVec> bestBranchMemory_;
   int g_ID_;
+  int iterationCount_;;
+  std::fstream fileTree_;
+  std::fstream filePath_;
+  std::fstream fileResponse_;
+  std::string logFilePath_;
 };
 }
 
