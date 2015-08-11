@@ -3,6 +3,7 @@
 
 #include <nbvplanner/rrt.h>
 #include <nbvplanner/tree.h>
+#include <nbvplanner/tree.hpp>
 #include <kdtree/kdtree.h>
 
 nbvInspection::RrtTree::RrtTree()

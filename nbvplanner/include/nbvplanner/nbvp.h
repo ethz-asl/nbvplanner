@@ -14,6 +14,7 @@
 #include <nbvplanner/nbvp_srv.h>
 #include <nbvplanner/mesh_structure.h>
 #include <nbvplanner/tree.h>
+#include <nbvplanner/tree.hpp>
 #include <nbvplanner/rrt.h>
 
 #define SQ(x) ((x)*(x))
