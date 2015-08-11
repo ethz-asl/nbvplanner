@@ -9,18 +9,20 @@ system/camera/vertical: 60.0
 system/bbx/x: 0.5
 system/bbx/y: 0.5
 system/bbx/z: 0.3
+system/bbx/overshoot: 0.5
 
-nbvp/information_gain/free: 0.0
-nbvp/information_gain/occupied: 0.0
-nbvp/information_gain/unmapped: 1.0
-nbvp/information_gain/area: 0.0
-nbvp/information_gain/probabilistic: 0.0
-nbvp/information_gain/range: 2.0
-nbvp/information_gain/degressive_coeff: 0.5
-nbvp/sampleHolonomic/extension_range: 1.0
-nbvp/RRT/initial_iterations: 15
+nbvp/gain/free: 0.0
+nbvp/gain/occupied: 0.0
+nbvp/gain/unmapped: 1.0
+nbvp/gain/area: 0.0
+nbvp/gain/probabilistic: 0.0
+nbvp/gain/range: 2.0
+nbvp/gain/zero: 0.0
+nbvp/gain/degressive_coeff: 0.5
+nbvp/tree/extension_range: 1.0
+nbvp/tree/initial_iterations: 15
+nbvp/tree/cuttoff_iterations: 200
 nbvp/dt: 0.1
-nbvp/RRT_extension: true
 
 # bounding box: necessary to limit the simulation 
 # scenario (smaller than actual gazebo scenario)
