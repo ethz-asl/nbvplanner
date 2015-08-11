@@ -52,7 +52,6 @@ include_directories(
 
 add_executable(nbvPlanner src/nbv_planner_node.cpp src/mesh_structure.cpp src/nbvp.cpp src/rrt.cpp src/tree.cpp)
 add_executable(exploration src/exploration.cpp)
-add_executable(wpFollower src/wpFollower.cpp)
 
 target_link_libraries(nbvPlanner
   ${catkin_LIBRARIES}
@@ -61,8 +60,4 @@ target_link_libraries(nbvPlanner
 target_link_libraries(exploration
   ${catkin_LIBRARIES}
 )
-target_link_libraries(wpFollower
-  ${catkin_LIBRARIES}
-)
 add_dependencies(exploration ${catkin_EXPORTED_TARGETS})
-add_dependencies(wpFollower ${catkin_EXPORTED_TARGETS})
