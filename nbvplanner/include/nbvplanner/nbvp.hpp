@@ -256,7 +256,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   res.path = tree_->getBestEdge();
 
   tree_->memorizeBestBranch();
-  ROS_INFO("Path computation lasted %2.2fms", 1.0e3 * (ros::Time::now() - computationTime).toSec());
+  ROS_INFO("Path computation lasted %2.3fs", (ros::Time::now() - computationTime).toSec());
   return true;
 }
 

@@ -224,6 +224,8 @@ void nbvInspection::RrtTree::iterate(int iterations)
 
 void nbvInspection::RrtTree::initialize()
 {
+
+  g_ID_ = 0;
   manager_->publishAll();
 
   kdTree_ = kd_create(3);
@@ -295,13 +297,11 @@ void nbvInspection::RrtTree::initialize()
   }
 
   // Publish visualization of total exploration area
-  g_ID_ = 0;
   visualization_msgs::Marker p;
   p.header.stamp = ros::Time::now();
-  p.header.seq = g_ID_;
+  p.header.seq = 0;
   p.header.frame_id = "/world";
-  p.id = g_ID_;
-  g_ID_++;
+  p.id = 0;
   p.ns = "workspace";
   p.type = visualization_msgs::Marker::CUBE;
   p.action = visualization_msgs::Marker::ADD;
