@@ -32,7 +32,7 @@
       <rosparam command="load" file="$(find rotors_gazebo)/resource/$(arg mav_name).yaml" />
       <remap from="odometry" to="odometry_sensor1/odometry" />
     </node>
-    <node name="exploration" pkg="nbvplanner" type="exploration" output="screen" >
+    <node name="exploration" pkg="interface_nbvp_rotors" type="exploration" output="screen" >
       <rosparam command="load" file="$(arg param_file)" />
     </node>
     

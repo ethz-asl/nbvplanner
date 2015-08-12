@@ -5,7 +5,7 @@
   <arg name="log_file" default="$(arg mav_name)" />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find nbvplanner)/worlds/flat.world" />
+    <arg name="world_name" value="$(find interface_nbvp_rotors)/worlds/flat.world" />
     <arg name="paused" value="true"/>
     <arg name="gui" value="true"/>
   </include>
@@ -24,8 +24,8 @@
     <rosparam command="load" file="$(find interface_nbvp_rotors)/resource/exploration.yaml" />
   </node>
 
-  <include file="$(find nbvplanner)/launch/mav_inspector.launch">
-    <arg name="mav_name" value="firefly" />
+  <include file="$(find interface_nbvp_rotors)/launch/mav_inspector.launch">
+    <arg name="mav_name" value="$(arg mav_name)" />
     <arg name="waypoint_x" value="0.0" />
     <arg name="waypoint_y" value="0.0" />
     <arg name="waypoint_z" value="1.0" />
