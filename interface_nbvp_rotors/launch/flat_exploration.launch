@@ -10,7 +10,7 @@
     <arg name="gui" value="true"/>
   </include>
 
-  <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen" required="true">
+  <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
     <param name="tf_frame" type="string" value="world" />
     <param name="resolution" type="double" value="0.4" />
     <param name="visualize_max_z" type="double" value="2.5" />
@@ -34,5 +34,4 @@
     <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
     <arg name="log_file" value="$(arg log_file)" />
   </include>
-  
 </launch>

@@ -19,7 +19,7 @@
     <param name="wp_z" type="double" value="$(arg waypoint_z)" />
     <include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
       <arg name="mav_name" value="$(arg mav_name)" />
-    <arg name="model" value="$(find rotors_description)/urdf/firefly_vi_sensor.gazebo" />
+      <arg name="model" value="$(find rotors_description)/urdf/firefly_vi_sensor.gazebo" />
       <arg name="enable_logging" value="$(arg enable_logging)" />
       <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
       <arg name="log_file" value="$(arg log_file)"/>
@@ -35,6 +35,5 @@
     <node name="exploration" pkg="interface_nbvp_rotors" type="exploration" output="screen" >
       <rosparam command="load" file="$(arg param_file)" />
     </node>
-    
   </group>
 </launch>

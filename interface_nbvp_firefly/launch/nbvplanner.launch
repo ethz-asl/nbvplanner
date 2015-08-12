@@ -7,7 +7,7 @@
   <arg name="flight_manager_ns" default="/flightManager" />
   <arg name="tf_planning_frame" default="world" />
 
-  <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen" required="true">
+  <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
     <param name="tf_frame" type="string" value="world" />
     <param name="resolution" type="double" value="$(resolution)" />
     <param name="visualize_max_z" type="double" value="$(visualize_max_z)" />
@@ -19,5 +19,4 @@
     <remap from="nbvplanner" to="$(arg flight_manager_ns)/nbvplanner"/>
     <rosparam command="load" file="$(find interface_nbvp_firefly)/resource/exploration.yaml" />
   </node>
-  
 </launch>
