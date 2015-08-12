@@ -3,9 +3,7 @@
 
 #include <boost/filesystem.hpp>
 #include <nbvplanner/rrt.h>
-#include <nbvplanner/tree.h>
 #include <nbvplanner/tree.hpp>
-#include <kdtree/kdtree.h>
 
 nbvInspection::RrtTree::RrtTree()
     : nbvInspection::TreeBase<StateVec>::TreeBase()
@@ -25,7 +23,7 @@ nbvInspection::RrtTree::RrtTree()
     boost::filesystem::path dir(logFilePath_.c_str());
     if (boost::filesystem::create_directory(dir)) {
       ROS_INFO("directory '%s' has been created", logFilePath_.c_str());
-    }else {
+    } else {
       ROS_INFO("directory '%s' has NOT been created", logFilePath_.c_str());
     }
     logFilePath_ += "/";
@@ -53,7 +51,7 @@ nbvInspection::RrtTree::RrtTree(mesh::StlMesh * mesh, volumetric_mapping::Octoma
     boost::filesystem::path dir(logFilePath_.c_str());
     if (boost::filesystem::create_directory(dir)) {
       ROS_INFO("directory '%s' has been created", logFilePath_.c_str());
-    }else {
+    } else {
       ROS_INFO("directory '%s' has NOT been created", logFilePath_.c_str());
     }
     logFilePath_ += "/";
@@ -141,7 +139,7 @@ void nbvInspection::RrtTree::iterate(int iterations)
   if (params_.softBounds_) {
     double radius = sqrt(
         SQ(params_.minX_ - params_.maxX_) + SQ(params_.minY_ - params_.maxY_)
-            + SQ(params_.minZ_ - params_.maxZ_));
+        + SQ(params_.minZ_ - params_.maxZ_));
     bool solutionFound = false;
     while (solutionFound) {
       for (int i = 0; i < 3; i++) {

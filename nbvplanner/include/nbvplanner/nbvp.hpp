@@ -1,32 +1,13 @@
 #ifndef NBVP_HPP_
 #define NBVP_HPP_
 
-#include <ros/ros.h>
-#include <ros/package.h>
+#include <fstream>
 #include <eigen3/Eigen/Dense>
-#include <cfloat>
-#include <cstdlib>
-#include <sstream>
 
-#include <tf/transform_datatypes.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
-#include <geometry_msgs/PolygonStamped.h>
-
-#include <planning_msgs/Octomap.h>
-#include <octomap/octomap.h>
-#include <octomap/OcTreeKey.h>
-#include <octomap_msgs/BoundingBoxQuery.h>
-#include <octomap_msgs/conversions.h>
-#include <octomap_msgs/GetOctomap.h>
-#include <octomap_msgs/Octomap.h>
-#include <octomap_ros/conversions.h>
-
-#include <kdtree/kdtree.h>
 
 #include <nbvplanner/nbvp.h>
-#include <nbvplanner/nbvp_srv.h>
-#include <nbvplanner/mesh_structure.h>
 
 // Convenience macro to get the absolute yaw difference
 #define ANGABS(x) (fmod(fabs(x),2.0*M_PI)<M_PI?fmod(fabs(x),2.0*M_PI):2.0*M_PI-fmod(fabs(x),2.0*M_PI))
@@ -44,47 +25,10 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
 
   // set up the topics and services
   params_.inspectionPath_ = nh_.advertise<visualization_msgs::Marker>("inspectionPath", 1000);
-  params_.treePub_ = nh_.advertise<geometry_msgs::PolygonStamped>("treePol", 1000);
-  plannerService0_ = nh_.advertiseService("nbvplanner0",
-                                          &nbvInspection::nbvPlanner<stateVec>::plannerCallback0,
-                                          this);
-  plannerService1_ = nh_.advertiseService("nbvplanner1",
-                                          &nbvInspection::nbvPlanner<stateVec>::plannerCallback1,
-                                          this);
-  plannerService2_ = nh_.advertiseService("nbvplanner2",
-                                          &nbvInspection::nbvPlanner<stateVec>::plannerCallback2,
-                                          this);
-  plannerService3_ = nh_.advertiseService("nbvplanner3",
-                                          &nbvInspection::nbvPlanner<stateVec>::plannerCallback3,
-                                          this);
-  plannerService4_ = nh_.advertiseService("nbvplanner4",
-                                          &nbvInspection::nbvPlanner<stateVec>::plannerCallback4,
-                                          this);
-  posClient0_ = nh_.subscribe("pose0", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback0,
-                              this);
-  posClient1_ = nh_.subscribe("pose1", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback1,
-                              this);
-  posClient2_ = nh_.subscribe("pose2", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback2,
-                              this);
-  posClient3_ = nh_.subscribe("pose3", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback3,
-                              this);
-  posClient4_ = nh_.subscribe("pose4", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback4,
-                              this);
-  pointcloud_sub0_ = nh_.subscribe("pointcloud0", 40,
-                                   &volumetric_mapping::OctomapManager::insertPointcloudWithTf,
-                                   manager_);
-  pointcloud_sub1_ = nh_.subscribe("pointcloud1", 40,
-                                   &volumetric_mapping::OctomapManager::insertPointcloudWithTf,
-                                   manager_);
-  pointcloud_sub2_ = nh_.subscribe("pointcloud2", 40,
-                                   &volumetric_mapping::OctomapManager::insertPointcloudWithTf,
-                                   manager_);
-  pointcloud_sub3_ = nh_.subscribe("pointcloud3", 40,
-                                   &volumetric_mapping::OctomapManager::insertPointcloudWithTf,
-                                   manager_);
-  pointcloud_sub4_ = nh_.subscribe("pointcloud4", 40,
-                                   &volumetric_mapping::OctomapManager::insertPointcloudWithTf,
-                                   manager_);
+  plannerService_ = nh_.advertiseService("nbvplanner",
+                                         &nbvInspection::nbvPlanner<stateVec>::plannerCallback,
+                                         this);
+  posClient_ = nh_.subscribe("pose", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback, this);
 
   if (!setParams()) {
     ROS_ERROR("Could not start the planner. Parameters missing!");
@@ -146,82 +90,15 @@ nbvInspection::nbvPlanner<stateVec>::~nbvPlanner()
 }
 
 template<typename stateVec>
-void nbvInspection::nbvPlanner<stateVec>::posCallback0(const geometry_msgs::PoseStamped& pose)
-{
-  nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 0);
-}
-
-template<typename stateVec>
-void nbvInspection::nbvPlanner<stateVec>::posCallback1(const geometry_msgs::PoseStamped& pose)
-{
-  nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 1);
-}
-
-template<typename stateVec>
-void nbvInspection::nbvPlanner<stateVec>::posCallback2(const geometry_msgs::PoseStamped& pose)
-{
-  nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 2);
-}
-
-template<typename stateVec>
-void nbvInspection::nbvPlanner<stateVec>::posCallback3(const geometry_msgs::PoseStamped& pose)
-{
-  nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 3);
-}
-
-template<typename stateVec>
-void nbvInspection::nbvPlanner<stateVec>::posCallback4(const geometry_msgs::PoseStamped& pose)
-{
-  nbvInspection::nbvPlanner<stateVec>::posCallback(pose, 4);
-}
-
-template<typename stateVec>
-void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseStamped& pose,
-                                                      int agentID)
+void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseStamped& pose)
 {
   tree_->setStateFromPoseMsg(pose);
   ready_ = true;
 }
 
 template<typename stateVec>
-bool nbvInspection::nbvPlanner<stateVec>::plannerCallback0(nbvplanner::nbvp_srv::Request& req,
-                                                           nbvplanner::nbvp_srv::Response& res)
-{
-  nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 0);
-}
-
-template<typename stateVec>
-bool nbvInspection::nbvPlanner<stateVec>::plannerCallback1(nbvplanner::nbvp_srv::Request& req,
-                                                           nbvplanner::nbvp_srv::Response& res)
-{
-  nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 1);
-}
-
-template<typename stateVec>
-bool nbvInspection::nbvPlanner<stateVec>::plannerCallback2(nbvplanner::nbvp_srv::Request& req,
-                                                           nbvplanner::nbvp_srv::Response& res)
-{
-  nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 2);
-}
-
-template<typename stateVec>
-bool nbvInspection::nbvPlanner<stateVec>::plannerCallback3(nbvplanner::nbvp_srv::Request& req,
-                                                           nbvplanner::nbvp_srv::Response& res)
-{
-  nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 3);
-}
-
-template<typename stateVec>
-bool nbvInspection::nbvPlanner<stateVec>::plannerCallback4(nbvplanner::nbvp_srv::Request& req,
-                                                           nbvplanner::nbvp_srv::Response& res)
-{
-  nbvInspection::nbvPlanner<stateVec>::plannerCallback(req, res, 4);
-}
-
-template<typename stateVec>
 bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::Request& req,
-                                                          nbvplanner::nbvp_srv::Response& res,
-                                                          int agentID)
+                                                          nbvplanner::nbvp_srv::Response& res)
 {
   ros::Time computationTime = ros::Time::now();
   if (!ros::ok()) {

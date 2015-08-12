@@ -1,13 +1,8 @@
 #ifndef _MESH_STRUCTURE_CPP_
 #define _MESH_STRUCTURE_CPP_
 
-#include <vector>
-#include <fstream>
 #include <eigen3/Eigen/Dense>
 #include <ros/ros.h>
-#include <geometry_msgs/Pose.h>
-#include <tf/transform_datatypes.h>
-#include <octomap_world/octomap_manager.h>
 #include <nbvplanner/mesh_structure.h>
 
 mesh::StlMesh::StlMesh()

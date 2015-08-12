@@ -4,10 +4,11 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <sstream>
-#include <nbvplanner/tree.h>
 #include <eigen3/Eigen/Dense>
-#include <nbvplanner/mesh_structure.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <kdtree/kdtree.h>
+#include <nbvplanner/tree.h>
+#include <nbvplanner/mesh_structure.h>
 
 #define SQ(x) ((x)*(x))
 #define SQRT2 0.70711
@@ -37,7 +38,8 @@ class RrtTree : public TreeBase<Eigen::Vector4d>
   std::stack<StateVec> history_;
   std::vector<StateVec> bestBranchMemory_;
   int g_ID_;
-  int iterationCount_;;
+  int iterationCount_;
+  ;
   std::fstream fileTree_;
   std::fstream filePath_;
   std::fstream fileResponse_;

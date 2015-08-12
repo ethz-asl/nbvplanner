@@ -5,13 +5,9 @@ add_definitions(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  rospy
-  roslib
   geometry_msgs
+  visualization_msgs
   message_generation
-  sensor_msgs
-  rotors_gazebo
-  octomap_to_mesh
   octomap_world
   tf
   kdtree
@@ -30,18 +26,15 @@ add_service_files(
 generate_messages(
   DEPENDENCIES
   geometry_msgs
+  visualization_msgs
   std_msgs
 )
 
 catkin_package(
   INCLUDE_DIRS include ${Eigen_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS}
   LIBRARIES nbvplanner ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES}
-  CATKIN_DEPENDS message_runtime octomap_to_mesh
+  CATKIN_DEPENDS message_runtime roscpp geometry_msgs visualization_msgs octomap_world tf kdtree
 )
-
-###########
-## Build ##
-###########
 
 include_directories(
   include
@@ -50,14 +43,14 @@ include_directories(
   ${OCTOMAP_INCLUDE_DIRS}
 )
 
+add_library(nbvPlannerLib src/mesh_structure.cpp src/nbvp.cpp src/rrt.cpp src/tree.cpp)
 add_executable(nbvPlanner src/nbv_planner_node.cpp src/mesh_structure.cpp src/nbvp.cpp src/rrt.cpp src/tree.cpp)
-add_executable(exploration src/exploration.cpp)
 
+target_link_libraries(nbvPlannerLib
+  ${catkin_LIBRARIES}
+  ${OCTOMAP_LIBRARIES}
+)
 target_link_libraries(nbvPlanner
   ${catkin_LIBRARIES}
   ${OCTOMAP_LIBRARIES}
 )
-target_link_libraries(exploration
-  ${catkin_LIBRARIES}
-)
-add_dependencies(exploration ${catkin_EXPORTED_TARGETS})

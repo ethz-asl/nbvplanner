@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <eigen3/Eigen/Dense>
+#include <geometry_msgs/PoseStamped.h>
+#include <octomap_world/octomap_manager.h>
 #include <nbvplanner/mesh_structure.h>
 
 namespace nbvInspection {
@@ -43,8 +45,7 @@ struct Params
   double meshResolution_;
 
   ros::Publisher inspectionPath_;
-  ros::Publisher treePub_;
-  
+
   bool log_;
   double log_throttle_;
 };
