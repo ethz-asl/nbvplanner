@@ -108,7 +108,6 @@ int main(int argc, char** argv)
     planSrv.request.header.stamp = ros::Time::now();
     planSrv.request.header.seq = iteration;
     planSrv.request.header.frame_id = ros::this_node::getNamespace();
-    ros::Time start = ros::Time::now();
     if (ros::service::call("nbvplanner", planSrv)) {
       n_seq++;
       for (int i = 0; i < planSrv.response.path.size(); i++) {
