@@ -80,11 +80,21 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseStampe
   //static const double offsetSensorPose = 0.14;
   //root_[0] = pose.pose.position.x - cos(root_[3]) * offsetSensorPose;
   //root_[1] = pose.pose.position.y - sin(root_[3]) * offsetSensorPose;
-  root_[0] = pose.pose.position.x;
-  root_[1] = pose.pose.position.y;
-  root_[2] = pose.pose.position.z;
+  static tf::TransformListener listener;
+  tf::StampedTransform transform;
+
+  try {
+    listener.lookupTransform(pose.header.frame_id, params_.navigationFrame_, pose.header.stamp, transform);
+  } catch (tf::TransformException ex) {
+    ROS_ERROR("%s", ex.what());
+    return;
+  }
   tf::Pose poseTF;
   tf::poseMsgToTF(pose.pose, poseTF);
+  poseTF *= transform;
+  root_[0] = poseTF.getOrigin().x();
+  root_[1] = poseTF.getOrigin().y();
+  root_[2] = poseTF.getOrigin().z();
   root_[3] = tf::getYaw(poseTF.getRotation());
 
   static double throttleTime = ros::Time::now().toSec();

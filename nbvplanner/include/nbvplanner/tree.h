@@ -45,9 +45,11 @@ struct Params
   double meshResolution_;
 
   ros::Publisher inspectionPath_;
+  std::string navigationFrame_;
 
   bool log_;
   double log_throttle_;
+  double pcl_throttle_;
 };
 
 template<typename stateVec>
@@ -89,6 +91,7 @@ class TreeBase
   void setParams(Params params);
   int getCounter();
   bool gainFound();
+  void insertPointcloudWithTf(const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
 };
 }
 

@@ -8,13 +8,13 @@
   <arg name="tf_planning_frame" default="world" />
 
   <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
-    <param name="tf_frame" type="string" value="world" />
+    <param name="tf_frame" type="string" value="navigation" />
     <param name="resolution" type="double" value="$(resolution)" />
     <param name="visualize_max_z" type="double" value="$(visualize_max_z)" />
     <param name="sensor_max_range" type="double" value="$(sensor_max_range)" />
     <remap from="cam0/camera_info" to="/cam0/camera_info"/>
     <remap from="cam1/camera_info" to="/cam1/camera_info"/>
-    <remap from="pointcloud" to="/stereo_dense_reconstruction/pcl"/>
+    <remap from="pointcloud_throttled" to="/stereo_dense_reconstruction/pcl"/>
     <remap from="pose" to="$(arg mav_name)/fcu/pose"/>
     <remap from="nbvplanner" to="$(arg flight_manager_ns)/nbvplanner"/>
     <rosparam command="load" file="$(find interface_nbvp_firefly)/resource/exploration.yaml" />

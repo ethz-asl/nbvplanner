@@ -30,6 +30,10 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
                                          this);
   posClient_ = nh_.subscribe("pose", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback, this);
 
+  pointcloud_sub_ = nh_.subscribe("pointcloud_throttled", 40,
+                                  &nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTf,
+                                  this);
+
   if (!setParams()) {
     ROS_ERROR("Could not start the planner. Parameters missing!");
   }
@@ -289,7 +293,29 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
     ROS_WARN("No throttle time for logging specified. Looking for %s. Default is 0.5s.",
              (ns + "/nbvp/log/throttle").c_str());
   }
+  params_.navigationFrame_ = "world";
+  if (!ros::param::get(ns + "/tf_frame", params_.navigationFrame_)) {
+    ROS_WARN("No navigation frame specified. Looking for %s. Default is 'world'.",
+             (ns + "/tf_frame").c_str());
+  }
+  params_.pcl_throttle_ = 0.0;
+  if (!ros::param::get(ns + "/pcl_throttle", params_.pcl_throttle_)) {
+    ROS_WARN(
+        "No throttle time constant for the point cloud insertion specified. Looking for %s. Default is 0.0.",
+        (ns + "/pcl_throttle").c_str());
+  }
   return ret;
+}
+
+template<typename stateVec>
+void nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTf(
+    const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
+{
+  static double last = ros::Time::now().toSec();
+  if (last + params_.pcl_throttle_ < ros::Time::now().toSec()) {
+    tree_->insertPointcloudWithTf(pointcloud);
+    last += params_.pcl_throttle_;
+  }
 }
 
 #endif // NBVP_HPP_

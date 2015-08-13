@@ -27,6 +27,7 @@ class nbvPlanner
   ros::ServiceClient octomapClient_;
   ros::Subscriber posClient_;
   ros::ServiceServer plannerService_;
+  ros::Subscriber pointcloud_sub_;
 
   Params params_;
   mesh::StlMesh * mesh_;
@@ -44,6 +45,7 @@ class nbvPlanner
   bool setParams();
   void posCallback(const geometry_msgs::PoseStamped& pose);
   bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::Response& res);
+  void insertPointcloudWithTf(const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
 };
 }
 

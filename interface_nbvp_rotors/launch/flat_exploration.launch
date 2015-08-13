@@ -18,7 +18,7 @@
     <param name="sensor_max_range" type="double" value="5.0" />
     <remap from="cam0/camera_info" to="/$(arg mav_name)/vi_sensor/left/camera_info"/>
     <remap from="cam1/camera_info" to="/$(arg mav_name)/vi_sensor/right/camera_info"/>
-    <remap from="pointcloud" to="$(arg mav_name)/vi_sensor/camera_depth/depth/points"/>
+    <remap from="pointcloud_throttled" to="$(arg mav_name)/vi_sensor/camera_depth/depth/points"/>
     <remap from="pose" to="$(arg mav_name)/ground_truth/pose"/>
     <remap from="nbvplanner" to="$(arg mav_name)/nbvplanner"/>
     <rosparam command="load" file="$(find interface_nbvp_rotors)/resource/exploration.yaml" />
