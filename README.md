@@ -40,4 +40,12 @@ Further instructions for the visualization of the exploration progress, as well 
 
 # Credits
 
-This algorithm was developed by [Andreas Bircher](mailto:bircher@gmx.ch) with the help and support of the members of the [Autonomous Systems Lab](http://www.asl.ethz.ch). The work was supported by the European Commission-funded project [AEROWORKS](http://www.aeroworks2020.eu/). 
+This algorithm was developed by [Andreas Bircher](mailto:bircher@gmx.ch) with the help and support of the members of the [Autonomous Systems Lab](http://www.asl.ethz.ch). The work was supported by the European Commission-funded project [AEROWORKS](http://www.aeroworks2020.eu/).
+
+
+
+# Contact
+
+You can contact us for any question or remark:
+* [Andreas Bircher](mailto:bircher@gmx.ch)
+* [Kostas Alexis](mailto:konstantinos.alexis@mavt.ethz.ch)
