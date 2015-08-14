@@ -9,6 +9,7 @@
     <arg name="paused" value="true"/>
     <arg name="gui" value="true"/>
   </include>
+  <node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0.8 0 0 world navigation 100" />
 
   <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
     <param name="tf_frame" type="string" value="world" />

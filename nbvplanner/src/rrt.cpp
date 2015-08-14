@@ -77,25 +77,26 @@ nbvInspection::RrtTree::~RrtTree()
 
 void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseStamped& pose)
 {
-  //static const double offsetSensorPose = 0.14;
-  //root_[0] = pose.pose.position.x - cos(root_[3]) * offsetSensorPose;
-  //root_[1] = pose.pose.position.y - sin(root_[3]) * offsetSensorPose;
   static tf::TransformListener listener;
   tf::StampedTransform transform;
 
   try {
-    listener.lookupTransform(pose.header.frame_id, params_.navigationFrame_, pose.header.stamp, transform);
+    listener.lookupTransform(params_.navigationFrame_, pose.header.frame_id, pose.header.stamp,
+                             transform);
   } catch (tf::TransformException ex) {
     ROS_ERROR("%s", ex.what());
     return;
   }
   tf::Pose poseTF;
   tf::poseMsgToTF(pose.pose, poseTF);
-  poseTF *= transform;
-  root_[0] = poseTF.getOrigin().x();
-  root_[1] = poseTF.getOrigin().y();
-  root_[2] = poseTF.getOrigin().z();
-  root_[3] = tf::getYaw(poseTF.getRotation());
+  tf::Vector3 position = poseTF.getOrigin();
+  position = transform * position;
+  tf::Quaternion quat = poseTF.getRotation();
+  quat = transform * quat;
+  root_[0] = position.x();
+  root_[1] = position.y();
+  root_[2] = position.z();
+  root_[3] = tf::getYaw(quat);
 
   static double throttleTime = ros::Time::now().toSec();
   if (ros::Time::now().toSec() - throttleTime > params_.log_throttle_) {
@@ -113,7 +114,7 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseStampe
       inspected.id = 0;
       inspected.header.seq = inspected.id;
       inspected.header.stamp = pose.header.stamp;
-      inspected.header.frame_id = "world";
+      inspected.header.frame_id = params_.navigationFrame_;
       inspected.type = visualization_msgs::Marker::TRIANGLE_LIST;
       inspected.lifetime = ros::Duration(10);
       inspected.action = visualization_msgs::Marker::ADD;
@@ -308,7 +309,7 @@ void nbvInspection::RrtTree::initialize()
   visualization_msgs::Marker p;
   p.header.stamp = ros::Time::now();
   p.header.seq = 0;
-  p.header.frame_id = "/world";
+  p.header.frame_id = params_.navigationFrame_;
   p.id = 0;
   p.ns = "workspace";
   p.type = visualization_msgs::Marker::CUBE;
@@ -334,17 +335,15 @@ void nbvInspection::RrtTree::initialize()
   params_.inspectionPath_.publish(p);
 }
 
-std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::getBestEdge()
+std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::getBestEdge(std::string targetFrame)
 {
-  // TODO: logging
   std::vector<geometry_msgs::Pose> ret;
   nbvInspection::Node<StateVec> * current = bestNode_;
   if (current->parent_ != NULL) {
     while (current->parent_ != rootNode_ && current->parent_ != NULL) {
       current = current->parent_;
     }
-
-    ret = samplePath(current->parent_->state_, current->state_);
+    ret = samplePath(current->parent_->state_, current->state_, targetFrame);
     history_.push(current->parent_->state_);
   }
   return ret;
@@ -424,13 +423,14 @@ double nbvInspection::RrtTree::gain(StateVec state)
   return gain;
 }
 
-std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::getPathBackToPrevious()
+std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::getPathBackToPrevious(
+    std::string targetFrame)
 {
   std::vector<geometry_msgs::Pose> ret;
   if (history_.empty()) {
     return ret;
   }
-  ret = samplePath(root_, history_.top());
+  ret = samplePath(root_, history_.top(), targetFrame);
   history_.pop();
   return ret;
 }
@@ -463,7 +463,7 @@ void nbvInspection::RrtTree::publishNode(Node<StateVec> * node)
   visualization_msgs::Marker p;
   p.header.stamp = ros::Time::now();
   p.header.seq = g_ID_;
-  p.header.frame_id = "/world";
+  p.header.frame_id = params_.navigationFrame_;
   p.id = g_ID_;
   g_ID_++;
   p.ns = "vp_tree";
@@ -534,9 +534,18 @@ void nbvInspection::RrtTree::publishNode(Node<StateVec> * node)
   }
 }
 
-std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::samplePath(StateVec start, StateVec end)
+std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::samplePath(StateVec start, StateVec end,
+                                                                    std::string targetFrame)
 {
   std::vector<geometry_msgs::Pose> ret;
+  static tf::TransformListener listener;
+  tf::StampedTransform transform;
+  try {
+    listener.lookupTransform(targetFrame, params_.navigationFrame_, ros::Time(0), transform);
+  } catch (tf::TransformException ex) {
+    ROS_ERROR("%s", ex.what());
+    return ret;
+  }
   Eigen::Vector3d distance(end[0] - start[0], end[1] - start[1], end[2] - start[2]);
   double yaw_direction = end[3] - start[3];
   if (yaw_direction > M_PI) {
@@ -549,10 +558,8 @@ std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::samplePath(StateVec sta
                          params_.dt_ * params_.dyaw_max_ / abs(yaw_direction));
   assert(disc > 0.0);
   for (double it = 0.0; it <= 1.0; it += disc) {
-    geometry_msgs::Pose pose;
-    pose.position.x = (1.0 - it) * start[0] + it * end[0];
-    pose.position.y = (1.0 - it) * start[1] + it * end[1];
-    pose.position.z = (1.0 - it) * start[2] + it * end[2];
+    tf::Vector3 origin((1.0 - it) * start[0] + it * end[0], (1.0 - it) * start[1] + it * end[1],
+                       (1.0 - it) * start[2] + it * end[2]);
     double yaw = start[3] + yaw_direction * it;
     if (yaw > M_PI)
       yaw -= 2.0 * M_PI;
@@ -560,16 +567,17 @@ std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::samplePath(StateVec sta
       yaw += 2.0 * M_PI;
     tf::Quaternion quat;
     quat.setEuler(0.0, 0.0, yaw);
-    pose.orientation.x = quat.x();
-    pose.orientation.y = quat.y();
-    pose.orientation.z = quat.z();
-    pose.orientation.w = quat.w();
+    origin = transform * origin;
+    quat = transform*quat;
+    tf::Pose poseTF(quat, origin);
+    geometry_msgs::Pose pose;
+    tf::poseTFToMsg(poseTF, pose);
     ret.push_back(pose);
     if (params_.log_) {
-      filePath_ << pose.position.x << ",";
-      filePath_ << pose.position.y << ",";
-      filePath_ << pose.position.z << ",";
-      filePath_ << yaw << "\n";
+      filePath_ << poseTF.getOrigin().x() << ",";
+      filePath_ << poseTF.getOrigin().y() << ",";
+      filePath_ << poseTF.getOrigin().z() << ",";
+      filePath_ << tf::getYaw(poseTF.getRotation()) << "\n";
     }
   }
   return ret;

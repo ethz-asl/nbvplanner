@@ -107,12 +107,13 @@ int main(int argc, char** argv)
     nbvplanner::nbvp_srv planSrv;
     planSrv.request.header.stamp = ros::Time::now();
     planSrv.request.header.seq = iteration;
-    planSrv.request.header.frame_id = ros::this_node::getNamespace();
+    planSrv.request.header.frame_id = "world";
     if (ros::service::call("nbvplanner", planSrv)) {
       n_seq++;
       for (int i = 0; i < planSrv.response.path.size(); i++) {
         samples_array.header.seq = n_seq;
         samples_array.header.stamp = ros::Time::now();
+        samples_array.header.frame_id = "world";
         samples_array.points.clear();
         tf::Pose pose;
         tf::poseMsgToTF(planSrv.response.path[i], pose);

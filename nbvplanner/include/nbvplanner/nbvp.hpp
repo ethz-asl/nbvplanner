@@ -105,6 +105,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
                                                           nbvplanner::nbvp_srv::Response& res)
 {
   ros::Time computationTime = ros::Time::now();
+
   if (!ros::ok()) {
     ROS_INFO_THROTTLE(1, "Exploration finished. Not planning any further moves.");
     return true;
@@ -128,13 +129,13 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
     }
     if (loopCount > 1000 * (tree_->getCounter() + 1)) {
       ROS_INFO("Exceeding maximum failed iterations, return to previous point!");
-      res.path = tree_->getPathBackToPrevious();
+      res.path = tree_->getPathBackToPrevious(req.header.frame_id);
       return true;
     }
     tree_->iterate(1);
     loopCount++;
   }
-  res.path = tree_->getBestEdge();
+  res.path = tree_->getBestEdge(req.header.frame_id);
 
   tree_->memorizeBestBranch();
   ROS_INFO("Path computation lasted %2.3fs", (ros::Time::now() - computationTime).toSec());

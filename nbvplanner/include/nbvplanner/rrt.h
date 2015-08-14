@@ -26,13 +26,14 @@ class RrtTree : public TreeBase<Eigen::Vector4d>
   virtual void setStateFromPoseMsg(const geometry_msgs::PoseStamped& pose);
   virtual void initialize();
   virtual void iterate(int iterations);
-  virtual std::vector<geometry_msgs::Pose> getBestEdge();
+  virtual std::vector<geometry_msgs::Pose> getBestEdge(std::string targetFrame);
   virtual void clear();
-  virtual std::vector<geometry_msgs::Pose> getPathBackToPrevious();
+  virtual std::vector<geometry_msgs::Pose> getPathBackToPrevious(std::string targetFrame);
   virtual void memorizeBestBranch();
   void publishNode(Node<StateVec> * node);
   double gain(StateVec state);
-  std::vector<geometry_msgs::Pose> samplePath(StateVec start, StateVec end);
+  std::vector<geometry_msgs::Pose> samplePath(StateVec start, StateVec end,
+                                              std::string targetFrame);
  protected:
   kdtree * kdTree_;
   std::stack<StateVec> history_;

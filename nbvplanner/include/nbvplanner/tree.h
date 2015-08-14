@@ -84,9 +84,9 @@ class TreeBase
   virtual void setStateFromPoseMsg(const geometry_msgs::PoseStamped& pose) = 0;
   virtual void iterate(int iterations) = 0;
   virtual void initialize() = 0;
-  virtual std::vector<geometry_msgs::Pose> getBestEdge() = 0;
+  virtual std::vector<geometry_msgs::Pose> getBestEdge(std::string targetFrame) = 0;
   virtual void clear() = 0;
-  virtual std::vector<geometry_msgs::Pose> getPathBackToPrevious() = 0;
+  virtual std::vector<geometry_msgs::Pose> getPathBackToPrevious(std::string targetFrame) = 0;
   virtual void memorizeBestBranch() = 0;
   void setParams(Params params);
   int getCounter();
