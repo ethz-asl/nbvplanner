@@ -568,7 +568,7 @@ std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::samplePath(StateVec sta
     tf::Quaternion quat;
     quat.setEuler(0.0, 0.0, yaw);
     origin = transform * origin;
-    quat = transform*quat;
+    quat = transform * quat;
     tf::Pose poseTF(quat, origin);
     geometry_msgs::Pose pose;
     tf::poseTFToMsg(poseTF, pose);

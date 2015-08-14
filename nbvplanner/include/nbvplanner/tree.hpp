@@ -66,7 +66,8 @@ bool nbvInspection::TreeBase<stateVec>::gainFound()
 }
 
 template<typename stateVec>
-void nbvInspection::TreeBase<stateVec>::insertPointcloudWithTf(const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
+void nbvInspection::TreeBase<stateVec>::insertPointcloudWithTf(
+    const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
 {
   manager_->insertPointcloudWithTf(pointcloud);
 }

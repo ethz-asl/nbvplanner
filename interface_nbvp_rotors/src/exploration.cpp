@@ -35,8 +35,8 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "exploration");
   ros::NodeHandle nh;
-  ros::Publisher trajectory_pub = nh.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
-      mav_msgs::default_topics::COMMAND_TRAJECTORY, 5);
+  ros::Publisher trajectory_pub = nh.advertise < trajectory_msgs::MultiDOFJointTrajectory
+      > (mav_msgs::default_topics::COMMAND_TRAJECTORY, 5);
   ROS_INFO("Started exploration");
 
   std_srvs::Empty srv;
