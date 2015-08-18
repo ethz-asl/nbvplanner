@@ -8,7 +8,6 @@ This README gives a short overview. For more information refer to the [wiki](htt
 
 To run the current version, compile the package nbvplanner, as well as additionally required packages. To get these:
 
-
 ```sh
 git clone https://github.com/ethz-asl/nbv_planning.git
 git clone https://github.com/ethz-asl/catkin_simple.git
@@ -25,7 +24,7 @@ Moreover, make sure you have all the necessary octomap libraries:
 apt-get install ros-<distro>-octomap-*
 ```
 
-To be able to run the planner in the simulation environment, also clone the rotors rep:
+To be able to run the planner in the simulation environment, also clone the rotors repo:
 ```sh
 git clone https://github.com/ethz-asl/rotors.git
 ```
@@ -41,8 +40,6 @@ Further instructions for the visualization of the exploration progress, as well 
 # Credits
 
 This algorithm was developed by [Andreas Bircher](mailto:bircher@gmx.ch) with the help and support of the members of the [Autonomous Systems Lab](http://www.asl.ethz.ch). The work was supported by the European Commission-funded project [AEROWORKS](http://www.aeroworks2020.eu/).
-
-
 
 # Contact
 

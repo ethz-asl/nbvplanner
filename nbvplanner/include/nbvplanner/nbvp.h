@@ -24,7 +24,6 @@ class nbvPlanner
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
-  ros::ServiceClient octomapClient_;
   ros::Subscriber posClient_;
   ros::ServiceServer plannerService_;
   ros::Subscriber pointcloud_sub_;

@@ -5,10 +5,10 @@
   <arg name="visualize_max_z" default="2.5" />
   <arg name="sensor_max_range" default="2.0" />
   <arg name="flight_manager_ns" default="/flightManager" />
-  <arg name="tf_planning_frame" default="world" />
+  <arg name="tf_planning_frame" default="navigation" />
 
   <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
-    <param name="tf_frame" type="string" value="navigation" />
+    <param name="tf_frame" type="string" value="$(tf_planning_frame)" />
     <param name="resolution" type="double" value="$(resolution)" />
     <param name="visualize_max_z" type="double" value="$(visualize_max_z)" />
     <param name="sensor_max_range" type="double" value="$(sensor_max_range)" />
