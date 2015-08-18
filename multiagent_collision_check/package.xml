@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package>
+  <name>multiagent_collision_check</name>
+  <version>0.0.0</version>
+  <description>The multiagent_collision_check package</description>
+  <maintainer email="andreas.bircher@mavt.ethz.ch">Andreas Bircher</maintainer>
+  <license>BSD</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>octomap_world</build_depend>
+  <run_depend>octomap_world</run_depend>
+</package>

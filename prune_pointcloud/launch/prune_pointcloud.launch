@@ -1,0 +1,14 @@
+<launch>
+  <arg name="maxDist" default="0.5"/>
+  <arg name="storeDuration" default="2.0"/>
+  <arg name="pose_topic" default="pose"/>
+  <arg name="pointcloud_in" default="pointcloudIn"/>
+  <arg name="pointcloud_out" default="pointcloudOut"/>
+  <node name="pcpruner" pkg="prune_pointcloud" type="prune_pointcloud_node" output="screen">
+    <param name="max_dist" type="double" value="$(maxDist)"/>
+    <param name="store_duration" type="double" value="$(storeDuration)"/>
+    <remap from="pose" to="$(pose_topic)"/>
+    <remap from="pointcloudIn" to="$(pointcloud_in)"/>
+    <remap from="pointcloudOut" to="$(pointcloud_out)"/>
+  </node>
+</launch>
