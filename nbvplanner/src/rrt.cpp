@@ -2,6 +2,7 @@
 #define RRTTREE_HPP_
 
 #include <boost/filesystem.hpp>
+#include <multiagent_collision_check/multiagent_collision_checker.h>
 #include <nbvplanner/rrt.h>
 #include <nbvplanner/tree.hpp>
 
@@ -199,13 +200,13 @@ void nbvInspection::RrtTree::iterate(int iterations)
   if (direction.norm() > params_.extensionRange_) {
     direction = params_.extensionRange_ * direction.normalized();
   }
+  newState[0] = origin[0] + direction[0];
+  newState[1] = origin[1] + direction[1];
+  newState[2] = origin[2] + direction[2];
   if (volumetric_mapping::OctomapManager::CellStatus::kFree
       == manager_->getLineStatusBoundingBox(
           origin, direction + origin + direction.normalized() * params_.dOvershoot_,
-          params_.boundingBox_)) {
-    newState[0] = origin[0] + direction[0];
-    newState[1] = origin[1] + direction[1];
-    newState[2] = origin[2] + direction[2];
+          params_.boundingBox_) && !multiagent::isInCollision(newParent->state_, newState, params_.boundingBox_, segments_)) {
     // sample the new orientation
     newState[3] = 2.0 * M_PI * (((double) rand()) / ((double) RAND_MAX) - 0.5);
     // create new node and insert into tree
@@ -275,13 +276,13 @@ void nbvInspection::RrtTree::initialize()
     if (direction.norm() > params_.extensionRange_) {
       direction = params_.extensionRange_ * direction.normalized();
     }
+    newState[0] = origin[0] + direction[0];
+    newState[1] = origin[1] + direction[1];
+    newState[2] = origin[2] + direction[2];
     if (volumetric_mapping::OctomapManager::CellStatus::kFree
         == manager_->getLineStatusBoundingBox(
             origin, direction + origin + direction.normalized() * params_.dOvershoot_,
-            params_.boundingBox_)) {
-      newState[0] = origin[0] + direction[0];
-      newState[1] = origin[1] + direction[1];
-      newState[2] = origin[2] + direction[2];
+            params_.boundingBox_) && !multiagent::isInCollision(newParent->state_, newState, params_.boundingBox_, segments_)) {
       // create new node and insert into tree
       nbvInspection::Node<StateVec> * newNode = new nbvInspection::Node<StateVec>;
       newNode->state_ = newState;

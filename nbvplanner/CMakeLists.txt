@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   octomap_world
   tf
   kdtree
+  multiagent_collision_check
 )
 find_package(cmake_modules REQUIRED)
 find_package(Eigen REQUIRED)

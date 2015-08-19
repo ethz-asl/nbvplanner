@@ -5,6 +5,7 @@
 #include <eigen3/Eigen/Dense>
 #include <geometry_msgs/PoseStamped.h>
 #include <octomap_world/octomap_manager.h>
+#include <multiagent_collision_check/Segment.h>
 #include <nbvplanner/mesh_structure.h>
 
 namespace nbvInspection {
@@ -77,11 +78,14 @@ class TreeBase
   mesh::StlMesh * mesh_;
   volumetric_mapping::OctomapManager * manager_;
   stateVec root_;
+  std::vector<std::vector<Eigen::Vector3d>*> segments_;
+  std::vector<std::string> agentNames_;
  public:
   TreeBase();
   TreeBase(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager);
   ~TreeBase();
   virtual void setStateFromPoseMsg(const geometry_msgs::PoseStamped& pose) = 0;
+  void evade(const multiagent_collision_check::Segment& segmentMsg);
   virtual void iterate(int iterations) = 0;
   virtual void initialize() = 0;
   virtual std::vector<geometry_msgs::Pose> getBestEdge(std::string targetFrame) = 0;

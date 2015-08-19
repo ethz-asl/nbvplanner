@@ -7,6 +7,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <octomap_world/octomap_manager.h>
+#include <multiagent_collision_check/Segment.h>
 #include <nbvplanner/nbvp_srv.h>
 #include <nbvplanner/mesh_structure.h>
 #include <nbvplanner/tree.hpp>
@@ -25,6 +26,8 @@ class nbvPlanner
   ros::NodeHandle nh_private_;
 
   ros::Subscriber posClient_;
+  ros::Subscriber evadeClient_;
+  ros::Publisher evadePub_;
   ros::ServiceServer plannerService_;
   ros::Subscriber pointcloud_sub_;
 
@@ -45,6 +48,7 @@ class nbvPlanner
   void posCallback(const geometry_msgs::PoseStamped& pose);
   bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::Response& res);
   void insertPointcloudWithTf(const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
+  void evasionCallback(const multiagent_collision_check::Segment& segmentMsg);
 };
 }
 

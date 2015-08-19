@@ -25,6 +25,7 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
 
   // set up the topics and services
   params_.inspectionPath_ = nh_.advertise<visualization_msgs::Marker>("inspectionPath", 1000);
+  evadePub_ = nh_.advertise<multiagent_collision_check::Segment>("/evasionSegment", 100);
   plannerService_ = nh_.advertiseService("nbvplanner",
                                          &nbvInspection::nbvPlanner<stateVec>::plannerCallback,
                                          this);
@@ -78,6 +79,9 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   }
   tree_ = new RrtTree(mesh_, manager_);
   tree_->setParams(params_);
+
+  evadeClient_ = nh_.subscribe("/evasionSegment", 10, &nbvInspection::TreeBase<stateVec>::evade,
+                              tree_);
 
   ready_ = false;
 }
@@ -138,6 +142,15 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   res.path = tree_->getBestEdge(req.header.frame_id);
 
   tree_->memorizeBestBranch();
+  // Publish path to block for other agents
+  multiagent_collision_check::Segment segment;
+  segment.header.stamp = ros::Time::now();
+  segment.header.frame_id = params_.navigationFrame_;
+  if (!res.path.empty()) {
+    segment.poses.push_back(res.path.front());
+    segment.poses.push_back(res.path.back());
+  }
+  evadePub_.publish(segment);
   ROS_INFO("Path computation lasted %2.3fs", (ros::Time::now() - computationTime).toSec());
   return true;
 }
@@ -317,6 +330,13 @@ void nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTf(
     tree_->insertPointcloudWithTf(pointcloud);
     last += params_.pcl_throttle_;
   }
+}
+
+template<typename stateVec>
+void nbvInspection::nbvPlanner<stateVec>::evasionCallback(
+    const multiagent_collision_check::Segment& segmentMsg)
+{
+  tree_->evade(segmentMsg);
 }
 
 #endif // NBVP_HPP_
