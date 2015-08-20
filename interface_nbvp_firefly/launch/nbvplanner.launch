@@ -7,7 +7,7 @@
   <arg name="tf_planning_frame" default="navigation" />
 
 <!--group ns="$(arg mav_name)" -->
-  <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen" launch-prefix="gdb -ex run --args">
+  <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
     <param name="tf_frame" type="string" value="$(arg tf_planning_frame)" />
     <param name="resolution" type="double" value="$(arg resolution)" />
     <param name="visualize_max_z" type="double" value="$(arg visualize_max_z)" />
