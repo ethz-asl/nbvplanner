@@ -20,7 +20,7 @@ nbvInspection::RrtTree::RrtTree()
         + std::to_string(ptm->tm_year + 1900) + "_" + std::to_string(ptm->tm_mon + 1) + "_"
         + std::to_string(ptm->tm_mday) + "_" + std::to_string(ptm->tm_hour) + "_"
         + std::to_string(ptm->tm_min) + "_" + std::to_string(ptm->tm_sec);
-    system(("mkdir " + logFilePath_).c_str());
+    system(("mkdir -p " + logFilePath_).c_str());
     logFilePath_ += "/";
     fileResponse_.open((logFilePath_ + "response.txt").c_str(), std::ios::out);
     filePath_.open((logFilePath_ + "path.txt").c_str(), std::ios::out);
@@ -43,7 +43,7 @@ nbvInspection::RrtTree::RrtTree(mesh::StlMesh * mesh, volumetric_mapping::Octoma
         + std::to_string(ptm->tm_year + 1900) + "_" + std::to_string(ptm->tm_mon + 1) + "_"
         + std::to_string(ptm->tm_mday) + "_" + std::to_string(ptm->tm_hour) + "_"
         + std::to_string(ptm->tm_min) + "_" + std::to_string(ptm->tm_sec);
-    system(("mkdir " + logFilePath_).c_str());
+    system(("mkdir -p " + logFilePath_).c_str());
     logFilePath_ += "/";
     fileResponse_.open((logFilePath_ + "response.txt").c_str(), std::ios::out);
     filePath_.open((logFilePath_ + "path.txt").c_str(), std::ios::out);
