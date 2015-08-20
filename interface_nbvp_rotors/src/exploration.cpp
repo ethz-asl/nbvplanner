@@ -92,6 +92,7 @@ int main(int argc, char** argv)
     ros::Duration(1.0).sleep();
   }
   trajectory_point.position_W.x() -= 0.5;
+  trajectory_point.position_W.y() -= 0.5;
   samples_array.header.seq = n_seq;
   samples_array.header.stamp = ros::Time::now();
   samples_array.points.clear();

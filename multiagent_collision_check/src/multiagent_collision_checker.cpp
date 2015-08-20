@@ -11,12 +11,11 @@ bool multiagent::isInCollision(const Eigen::Vector4d& start, const Eigen::Vector
 {
   for (typename std::vector<std::vector<Eigen::Vector3d>*>::const_iterator it = agent_paths.begin();
       it != agent_paths.end(); it++) {
-    for (typename std::vector<Eigen::Vector3d>::const_iterator it_segment = (*it)->begin();
-        it_segment < (*it)->end() - 1; it_segment++) {
+    for (int it_segment = 1; it_segment < (*it)->size(); it_segment++) {
       if (boundingBox.norm()
           > closestDistanceBetweenLines(Eigen::Vector3d(start.x(), start.y(), start.z()),
-                                        Eigen::Vector3d(end.x(), end.y(), end.z()), *it_segment,
-                                        *(it_segment + 1))) {
+                                        Eigen::Vector3d(end.x(), end.y(), end.z()),
+                                        (**it)[it_segment - 1], (**it)[it_segment])) {
         return true;
       }
     }
@@ -29,12 +28,11 @@ bool multiagent::isInCollision(const Eigen::Vector4d& state, const Eigen::Vector
 {
   for (typename std::vector<std::vector<Eigen::Vector3d>*>::const_iterator it = agent_paths.begin();
       it != agent_paths.end(); it++) {
-    for (typename std::vector<Eigen::Vector3d>::const_iterator it_segment = (*it)->begin();
-        it_segment < (*it)->end() - 1; it_segment++) {
+    for (int it_segment = 1; it_segment < (*it)->size(); it_segment++) {
       if (boundingBox.norm()
           > closestDistanceBetweenLines(Eigen::Vector3d(state.x(), state.y(), state.z()),
                                         Eigen::Vector3d(state.x(), state.y(), state.z()),
-                                        *it_segment, *(it_segment + 1))) {
+                                        (**it)[it_segment - 1], (**it)[it_segment])) {
         return true;
       }
     }

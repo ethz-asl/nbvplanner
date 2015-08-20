@@ -206,7 +206,8 @@ void nbvInspection::RrtTree::iterate(int iterations)
   if (volumetric_mapping::OctomapManager::CellStatus::kFree
       == manager_->getLineStatusBoundingBox(
           origin, direction + origin + direction.normalized() * params_.dOvershoot_,
-          params_.boundingBox_) && !multiagent::isInCollision(newParent->state_, newState, params_.boundingBox_, segments_)) {
+          params_.boundingBox_)
+      && !multiagent::isInCollision(newParent->state_, newState, params_.boundingBox_, segments_)) {
     // sample the new orientation
     newState[3] = 2.0 * M_PI * (((double) rand()) / ((double) RAND_MAX) - 0.5);
     // create new node and insert into tree
@@ -237,6 +238,16 @@ void nbvInspection::RrtTree::initialize()
 
   g_ID_ = 0;
   manager_->publishAll();
+
+  int i;
+  for (i = 0; i < agentNames_.size(); i++) {
+    if (agentNames_[i].compare(params_.navigationFrame_) == 0) {
+      break;
+    }
+  }
+  if (i < agentNames_.size()) {
+    segments_[i]->clear();
+  }
 
   kdTree_ = kd_create(3);
 
@@ -282,7 +293,9 @@ void nbvInspection::RrtTree::initialize()
     if (volumetric_mapping::OctomapManager::CellStatus::kFree
         == manager_->getLineStatusBoundingBox(
             origin, direction + origin + direction.normalized() * params_.dOvershoot_,
-            params_.boundingBox_) && !multiagent::isInCollision(newParent->state_, newState, params_.boundingBox_, segments_)) {
+            params_.boundingBox_)
+        && !multiagent::isInCollision(newParent->state_, newState, params_.boundingBox_,
+                                      segments_)) {
       // create new node and insert into tree
       nbvInspection::Node<StateVec> * newNode = new nbvInspection::Node<StateVec>;
       newNode->state_ = newState;

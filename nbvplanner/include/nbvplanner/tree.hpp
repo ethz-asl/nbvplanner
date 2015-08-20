@@ -76,7 +76,7 @@ template<typename stateVec>
 void nbvInspection::TreeBase<stateVec>::evade(const multiagent_collision_check::Segment& segmentMsg) {
   int i;
   for(i = 0; i < agentNames_.size(); i++) {
-    if(agentNames_[i] == segmentMsg.header.frame_id) {
+    if(agentNames_[i].compare(segmentMsg.header.frame_id) == 0) {
       break;
     }
   }
