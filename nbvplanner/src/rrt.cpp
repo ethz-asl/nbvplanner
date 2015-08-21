@@ -65,7 +65,7 @@ nbvInspection::RrtTree::~RrtTree()
   }
 }
 
-void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseStamped& pose)
+void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseWithCovarianceStamped& pose)
 {
   static tf::TransformListener listener;
   tf::StampedTransform transform;
@@ -78,7 +78,7 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseStampe
     return;
   }
   tf::Pose poseTF;
-  tf::poseMsgToTF(pose.pose, poseTF);
+  tf::poseMsgToTF(pose.pose.pose, poseTF);
   tf::Vector3 position = poseTF.getOrigin();
   position = transform * position;
   tf::Quaternion quat = poseTF.getRotation();
@@ -98,7 +98,7 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseStampe
       fileResponse_ << root_[root_.size() - 1] << "\n";
     }
     if (mesh_) {
-      mesh_->incoorporateViewFromPoseMsg(pose.pose);
+      mesh_->incoorporateViewFromPoseMsg(pose.pose.pose);
       visualization_msgs::Marker inspected;
       inspected.ns = "meshInspected";
       inspected.id = 0;

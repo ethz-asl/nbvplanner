@@ -4,7 +4,6 @@
 #include <fstream>
 #include <eigen3/Eigen/Dense>
 
-#include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
 
 #include <nbvplanner/nbvp.h>
@@ -94,7 +93,7 @@ nbvInspection::nbvPlanner<stateVec>::~nbvPlanner()
 }
 
 template<typename stateVec>
-void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseStamped& pose)
+void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseWithCovarianceStamped& pose)
 {
   tree_->setStateFromPoseMsg(pose);
   ready_ = true;

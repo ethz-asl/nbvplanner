@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <eigen3/Eigen/Dense>
-#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <octomap_world/octomap_manager.h>
 #include <nbvplanner/mesh_structure.h>
 
@@ -81,7 +81,7 @@ class TreeBase
   TreeBase();
   TreeBase(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager);
   ~TreeBase();
-  virtual void setStateFromPoseMsg(const geometry_msgs::PoseStamped& pose) = 0;
+  virtual void setStateFromPoseMsg(const geometry_msgs::PoseWithCovarianceStamped& pose) = 0;
   virtual void iterate(int iterations) = 0;
   virtual void initialize() = 0;
   virtual std::vector<geometry_msgs::Pose> getBestEdge(std::string targetFrame) = 0;
