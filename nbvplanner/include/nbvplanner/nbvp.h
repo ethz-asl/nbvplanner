@@ -5,7 +5,7 @@
 #include <fstream>
 #include <eigen3/Eigen/Dense>
 #include <ros/ros.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <octomap_world/octomap_manager.h>
 #include <nbvplanner/nbvp_srv.h>
 #include <nbvplanner/mesh_structure.h>
@@ -42,7 +42,7 @@ class nbvPlanner
   ~nbvPlanner();
   vector_t buildTree(nbvPlanner<stateVec>& instance, int I, stateVec s, double& Iout, int agentID);
   bool setParams();
-  void posCallback(const geometry_msgs::PoseStamped& pose);
+  void posCallback(const geometry_msgs::PoseWithCovarianceStamped& pose);
   bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::Response& res);
   void insertPointcloudWithTf(const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
 };

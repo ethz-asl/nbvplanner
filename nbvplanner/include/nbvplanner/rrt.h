@@ -5,7 +5,7 @@
 #include <ros/package.h>
 #include <sstream>
 #include <eigen3/Eigen/Dense>
-#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <kdtree/kdtree.h>
 #include <nbvplanner/tree.h>
 #include <nbvplanner/mesh_structure.h>
@@ -23,7 +23,7 @@ class RrtTree : public TreeBase<Eigen::Vector4d>
   RrtTree();
   RrtTree(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager);
   ~RrtTree();
-  virtual void setStateFromPoseMsg(const geometry_msgs::PoseStamped& pose);
+  virtual void setStateFromPoseMsg(const geometry_msgs::PoseWithCovarianceStamped& pose);
   virtual void initialize();
   virtual void iterate(int iterations);
   virtual std::vector<geometry_msgs::Pose> getBestEdge(std::string targetFrame);
