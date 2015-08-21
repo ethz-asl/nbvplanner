@@ -3,9 +3,9 @@ system/dyaw_max: 0.5
 system/camera/pitch: 15.0
 system/camera/horizontal: 90.0
 system/camera/vertical: 60.0
-system/bbx/x: 1.4
-system/bbx/y: 1.4
-system/bbx/z: 1.0
+system/bbx/x: 1.2
+system/bbx/y: 1.2
+system/bbx/z: 0.5
 system/bbx/overshoot: 0.5
 
 nbvp/gain/free: 0.0
@@ -16,7 +16,7 @@ nbvp/gain/probabilistic: 0.0
 nbvp/gain/range: 1.5
 nbvp/gain/zero: 0.0
 nbvp/gain/degressive_coeff: 0.5
-nbvp/tree/extension_range: 1.0
+nbvp/tree/extension_range: 0.5
 nbvp/tree/initial_iterations: 20
 nbvp/tree/cuttoff_iterations: 200
 nbvp/dt: 0.01
@@ -32,6 +32,6 @@ bbx/minZ: 0.5
 bbx/maxX: 1.5
 bbx/maxY: 1.5
 bbx/maxZ: 2.0
-bbx/softBounds: false
+bbx/softBounds: true
 
 pcl_throttle: 1.0

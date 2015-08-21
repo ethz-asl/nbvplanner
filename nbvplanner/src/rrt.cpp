@@ -142,7 +142,7 @@ void nbvInspection::RrtTree::iterate(int iterations)
         SQ(params_.minX_ - params_.maxX_) + SQ(params_.minY_ - params_.maxY_)
         + SQ(params_.minZ_ - params_.maxZ_));
     bool solutionFound = false;
-    while (solutionFound) {
+    while (!solutionFound) {
       for (int i = 0; i < 3; i++) {
         newState[i] = 2.0 * radius * (((double) rand()) / ((double) RAND_MAX) - 0.5);
       }
@@ -173,6 +173,7 @@ void nbvInspection::RrtTree::iterate(int iterations)
     newState[2] = 2.0 * (params_.maxZ_ - params_.minZ_)
         * (((double) rand()) / ((double) RAND_MAX) - 0.5) + params_.minZ_;
   }
+
   kdres * nearest = kd_nearest3(kdTree_, newState.x(), newState.y(), newState.z());
   if (kd_res_size(nearest) <= 0) {
     kd_res_free(nearest);
