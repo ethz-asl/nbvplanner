@@ -1,7 +1,7 @@
 #ifndef RRTTREE_HPP_
 #define RRTTREE_HPP_
 
-#include <boost/filesystem.hpp>
+#include <cstdlib>
 #include <multiagent_collision_check/multiagent_collision_checker.h>
 #include <nbvplanner/rrt.h>
 #include <nbvplanner/tree.hpp>
@@ -21,12 +21,7 @@ nbvInspection::RrtTree::RrtTree()
         + std::to_string(ptm->tm_year + 1900) + "_" + std::to_string(ptm->tm_mon + 1) + "_"
         + std::to_string(ptm->tm_mday) + "_" + std::to_string(ptm->tm_hour) + "_"
         + std::to_string(ptm->tm_min) + "_" + std::to_string(ptm->tm_sec);
-    boost::filesystem::path dir(logFilePath_.c_str());
-    if (boost::filesystem::create_directory(dir)) {
-      ROS_INFO("directory '%s' has been created", logFilePath_.c_str());
-    } else {
-      ROS_INFO("directory '%s' has NOT been created", logFilePath_.c_str());
-    }
+    system(("mkdir -p " + logFilePath_).c_str());
     logFilePath_ += "/";
     fileResponse_.open((logFilePath_ + "response.txt").c_str(), std::ios::out);
     filePath_.open((logFilePath_ + "path.txt").c_str(), std::ios::out);
@@ -49,12 +44,7 @@ nbvInspection::RrtTree::RrtTree(mesh::StlMesh * mesh, volumetric_mapping::Octoma
         + std::to_string(ptm->tm_year + 1900) + "_" + std::to_string(ptm->tm_mon + 1) + "_"
         + std::to_string(ptm->tm_mday) + "_" + std::to_string(ptm->tm_hour) + "_"
         + std::to_string(ptm->tm_min) + "_" + std::to_string(ptm->tm_sec);
-    boost::filesystem::path dir(logFilePath_.c_str());
-    if (boost::filesystem::create_directory(dir)) {
-      ROS_INFO("directory '%s' has been created", logFilePath_.c_str());
-    } else {
-      ROS_INFO("directory '%s' has NOT been created", logFilePath_.c_str());
-    }
+    system(("mkdir -p " + logFilePath_).c_str());
     logFilePath_ += "/";
     fileResponse_.open((logFilePath_ + "response.txt").c_str(), std::ios::out);
     filePath_.open((logFilePath_ + "path.txt").c_str(), std::ios::out);

@@ -1,22 +1,23 @@
 <launch>
-  <arg name="mav_name" default="firefly" />
+  <arg name="mav_name" default="bluebird" />
   <arg name="enable_logging" default="false" />
   <arg name="resolution" default="0.4" />
   <arg name="visualize_max_z" default="2.5" />
   <arg name="sensor_max_range" default="2.0" />
-  <arg name="flight_manager_ns" default="/flightManager" />
   <arg name="tf_planning_frame" default="navigation" />
 
+<!--group ns="$(arg mav_name)" -->
   <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
-    <param name="tf_frame" type="string" value="$(tf_planning_frame)" />
-    <param name="resolution" type="double" value="$(resolution)" />
-    <param name="visualize_max_z" type="double" value="$(visualize_max_z)" />
-    <param name="sensor_max_range" type="double" value="$(sensor_max_range)" />
-    <remap from="cam0/camera_info" to="/cam0/camera_info"/>
-    <remap from="cam1/camera_info" to="/cam1/camera_info"/>
-    <remap from="pointcloud_throttled" to="/stereo_dense_reconstruction/pcl"/>
-    <remap from="pose" to="$(arg mav_name)/fcu/pose"/>
-    <remap from="nbvplanner" to="$(arg flight_manager_ns)/nbvplanner"/>
+    <param name="tf_frame" type="string" value="$(arg tf_planning_frame)" />
+    <param name="resolution" type="double" value="$(arg resolution)" />
+    <param name="visualize_max_z" type="double" value="$(arg visualize_max_z)" />
+    <param name="sensor_max_range" type="double" value="$(arg sensor_max_range)" />
+    <remap from="cam0/camera_info" to="$(arg mav_name)/cam0/camera_info"/>
+    <remap from="cam1/camera_info" to="$(arg mav_name)/cam1/camera_info"/>
+    <remap from="pointcloud_throttled" to="$(arg mav_name)/stereo_dense_reconstruction/pcl"/>
+    <remap from="pose" to="$(arg mav_name)/msf_core/pose"/>
+    <remap from="nbvplanner" to="$(arg mav_name)/nbvplanner"/>
     <rosparam command="load" file="$(find interface_nbvp_firefly)/resource/exploration.yaml" />
   </node>
+ <!--/group-->
 </launch>
