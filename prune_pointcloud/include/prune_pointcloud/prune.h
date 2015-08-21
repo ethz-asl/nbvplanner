@@ -16,7 +16,16 @@ class Prune
   ros::NodeHandle n_;
   ros::Publisher pcl_publisher_;
   ros::Subscriber pointcloudSub_;
-  ros::Subscriber poseSub_;
+  ros::Subscriber poseSub0_;
+  ros::Subscriber poseSub1_;
+  ros::Subscriber poseSub2_;
+  ros::Subscriber poseSub3_;
+  ros::Subscriber poseSub4_;
+  ros::Subscriber poseSub5_;
+  ros::Subscriber poseSub6_;
+  ros::Subscriber poseSub7_;
+  ros::Subscriber poseSub8_;
+  ros::Subscriber poseSub9_;
   tf::TransformListener tf_listener_;
   void loadParams();
   std::vector<std::pair<std::string, double> > vehicle_tf_frames_;

@@ -11,7 +11,16 @@ PointcloudPruning::Prune::Prune(ros::NodeHandle& n)
 {
   n_ = n;
   pointcloudSub_ = n_.subscribe("pointcloudIn", 40, &PointcloudPruning::Prune::pointcloud, this);
-  poseSub_ = n_.subscribe("pose", 40, &PointcloudPruning::Prune::pose, this);
+  poseSub0_ = n_.subscribe("pose0", 40, &PointcloudPruning::Prune::pose, this);
+  poseSub1_ = n_.subscribe("pose1", 40, &PointcloudPruning::Prune::pose, this);
+  poseSub2_ = n_.subscribe("pose2", 40, &PointcloudPruning::Prune::pose, this);
+  poseSub3_ = n_.subscribe("pose3", 40, &PointcloudPruning::Prune::pose, this);
+  poseSub4_ = n_.subscribe("pose4", 40, &PointcloudPruning::Prune::pose, this);
+  poseSub5_ = n_.subscribe("pose5", 40, &PointcloudPruning::Prune::pose, this);
+  poseSub6_ = n_.subscribe("pose6", 40, &PointcloudPruning::Prune::pose, this);
+  poseSub7_ = n_.subscribe("pose7", 40, &PointcloudPruning::Prune::pose, this);
+  poseSub8_ = n_.subscribe("pose8", 40, &PointcloudPruning::Prune::pose, this);
+  poseSub9_ = n_.subscribe("pose9", 40, &PointcloudPruning::Prune::pose, this);
   pcl_publisher_ = n_.advertise<sensor_msgs::PointCloud2>("pointcloudOut", 1, true);
 }
 

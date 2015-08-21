@@ -31,6 +31,7 @@
       <arg name="x" value="$(arg waypoint_x)"/>
       <arg name="y" value="$(arg waypoint_y)"/>
       <arg name="z" value="0.1"/>
+      <arg name="tf_prefix" default="$(arg mav_name)$(arg subscript)"/>
     </include>
     <node name="lee_position_controller_node" pkg="rotors_control" type="lee_position_controller_node" output="screen">
       <rosparam command="load" file="$(find rotors_gazebo)/resource/lee_controller_$(arg mav_name).yaml" />
@@ -44,7 +45,7 @@
       <param name="sensor_max_range" type="double" value="$(arg sensor_max_range)" />
       <remap from="cam0/camera_info" to="/$(arg mav_name)$(arg subscript)/vi_sensor/left/camera_info"/>
       <remap from="cam1/camera_info" to="/$(arg mav_name)$(arg subscript)/vi_sensor/right/camera_info"/>
-      <remap from="pointcloud_throttled" to="/$(arg mav_name)$(arg subscript)/vi_sensor/camera_depth/depth/points"/>
+      <remap from="pointcloud_throttled" to="/$(arg mav_name)$(arg subscript)/pruned/points"/>
       <remap from="pose" to="/$(arg mav_name)$(arg subscript)/ground_truth/pose"/>
       <remap from="nbvplanner" to="/$(arg mav_name)$(arg subscript)/nbvplanner"/>
       <rosparam command="load" file="$(find interface_nbvp_rotors)/resource/exploration.yaml" />
