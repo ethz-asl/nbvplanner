@@ -9,7 +9,7 @@
     <arg name="paused" value="true"/>
     <arg name="gui" value="true"/>
   </include>
-  <node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0.8 0 0 world navigation 100" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world navigation 100" />
 
   <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
     <param name="tf_frame" type="string" value="world" />
@@ -20,7 +20,7 @@
     <remap from="cam0/camera_info" to="/$(arg mav_name)/vi_sensor/left/camera_info"/>
     <remap from="cam1/camera_info" to="/$(arg mav_name)/vi_sensor/right/camera_info"/>
     <remap from="pointcloud_throttled" to="$(arg mav_name)/vi_sensor/camera_depth/depth/points"/>
-    <remap from="pose" to="$(arg mav_name)/ground_truth/pose"/>
+    <remap from="pose" to="$(arg mav_name)/ground_truth/pose_with_covariance"/>
     <remap from="nbvplanner" to="$(arg mav_name)/nbvplanner"/>
     <rosparam command="load" file="$(find interface_nbvp_rotors)/resource/exploration.yaml" />
   </node>
