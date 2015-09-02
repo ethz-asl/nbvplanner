@@ -1,4 +1,4 @@
 <launch>
-  <node pkg="rosbag" type="rosbag" name="rosbag_record_cam"
-       args="record -o /bluebird/cam0/camera_info /bluebird/cam0/image_raw /bluebird/cam1/camera_info /bluebird/cam1/image_raw /clock /bluebird/stereo_dense_reconstruction/pcl /bluebird/msf_core/pose /tf /bluebird/nbvPlanner/octomap_occupied /bluebird/nbvPlanner/octomap_free /bluebird/inspectionPath />
+  <node pkg="rosbag" type="record" name="rosbag_record_nbvp"
+       args="-o $(find nbvplanner)/data/nbvp_experiment /bluebird/cam0/camera_info /bluebird/cam0/image_raw /bluebird/cam1/camera_info /bluebird/cam1/image_raw /clock /bluebird/stereo_dense_reconstruction/pcl /bluebird/msf_core/pose /tf /bluebird/nbvPlanner/octomap_occupied /bluebird/nbvPlanner/octomap_free /bluebird/inspectionPath" />
 </launch>
