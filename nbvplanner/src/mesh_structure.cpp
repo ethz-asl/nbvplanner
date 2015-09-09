@@ -338,7 +338,6 @@ bool mesh::StlMesh::collapse()
     isInspected_ = state;
     isLeaf_ = true;
   }
-  //ROS_INFO("collapsed branch");
   return true;
 }
 
