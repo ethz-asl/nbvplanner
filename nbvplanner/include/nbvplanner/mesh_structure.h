@@ -43,7 +43,7 @@ class StlMesh {
   Eigen::Vector3d x2_;
   Eigen::Vector3d x3_;
   Eigen::Vector3d normal_;
-  
+
   static double resolution_;
   static double cameraPitch_;
   static double cameraHorizontalFoV_;

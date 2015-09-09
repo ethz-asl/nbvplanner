@@ -65,7 +65,8 @@ nbvInspection::RrtTree::~RrtTree()
   }
 }
 
-void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseWithCovarianceStamped& pose)
+void nbvInspection::RrtTree::setStateFromPoseMsg(
+    const geometry_msgs::PoseWithCovarianceStamped& pose)
 {
   static tf::TransformListener listener;
   tf::StampedTransform transform;
@@ -89,6 +90,8 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseWithCo
   root_[3] = tf::getYaw(quat);
 
   static double throttleTime = ros::Time::now().toSec();
+  // TODO: (birchera) test area exploration and add demo scenario
+  // TODO: (birchera) have different throttle parameter for this
   if (ros::Time::now().toSec() - throttleTime > params_.log_throttle_) {
     throttleTime += params_.log_throttle_;
     if (params_.log_) {
