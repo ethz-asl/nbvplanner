@@ -8,7 +8,7 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
   ros::NodeHandle nh_private("~");
 
-  nbvInspection::nbvPlanner<Eigen::Matrix<double, 4, 1>> planner(nh, nh_private);
+  nbvInspection::nbvPlanner<Eigen::Matrix<double, 4, 1> > planner(nh, nh_private);
 
   ros::spin();
   return 0;
