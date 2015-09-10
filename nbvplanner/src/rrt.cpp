@@ -66,7 +66,8 @@ nbvInspection::RrtTree::~RrtTree()
   }
 }
 
-void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseStamped& pose)
+void nbvInspection::RrtTree::setStateFromPoseMsg(
+    const geometry_msgs::PoseWithCovarianceStamped& pose)
 {
   static tf::TransformListener listener;
   tf::StampedTransform transform;
@@ -79,7 +80,7 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseStampe
     return;
   }
   tf::Pose poseTF;
-  tf::poseMsgToTF(pose.pose, poseTF);
+  tf::poseMsgToTF(pose.pose.pose, poseTF);
   tf::Vector3 position = poseTF.getOrigin();
   position = transform * position;
   tf::Quaternion quat = poseTF.getRotation();
@@ -90,6 +91,8 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseStampe
   root_[3] = tf::getYaw(quat);
 
   static double throttleTime = ros::Time::now().toSec();
+  // TODO: (birchera) test area exploration and add demo scenario
+  // TODO: (birchera) have different throttle parameter for this
   if (ros::Time::now().toSec() - throttleTime > params_.log_throttle_) {
     throttleTime += params_.log_throttle_;
     if (params_.log_) {
@@ -99,7 +102,7 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(const geometry_msgs::PoseStampe
       fileResponse_ << root_[root_.size() - 1] << "\n";
     }
     if (mesh_) {
-      mesh_->incoorporateViewFromPoseMsg(pose.pose);
+      mesh_->incoorporateViewFromPoseMsg(pose.pose.pose);
       visualization_msgs::Marker inspected;
       inspected.ns = "meshInspected";
       inspected.id = 0;
@@ -143,7 +146,7 @@ void nbvInspection::RrtTree::iterate(int iterations)
         SQ(params_.minX_ - params_.maxX_) + SQ(params_.minY_ - params_.maxY_)
         + SQ(params_.minZ_ - params_.maxZ_));
     bool solutionFound = false;
-    while (solutionFound) {
+    while (!solutionFound) {
       for (int i = 0; i < 3; i++) {
         newState[i] = 2.0 * radius * (((double) rand()) / ((double) RAND_MAX) - 0.5);
       }
@@ -174,6 +177,7 @@ void nbvInspection::RrtTree::iterate(int iterations)
     newState[2] = 2.0 * (params_.maxZ_ - params_.minZ_)
         * (((double) rand()) / ((double) RAND_MAX) - 0.5) + params_.minZ_;
   }
+
   kdres * nearest = kd_nearest3(kdTree_, newState.x(), newState.y(), newState.z());
   if (kd_res_size(nearest) <= 0) {
     kd_res_free(nearest);
