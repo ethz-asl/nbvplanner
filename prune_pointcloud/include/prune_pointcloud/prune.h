@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <tf/transform_listener.h>
 
 namespace PointcloudPruning {
@@ -11,7 +11,7 @@ class Prune
   Prune(ros::NodeHandle& n);
   ~Prune();
   void pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pointcloudIn);
-  void pose(const geometry_msgs::PoseStamped& pose);
+  void pose(const geometry_msgs::PoseWithCovarianceStamped& pose);
  private:
   ros::NodeHandle n_;
   ros::Publisher pcl_publisher_;

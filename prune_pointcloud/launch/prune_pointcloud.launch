@@ -12,9 +12,9 @@
   <arg name="pose_topic7" default="pose7"/>
   <arg name="pose_topic8" default="pose8"/>
   <arg name="pose_topic9" default="pose9"/>
-  <arg name="pointcloud_in" default="pointcloudIn"/>
-  <arg name="pointcloud_out" default="pointcloudOut"/>
-  <node name="pcpruner_$(arg mav_name)" pkg="prune_pointcloud" type="prune_pointcloud_node" output="screen">
+  <arg name="pointcloud_in" default="$(arg mav_name)/pointcloudIn"/>
+  <arg name="pointcloud_out" default="$(arg mav_name)/pointcloudOut"/>
+  <node name="pcpruner_$(arg mav_name)" pkg="prune_pointcloud" type="prune_node" output="screen">
     <param name="max_dist" type="double" value="$(arg maxDist)"/>
     <param name="store_duration" type="double" value="$(arg storeDuration)"/>
     <remap from="pose0" to="$(arg pose_topic0)"/>

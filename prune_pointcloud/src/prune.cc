@@ -3,7 +3,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 
 #define SQ(x) ((x)*(x))
 
@@ -63,7 +63,7 @@ void PointcloudPruning::Prune::pointcloud(const sensor_msgs::PointCloud2::ConstP
   pcl_publisher_.publish(pointcloudOut);
 }
 
-void PointcloudPruning::Prune::pose(const geometry_msgs::PoseStamped& pose)
+void PointcloudPruning::Prune::pose(const geometry_msgs::PoseWithCovarianceStamped& pose)
 {
   double now = ros::Time::now().toSec();
   for (typename std::vector<std::pair<std::string, double> >::iterator it =

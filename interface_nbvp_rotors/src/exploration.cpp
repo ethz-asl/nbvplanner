@@ -104,7 +104,7 @@ int main(int argc, char** argv)
 
   int iteration = 0;
   while (ros::ok()) {
-    ROS_INFO("Planning iteration %i", iteration);
+    ROS_INFO_THROTTLE(0.5, "Planning iteration %i", iteration);
     nbvplanner::nbvp_srv planSrv;
     planSrv.request.header.stamp = ros::Time::now();
     planSrv.request.header.seq = iteration;
