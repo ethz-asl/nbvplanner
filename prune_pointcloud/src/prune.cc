@@ -63,7 +63,7 @@ void PointcloudPruning::Prune::pointcloud(const sensor_msgs::PointCloud2::ConstP
   pcl_publisher_.publish(pointcloudOut);
 }
 
-void PointcloudPruning::Prune::pose(const geometry_msgs::PoseWithCovarianceStamped& pose)
+void PointcloudPruning::Prune::pose(const geometry_msgs::PoseWithCovarianceStamped& pose, int i)
 {
   double now = ros::Time::now().toSec();
   for (typename std::vector<std::pair<std::string, double> >::iterator it =
@@ -77,6 +77,56 @@ void PointcloudPruning::Prune::pose(const geometry_msgs::PoseWithCovarianceStamp
   }
   vehicle_tf_frames_.push_back(
       std::pair<std::string, double>(pose.header.frame_id, ros::Time::now().toSec()));
+}
+
+void PointcloudPruning::Prune::pose0(const geometry_msgs::PoseWithCovarianceStamped& pose)
+{
+  pose(pose, 0);
+}
+
+void PointcloudPruning::Prune::pose1(const geometry_msgs::PoseWithCovarianceStamped& pose)
+{
+  pose(pose, 1);
+}
+
+void PointcloudPruning::Prune::pose2(const geometry_msgs::PoseWithCovarianceStamped& pose)
+{
+  pose(pose, 2);
+}
+
+void PointcloudPruning::Prune::pose3(const geometry_msgs::PoseWithCovarianceStamped& pose)
+{
+  pose(pose, 3);
+}
+
+void PointcloudPruning::Prune::pose4(const geometry_msgs::PoseWithCovarianceStamped& pose)
+{
+  pose(pose, 4);
+}
+
+void PointcloudPruning::Prune::pose5(const geometry_msgs::PoseWithCovarianceStamped& pose)
+{
+  pose(pose, 5);
+}
+
+void PointcloudPruning::Prune::pose6(const geometry_msgs::PoseWithCovarianceStamped& pose)
+{
+  pose(pose, 6);
+}
+
+void PointcloudPruning::Prune::pose7(const geometry_msgs::PoseWithCovarianceStamped& pose)
+{
+  pose(pose, 7);
+}
+
+void PointcloudPruning::Prune::pose8(const geometry_msgs::PoseWithCovarianceStamped& pose)
+{
+  pose(pose, 8);
+}
+
+void PointcloudPruning::Prune::pose9(const geometry_msgs::PoseWithCovarianceStamped& pose)
+{
+  pose(pose, 9);
 }
 
 void PointcloudPruning::Prune::loadParams()

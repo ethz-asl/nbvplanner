@@ -11,7 +11,17 @@ class Prune
   Prune(ros::NodeHandle& n);
   ~Prune();
   void pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pointcloudIn);
-  void pose(const geometry_msgs::PoseWithCovarianceStamped& pose);
+  void pose(const geometry_msgs::PoseWithCovarianceStamped& pose, int i);
+  void pose0(const geometry_msgs::PoseWithCovarianceStamped& pose);
+  void pose1(const geometry_msgs::PoseWithCovarianceStamped& pose);
+  void pose2(const geometry_msgs::PoseWithCovarianceStamped& pose);
+  void pose3(const geometry_msgs::PoseWithCovarianceStamped& pose);
+  void pose4(const geometry_msgs::PoseWithCovarianceStamped& pose);
+  void pose5(const geometry_msgs::PoseWithCovarianceStamped& pose);
+  void pose6(const geometry_msgs::PoseWithCovarianceStamped& pose);
+  void pose7(const geometry_msgs::PoseWithCovarianceStamped& pose);
+  void pose8(const geometry_msgs::PoseWithCovarianceStamped& pose);
+  void pose9(const geometry_msgs::PoseWithCovarianceStamped& pose);
  private:
   ros::NodeHandle n_;
   ros::Publisher pcl_publisher_;
@@ -28,7 +38,7 @@ class Prune
   ros::Subscriber poseSub9_;
   tf::TransformListener tf_listener_;
   void loadParams();
-  std::vector<std::pair<std::string, double> > vehicle_tf_frames_;
+  std::vector<std::pair<int, double> > vehicle_tf_frames_;
   double maxDist2_;
   double store_duration_;
 };

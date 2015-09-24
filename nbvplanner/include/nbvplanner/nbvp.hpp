@@ -114,8 +114,16 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
     return true;
   }
 
-  if (!ready_ || manager_ == NULL || manager_->getMapSize().norm() <= 0.0) {
-    ROS_ERROR_THROTTLE(1, "Planner not set up");
+  if (!ready_) {
+    ROS_ERROR_THROTTLE(1, "Planner not set up: Planner not ready!");
+    return true;
+  }
+  if (manager_ == NULL) {
+    ROS_ERROR_THROTTLE(1, "Planner not set up: No octomap available!");
+    return true;
+  }
+  if (manager_->getMapSize().norm() <= 0.0) {
+    ROS_ERROR_THROTTLE(1, "Planner not set up: Octomap is empty!");
     return true;
   }
   res.path.clear();
