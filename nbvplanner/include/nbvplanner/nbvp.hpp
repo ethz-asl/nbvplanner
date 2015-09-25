@@ -139,7 +139,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
       return true;
     }
     if (loopCount > 1000 * (tree_->getCounter() + 1)) {
-      ROS_INFO("Exceeding maximum failed iterations, return to previous point!");
+      ROS_INFO_THROTTLE(1, "Exceeding maximum failed iterations, return to previous point!");
       res.path = tree_->getPathBackToPrevious(req.header.frame_id);
       return true;
     }

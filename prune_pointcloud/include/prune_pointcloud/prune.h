@@ -11,36 +11,14 @@ class Prune
   Prune(ros::NodeHandle& n);
   ~Prune();
   void pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pointcloudIn);
-  void pose(const geometry_msgs::PoseWithCovarianceStamped& pose, int i);
-  void pose0(const geometry_msgs::PoseWithCovarianceStamped& pose);
-  void pose1(const geometry_msgs::PoseWithCovarianceStamped& pose);
-  void pose2(const geometry_msgs::PoseWithCovarianceStamped& pose);
-  void pose3(const geometry_msgs::PoseWithCovarianceStamped& pose);
-  void pose4(const geometry_msgs::PoseWithCovarianceStamped& pose);
-  void pose5(const geometry_msgs::PoseWithCovarianceStamped& pose);
-  void pose6(const geometry_msgs::PoseWithCovarianceStamped& pose);
-  void pose7(const geometry_msgs::PoseWithCovarianceStamped& pose);
-  void pose8(const geometry_msgs::PoseWithCovarianceStamped& pose);
-  void pose9(const geometry_msgs::PoseWithCovarianceStamped& pose);
  private:
   ros::NodeHandle n_;
   ros::Publisher pcl_publisher_;
   ros::Subscriber pointcloudSub_;
-  ros::Subscriber poseSub0_;
-  ros::Subscriber poseSub1_;
-  ros::Subscriber poseSub2_;
-  ros::Subscriber poseSub3_;
-  ros::Subscriber poseSub4_;
-  ros::Subscriber poseSub5_;
-  ros::Subscriber poseSub6_;
-  ros::Subscriber poseSub7_;
-  ros::Subscriber poseSub8_;
-  ros::Subscriber poseSub9_;
   tf::TransformListener tf_listener_;
   void loadParams();
-  std::vector<std::pair<int, double> > vehicle_tf_frames_;
+  std::vector<std::string> vehicle_tf_frames_;
   double maxDist2_;
-  double store_duration_;
 };
 
 }

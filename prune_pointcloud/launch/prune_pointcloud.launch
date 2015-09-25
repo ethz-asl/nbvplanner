@@ -1,32 +1,12 @@
 <launch>
   <arg name="mav_name" default="firefly"/>
   <arg name="maxDist" default="0.5"/>
-  <arg name="storeDuration" default="2.0"/>
-  <arg name="pose_topic0" default="pose0"/>
-  <arg name="pose_topic1" default="pose1"/>
-  <arg name="pose_topic2" default="pose2"/>
-  <arg name="pose_topic3" default="pose3"/>
-  <arg name="pose_topic4" default="pose4"/>
-  <arg name="pose_topic5" default="pose5"/>
-  <arg name="pose_topic6" default="pose6"/>
-  <arg name="pose_topic7" default="pose7"/>
-  <arg name="pose_topic8" default="pose8"/>
-  <arg name="pose_topic9" default="pose9"/>
+  <arg name="vehicle_tf_frames_file" default="$(find prune_pointcloud)/launch/tf_frames.yaml"/>
   <arg name="pointcloud_in" default="$(arg mav_name)/pointcloudIn"/>
   <arg name="pointcloud_out" default="$(arg mav_name)/pointcloudOut"/>
   <node name="pcpruner_$(arg mav_name)" pkg="prune_pointcloud" type="prune_node" output="screen">
     <param name="max_dist" type="double" value="$(arg maxDist)"/>
-    <param name="store_duration" type="double" value="$(arg storeDuration)"/>
-    <remap from="pose0" to="$(arg pose_topic0)"/>
-    <remap from="pose1" to="$(arg pose_topic1)"/>
-    <remap from="pose2" to="$(arg pose_topic2)"/>
-    <remap from="pose3" to="$(arg pose_topic3)"/>
-    <remap from="pose4" to="$(arg pose_topic4)"/>
-    <remap from="pose5" to="$(arg pose_topic5)"/>
-    <remap from="pose6" to="$(arg pose_topic6)"/>
-    <remap from="pose7" to="$(arg pose_topic7)"/>
-    <remap from="pose8" to="$(arg pose_topic8)"/>
-    <remap from="pose9" to="$(arg pose_topic9)"/>
+    <rosparam file="$(arg vehicle_tf_frames_file)"/>
     <remap from="pointcloudIn" to="$(arg pointcloud_in)"/>
     <remap from="pointcloudOut" to="$(arg pointcloud_out)"/>
   </node>
