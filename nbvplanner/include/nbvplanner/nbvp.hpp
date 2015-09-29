@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Andreas Bircher, ASL, ETH Zurich, Switzerland
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef NBVP_HPP_
 #define NBVP_HPP_
 
@@ -22,7 +38,7 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
 
   manager_ = new volumetric_mapping::OctomapManager(nh_, nh_private_);
 
-  // set up the topics and services
+  // Set up the topics and services
   params_.inspectionPath_ = nh_.advertise<visualization_msgs::Marker>("inspectionPath", 1000);
   evadePub_ = nh_.advertise<multiagent_collision_check::Segment>("/evasionSegment", 100);
   plannerService_ = nh_.advertiseService("nbvplanner",
@@ -38,6 +54,8 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
     ROS_ERROR("Could not start the planner. Parameters missing!");
   }
 
+  // Precompute the camera field of view boundaries. The normals of the separating hyperplanes are
+  // stored
   double pitch = M_PI * params_.camPitch_ / 180.0;
   double camTop = M_PI * (pitch - params_.camVertical_ / 2.0) / 180.0 + M_PI / 2.0;
   double camBottom = M_PI * (pitch + params_.camVertical_ / 2.0) / 180.0 - M_PI / 2.0;
@@ -56,32 +74,36 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   params_.camBoundNormals_.push_back(rightR);
   params_.camBoundNormals_.push_back(leftR);
 
+  // Load mesh from STL file if provided.
   std::string ns = ros::this_node::getName();
   std::string stlPath = "";
   mesh_ = NULL;
   if (ros::param::get(ns + "/stl_file_path", stlPath)) {
-    if (ros::param::get(ns + "/mesh_resolution", params_.meshResolution_)) {
-      std::fstream stlFile;
-      stlFile.open(stlPath.c_str());
-      if (stlFile.is_open()) {
-        mesh_ = new mesh::StlMesh(stlFile);
-        mesh_->setResolution(params_.meshResolution_);
-        mesh_->setOctomapManager(manager_);
-        mesh_->setCameraParams(params_.camPitch_, params_.camHorizontal_, params_.camVertical_,
-                               params_.gainRange_);
+    if (stlPath.length() > 0) {
+      if (ros::param::get(ns + "/mesh_resolution", params_.meshResolution_)) {
+        std::fstream stlFile;
+        stlFile.open(stlPath.c_str());
+        if (stlFile.is_open()) {
+          mesh_ = new mesh::StlMesh(stlFile);
+          mesh_->setResolution(params_.meshResolution_);
+          mesh_->setOctomapManager(manager_);
+          mesh_->setCameraParams(params_.camPitch_, params_.camHorizontal_, params_.camVertical_,
+                                 params_.gainRange_);
+        } else {
+          ROS_WARN("Unable to open STL file");
+        }
       } else {
-        ROS_WARN("Unable to open STL file");
+        ROS_WARN("STL mesh file path specified but mesh resolution parameter missing!");
       }
-    } else {
-      ROS_WARN("STL mesh file path specified but mesh resolution parameter missing!");
     }
   }
+  // Initialize the tree instance.
   tree_ = new RrtTree(mesh_, manager_);
   tree_->setParams(params_);
-
+  // Subscribe to topic used for the collaborative collision avoidance (don't hit your peer).
   evadeClient_ = nh_.subscribe("/evasionSegment", 10, &nbvInspection::TreeBase<stateVec>::evade,
                               tree_);
-
+  // Not yet ready. Needs a position message first.
   ready_ = false;
 }
 
@@ -100,6 +122,7 @@ template<typename stateVec>
 void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseWithCovarianceStamped& pose)
 {
   tree_->setStateFromPoseMsg(pose);
+  // Planner is now ready to plan.
   ready_ = true;
 }
 
@@ -108,7 +131,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
                                                           nbvplanner::nbvp_srv::Response& res)
 {
   ros::Time computationTime = ros::Time::now();
-
+  // Check that planner is ready to compute path.
   if (!ros::ok()) {
     ROS_INFO_THROTTLE(1, "Exploration finished. Not planning any further moves.");
     return true;
@@ -128,9 +151,11 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   }
   res.path.clear();
 
+  // Clear old tree and reinitialize.
   tree_->clear();
   tree_->initialize();
   vector_t path;
+  // Iterate the tree construction method.
   int loopCount = 0;
   while ((!tree_->gainFound() || tree_->getCounter() < params_.initIterations_) && ros::ok()) {
     if (tree_->getCounter() > params_.cuttoffIterations_) {
@@ -146,10 +171,11 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
     tree_->iterate(1);
     loopCount++;
   }
+  // Extract the best edge.
   res.path = tree_->getBestEdge(req.header.frame_id);
 
   tree_->memorizeBestBranch();
-  // Publish path to block for other agents
+  // Publish path to block for other agents (multi agent only).
   multiagent_collision_check::Segment segment;
   segment.header.stamp = ros::Time::now();
   segment.header.frame_id = params_.navigationFrame_;

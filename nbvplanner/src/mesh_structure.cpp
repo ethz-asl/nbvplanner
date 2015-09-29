@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Andreas Bircher, ASL, ETH Zurich, Switzerland
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef _MESH_STRUCTURE_CPP_
 #define _MESH_STRUCTURE_CPP_
 
@@ -31,6 +47,7 @@ mesh::StlMesh::StlMesh(std::fstream& file)
       x2_(0.0, 0.0, 0.0),
       x3_(0.0, 0.0, 0.0)
 {
+  // This routine loads the mesh and constructs the hierarchical structure.
   assert(file.is_open());
   int MaxLine = 0;
   char* line;
@@ -111,8 +128,8 @@ mesh::StlMesh::StlMesh(std::fstream& file)
   if (k > 0)
     isLeaf_ = false;
   ROS_INFO(
-      "STL file read. Contains %i elements located inside (%2.2f,%2.2f)x(%2.2f,%2.2f)x(%2.2f,%2.2f)", k,
-      minX, maxX, minY, maxY, minZ, maxZ);
+      "STL file read. Contains %i elements located inside (%2.2f,%2.2f)x(%2.2f,%2.2f)x(%2.2f,%2.2f)",
+      k, minX, maxX, minY, maxY, minZ, maxZ);
 }
 
 mesh::StlMesh::~StlMesh()
@@ -124,6 +141,7 @@ mesh::StlMesh::~StlMesh()
 void mesh::StlMesh::setCameraParams(double cameraPitch, double cameraHorizontalFoV,
                                     double cameraVerticalFoV, double maxDist)
 {
+  // Precompute the normals of the separating hyperplanes that constrain the field of view.
   cameraPitch_ = cameraPitch;
   cameraHorizontalFoV_ = cameraHorizontalFoV;
   cameraVerticalFoV_ = cameraVerticalFoV;
@@ -164,6 +182,7 @@ void mesh::StlMesh::incoorporateViewFromPoseMsg(const geometry_msgs::Pose& pose)
 void mesh::StlMesh::assembleMarkerArray(visualization_msgs::Marker& inspected,
                                         visualization_msgs::Marker& uninspected) const
 {
+  // Recursively assemble the array of markers to publish to rviz.
   if (isLeaf_) {
     if (isInspected_) {
       geometry_msgs::Point point;
@@ -226,7 +245,7 @@ void mesh::StlMesh::incoorporateViewFromTf(const tf::Transform& transform)
     if (currentNode->isInspected_)
       continue;
     bool partialVisibility = false;
-    if (currentNode->getVisibility(transform.inverse(), partialVisibility, true)) {
+    if (currentNode->getVisibility(transform.inverse(), partialVisibility, false)) {
       currentNode->isInspected_ = true;
       if (!currentNode->isLeaf_) {
         for (typename std::vector<mesh::StlMesh*>::iterator currentChild = currentNode->children_
@@ -356,10 +375,10 @@ bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialV
   if (transformedNormal.dot(transformedX1) >= 0.0)
     return false;
   if (transformedX1.length() > maxDist_
-      || !manager_->getVisibility(
+      || manager_->getVisibility(
           Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
           Eigen::Vector3d(transformedX1.x(), transformedX1.y(), transformedX1.z()),
-          stop_at_unknown_cell)) {
+          stop_at_unknown_cell) != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
     ret = false;
   } else {
     bool visibility1 = true;
@@ -370,18 +389,21 @@ bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialV
         break;
       }
     }
-    if (visibility1)
+    if (visibility1) {
       partialVisibility = true;
-    else
+      if (stop_at_unknown_cell)
+        ROS_INFO("visible1");
+    } else {
       ret = false;
+    }
   }
   // #2
   tf::Vector3 transformedX2 = transform * tf::Vector3(x2_.x(), x2_.y(), x2_.z());
   if (transformedX2.length() > maxDist_
-      || !manager_->getVisibility(
+      || manager_->getVisibility(
           Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
           Eigen::Vector3d(transformedX2.x(), transformedX2.y(), transformedX2.z()),
-          stop_at_unknown_cell)) {
+          stop_at_unknown_cell) != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
     ret = false;
   } else {
     bool visibility2 = true;
@@ -392,20 +414,23 @@ bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialV
         break;
       }
     }
-    if (visibility2)
+    if (visibility2) {
       partialVisibility = true;
-    else
+      if (stop_at_unknown_cell)
+        ROS_INFO("visible2");
+    } else {
       ret = false;
+    }
   }
   if (partialVisibility && !ret)
     return ret;
   // #3
   tf::Vector3 transformedX3 = transform * tf::Vector3(x3_.x(), x3_.y(), x3_.z());
   if (transformedX3.length() > maxDist_
-      || !manager_->getVisibility(
+      || manager_->getVisibility(
           Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
           Eigen::Vector3d(transformedX3.x(), transformedX3.y(), transformedX3.z()),
-          stop_at_unknown_cell)) {
+          stop_at_unknown_cell) != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
     ret = false;
   } else {
     bool visibility3 = true;
@@ -416,10 +441,13 @@ bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialV
         break;
       }
     }
-    if (visibility3)
+    if (visibility3) {
       partialVisibility = true;
-    else
+      if (stop_at_unknown_cell)
+        ROS_INFO("visible3");
+    } else {
       ret = false;
+    }
   }
   return ret;
 }

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Andreas Bircher, ASL, ETH Zurich, Switzerland
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <ros/ros.h>
 #include <prune_pointcloud/prune.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -13,7 +29,7 @@
 PointcloudPruning::Prune::Prune(ros::NodeHandle& n)
     : n_(n)
 {
-  pointcloudSub_ = n_.subscribe("pointcloudIn", 40, &PointcloudPruning::Prune::pointcloud, this);
+  pointcloudSub_ = n_.subscribe("pointcloudIn", 1, &PointcloudPruning::Prune::pointcloud, this);
   pcl_publisher_ = n_.advertise < sensor_msgs::PointCloud2 > ("pointcloudOut", 1, true);
   loadParams();
 }
@@ -24,8 +40,8 @@ PointcloudPruning::Prune::~Prune()
 
 void PointcloudPruning::Prune::pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pointcloudIn)
 {
+  // Find transforms for all specified vehicles by their tf frames.
   std::vector < tf::Vector3 > agents;
-  ROS_WARN("pruning pointcloud, size of frame vector %i", vehicle_tf_frames_.size());
   for (typename std::vector<std::string>::iterator it = vehicle_tf_frames_.begin();
       it != vehicle_tf_frames_.end(); it++) {
     tf::StampedTransform tf_transform;
@@ -42,30 +58,23 @@ void PointcloudPruning::Prune::pointcloud(const sensor_msgs::PointCloud2::ConstP
       return;
     }
     agents.push_back(tf_transform.getOrigin());
-    static tf::TransformBroadcaster broadcaster;
-    broadcaster.sendTransform(tf::StampedTransform(tf_transform, ros::Time::now(), pointcloudIn->header.frame_id , *it+"/pruning"));
-    ROS_INFO("TF Position is (%2.2f,%2.2f,%2.2f) and pcl frame is: %s", tf_transform.getOrigin().x(),
-             tf_transform.getOrigin().y(), tf_transform.getOrigin().z(), pointcloudIn->header.frame_id.c_str());
   }
+  // Prepare pointcloud.
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::fromROSMsg(*pointcloudIn, *cloud);
   // Remove NaN values, if any.
   std::vector<int> indices;
   pcl::removeNaNFromPointCloud(*cloud, *cloud, indices);
+  // Iterate through pointcloud and remove all points that are close than squared threshold maxDist2_
   for (pcl::PointCloud<pcl::PointXYZ>::iterator it = cloud->begin(); it != cloud->end(); ++it) {
     for (typename std::vector<tf::Vector3>::iterator itPose = agents.begin();
         itPose != agents.end(); itPose++) {
-      /*ROS_INFO("1: %2.2f", it->x);
-      ROS_INFO("2: %2.2f", itPose->x());
-      ROS_INFO("3: %2.2f", it->y);
-      ROS_INFO("4: %2.2f", itPose->y());
-      ROS_INFO("5: %2.2f", it->z);
-      ROS_INFO("6: %2.2f", itPose->z());*/
       if (SQ(it->x - itPose->x()) + SQ(it->y - itPose->y()) + SQ(it->z - itPose->z()) < maxDist2_) {
         cloud->erase(it);
       }
     }
   }
+  // Publish pruned pointcloud
   sensor_msgs::PointCloud2::Ptr pointcloudOut(new sensor_msgs::PointCloud2);
   pcl::toROSMsg(*cloud, *pointcloudOut);
   pcl_publisher_.publish(pointcloudOut);

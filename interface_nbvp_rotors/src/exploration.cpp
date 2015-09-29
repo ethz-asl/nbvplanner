@@ -1,4 +1,5 @@
 /*
+ * Copyright 2015 Andreas Bircher, ASL, ETH Zurich, Switzerland
  * Copyright 2015 Fadri Furrer, ASL, ETH Zurich, Switzerland
  * Copyright 2015 Michael Burri, ASL, ETH Zurich, Switzerland
  * Copyright 2015 Mina Kamel, ASL, ETH Zurich, Switzerland
@@ -75,6 +76,8 @@ int main(int argc, char** argv)
   // Wait for 5 seconds to let the Gazebo GUI show up.
   ros::Duration(5.0).sleep();
 
+  // This is the initialization motion, necessary that the known free space allows the planning
+  // of initial paths.
   ROS_INFO("Starting the planner: Performing initialization motion");
   for (double i = 0; i <= 1.0; i = i + 0.1) {
     nh.param<double>("wp_x", trajectory_point.position_W.x(), 0.0);
@@ -102,6 +105,7 @@ int main(int argc, char** argv)
   trajectory_pub.publish(samples_array);
   ros::Duration(1.0).sleep();
 
+  // Start planning: The planner is called and the computed path sent to the controller.
   int iteration = 0;
   while (ros::ok()) {
     ROS_INFO_THROTTLE(0.5, "Planning iteration %i", iteration);
@@ -111,6 +115,9 @@ int main(int argc, char** argv)
     planSrv.request.header.frame_id = "world";
     if (ros::service::call("nbvplanner", planSrv)) {
       n_seq++;
+      if (planSrv.response.path.size() == 0) {
+        ros::Duration(1.0).sleep();
+      }
       for (int i = 0; i < planSrv.response.path.size(); i++) {
         samples_array.header.seq = n_seq;
         samples_array.header.stamp = ros::Time::now();
@@ -121,7 +128,7 @@ int main(int argc, char** argv)
         double yaw = tf::getYaw(pose.getRotation());
         trajectory_point.position_W.x() = planSrv.response.path[i].position.x;
         trajectory_point.position_W.y() = planSrv.response.path[i].position.y;
-        // add offset to account for constant tracking error of controller
+        // Add offset to account for constant tracking error of controller
         trajectory_point.position_W.z() = planSrv.response.path[i].position.z + 0.25;
         tf::Quaternion quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), yaw);
         trajectory_point.setFromYaw(tf::getYaw(quat));

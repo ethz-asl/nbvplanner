@@ -9,23 +9,7 @@
     <arg name="paused" value="true"/>
     <arg name="gui" value="true"/>
   </include>
-  <node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world navigation 100" />
-
-  <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
-    <param name="tf_frame" type="string" value="world" />
-    <param name="resolution" type="double" value="0.4" />
-    <param name="visualize_max_z" type="double" value="2.5" />
-    <param name="sensor_max_range" type="double" value="5.0" />
-    <param name="stl_file_path" type="string" value="$(find interface_nbvp_rotors)/mesh/meshFlat.stl" />
-    <param name="mesh_resolution" type="double" value="0.5" />
-    <remap from="cam0/camera_info" to="/$(arg mav_name)/vi_sensor/left/camera_info"/>
-    <remap from="cam1/camera_info" to="/$(arg mav_name)/vi_sensor/right/camera_info"/>
-    <remap from="pointcloud_throttled" to="$(arg mav_name)/vi_sensor/camera_depth/depth/points"/>
-    <remap from="pose" to="$(arg mav_name)/ground_truth/pose_with_covariance"/>
-    <remap from="nbvplanner" to="$(arg mav_name)/nbvplanner"/>
-    <rosparam command="load" file="$(find interface_nbvp_rotors)/resource/area_exploration.yaml" />
-  </node>
-
+  
   <include file="$(find interface_nbvp_rotors)/launch/mav_inspector.launch">
     <arg name="mav_name" value="$(arg mav_name)" />
     <arg name="waypoint_x" value="0.0" />
@@ -35,5 +19,12 @@
     <arg name="enable_logging" value="$(arg enable_logging)" />
     <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
     <arg name="log_file" value="$(arg log_file)" />
+    <arg name="tf_frame" value="world" />
+    <arg name="pcl_topic" value="/$(arg mav_name)/vi_sensor/camera_depth/depth/points" />
+    <arg name="stl_file_path" value="$(find interface_nbvp_rotors)/mesh/meshFlat.stl" />
+    <arg name="mesh_resolution" value="0.5" />
+    <arg name="resolution" value="0.4" />
+    <arg name="visualize_max_z" value="2.5" />
+    <arg name="sensor_max_range" value="5.0" />
   </include>
 </launch>

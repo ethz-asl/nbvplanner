@@ -34,4 +34,4 @@ bbx/maxY: 8.0
 bbx/maxZ: 3.0
 bbx/softBounds: false
 
-pcl_throttle: 1.0
+pcl_throttle: 0.36

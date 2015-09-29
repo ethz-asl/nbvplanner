@@ -4,13 +4,14 @@
   <version>0.0.0</version>
   <description>The nbvplanner package</description>
 
-  <maintainer email="andreas.bircher@mavt.ethz.ch">andreasbircher</maintainer>
+  <maintainer email="andreas.bircher@mavt.ethz.ch">Andreas Bircher</maintainer>
 
-  <license>GPLv3</license>
+  <license>ASL 2.0</license>
 
-  <author email="andreas.bircher@mavt.ethz.ch">andreasbircher</author>
+  <author>Andreas Bircher</author>
 
   <buildtool_depend>catkin</buildtool_depend>
+  
   <build_depend>roscpp</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>message_generation</build_depend>
@@ -19,6 +20,7 @@
   <build_depend>octomap_world</build_depend>
   <build_depend>kdtree</build_depend>
   <build_depend>multiagent_collision_check</build_depend>
+  
   <run_depend>roscpp</run_depend>
   <run_depend>tf</run_depend>
   <run_depend>message_runtime</run_depend>

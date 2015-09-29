@@ -3,11 +3,18 @@
   <name>multiagent_collision_check</name>
   <version>0.0.0</version>
   <description>The multiagent_collision_check package</description>
+  
   <maintainer email="andreas.bircher@mavt.ethz.ch">Andreas Bircher</maintainer>
-  <license>BSD</license>
+  
+  <license>ASL 2.0</license>
+  
+  <author>Andreas Bircher</author>
+  
   <buildtool_depend>catkin</buildtool_depend>
+  
   <build_depend>octomap_world</build_depend>
   <build_depend>message_generation</build_depend>
+  
   <run_depend>octomap_world</run_depend>
   <run_depend>message_runtime</run_depend>
 </package>

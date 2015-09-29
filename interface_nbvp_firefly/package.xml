@@ -4,10 +4,11 @@
   <version>0.0.0</version>
   <description>The package to interface the nbvplanner with the firefly robot</description>
   
-  <maintainer email="andreas.bircher@mavt.ethz.ch">andreasbircher</maintainer>
+  <maintainer email="andreas.bircher@mavt.ethz.ch">Andreas Bircher</maintainer>
 
-  <license>GPLv3</license>
+  <license>ASL 2.0</license>
 
-  <author email="andreas.bircher@mavt.ethz.ch">andreasbircher</author>
+  <author>Andreas Bircher</author>
+  
   <buildtool_depend>catkin</buildtool_depend>
 </package>

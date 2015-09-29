@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Andreas Bircher, ASL, ETH Zurich, Switzerland
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef RRTTREE_HPP_
 #define RRTTREE_HPP_
 
@@ -12,7 +28,10 @@ nbvInspection::RrtTree::RrtTree()
   kdTree_ = kd_create(3);
   iterationCount_ = 0;
 
-  if (params_.log_) {
+  // If logging is required, set up files here
+  bool ifLog = false;
+  ros::param::get(ns + "/nbvp/log/on", ifLog);
+  if (ifLog) {
     time_t rawtime;
     struct tm * ptm;
     time(&rawtime);
@@ -35,7 +54,10 @@ nbvInspection::RrtTree::RrtTree(mesh::StlMesh * mesh, volumetric_mapping::Octoma
   kdTree_ = kd_create(3);
   iterationCount_ = 0;
 
-  if (params_.log_) {
+  // If logging is required, set up files here
+  bool ifLog = false;
+  ros::param::get(ns + "/nbvp/log/on", ifLog);
+  if (ifLog) {
     time_t rawtime;
     struct tm * ptm;
     time(&rawtime);
@@ -69,9 +91,9 @@ nbvInspection::RrtTree::~RrtTree()
 void nbvInspection::RrtTree::setStateFromPoseMsg(
     const geometry_msgs::PoseWithCovarianceStamped& pose)
 {
+  // Get latest transform to the planning frame and transform the pose
   static tf::TransformListener listener;
   tf::StampedTransform transform;
-
   try {
     listener.lookupTransform(params_.navigationFrame_, pose.header.frame_id, pose.header.stamp,
                              transform);
@@ -90,8 +112,8 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(
   root_[2] = position.z();
   root_[3] = tf::getYaw(quat);
 
+  // Log the vehicle response in the planning frame
   static double throttleTime = ros::Time::now().toSec();
-  // TODO: (birchera) test area exploration and add demo scenario
   // TODO: (birchera) have different throttle parameter for this
   if (ros::Time::now().toSec() - throttleTime > params_.log_throttle_) {
     throttleTime += params_.log_throttle_;
@@ -101,8 +123,10 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(
       }
       fileResponse_ << root_[root_.size() - 1] << "\n";
     }
+    // Update the inspected parts of the mesh using the current position
     if (mesh_) {
       mesh_->incoorporateViewFromPoseMsg(pose.pose.pose);
+      // Publish the mesh marker for visualization in rviz
       visualization_msgs::Marker inspected;
       inspected.ns = "meshInspected";
       inspected.id = 0;
@@ -139,21 +163,26 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(
 
 void nbvInspection::RrtTree::iterate(int iterations)
 {
-  // sample uniformly over space and throw away those samples that lie outside of the sampling area
+  // In this function a new configuration is sampled and added to the tree.
   StateVec newState;
-  if (params_.softBounds_) {
-    double radius = sqrt(
-        SQ(params_.minX_ - params_.maxX_) + SQ(params_.minY_ - params_.maxY_)
-        + SQ(params_.minZ_ - params_.maxZ_));
-    bool solutionFound = false;
-    while (!solutionFound) {
-      for (int i = 0; i < 3; i++) {
-        newState[i] = 2.0 * radius * (((double) rand()) / ((double) RAND_MAX) - 0.5);
-      }
-      if (SQ(newState[0]) + SQ(newState[1]) + SQ(newState[2]) > pow(radius, 2.0))
-        continue;
-      // offset new state by root
-      newState += rootNode_->state_;
+
+  // Sample over a sphere with the radius of the maximum diagonal of the exploration
+  // space. Throw away samples outside the sampling region it exiting is not allowed
+  // by the corresponding parameter. This method is to not bias the tree towards the
+  // center of the exploration space.
+  double radius = sqrt(
+      SQ(params_.minX_ - params_.maxX_) + SQ(params_.minY_ - params_.maxY_)
+      + SQ(params_.minZ_ - params_.maxZ_));
+  bool solutionFound = false;
+  while (!solutionFound) {
+    for (int i = 0; i < 3; i++) {
+      newState[i] = 2.0 * radius * (((double) rand()) / ((double) RAND_MAX) - 0.5);
+    }
+    if (SQ(newState[0]) + SQ(newState[1]) + SQ(newState[2]) > pow(radius, 2.0))
+      continue;
+    // Offset new state by root
+    newState += rootNode_->state_;
+    if (!params_.softBounds_) {
       if (newState.x() < params_.minX_ + 0.5 * params_.boundingBox_.x()) {
         continue;
       } else if (newState.y() < params_.minY_ + 0.5 * params_.boundingBox_.y()) {
@@ -167,17 +196,11 @@ void nbvInspection::RrtTree::iterate(int iterations)
       } else if (newState.z() > params_.maxZ_ - 0.5 * params_.boundingBox_.z()) {
         continue;
       }
-      solutionFound = true;
     }
-  } else {
-    newState[0] = 2.0 * (params_.maxX_ - params_.minX_)
-        * (((double) rand()) / ((double) RAND_MAX) - 0.5) + params_.minX_;
-    newState[1] = 2.0 * (params_.maxY_ - params_.minY_)
-        * (((double) rand()) / ((double) RAND_MAX) - 0.5) + params_.minY_;
-    newState[2] = 2.0 * (params_.maxZ_ - params_.minZ_)
-        * (((double) rand()) / ((double) RAND_MAX) - 0.5) + params_.minZ_;
+    solutionFound = true;
   }
 
+  // Find nearest neighbour
   kdres * nearest = kd_nearest3(kdTree_, newState.x(), newState.y(), newState.z());
   if (kd_res_size(nearest) <= 0) {
     kd_res_free(nearest);
@@ -187,7 +210,7 @@ void nbvInspection::RrtTree::iterate(int iterations)
       nearest);
   kd_res_free(nearest);
 
-  // check for collision
+  // Check for collision of new connection plus some overshoot distance.
   Eigen::Vector3d origin(newParent->state_[0], newParent->state_[1], newParent->state_[2]);
   Eigen::Vector3d direction(newState[0] - origin[0], newState[1] - origin[1],
                             newState[2] - origin[2]);
@@ -202,9 +225,9 @@ void nbvInspection::RrtTree::iterate(int iterations)
           origin, direction + origin + direction.normalized() * params_.dOvershoot_,
           params_.boundingBox_)
       && !multiagent::isInCollision(newParent->state_, newState, params_.boundingBox_, segments_)) {
-    // sample the new orientation
+    // Sample the new orientation
     newState[3] = 2.0 * M_PI * (((double) rand()) / ((double) RAND_MAX) - 0.5);
-    // create new node and insert into tree
+    // Create new node and insert into tree
     nbvInspection::Node<StateVec> * newNode = new nbvInspection::Node<StateVec>;
     newNode->state_ = newState;
     newNode->parent_ = newParent;
@@ -215,10 +238,10 @@ void nbvInspection::RrtTree::iterate(int iterations)
 
     kd_insert3(kdTree_, newState.x(), newState.y(), newState.z(), newNode);
 
-    // display new node
+    // Display new node
     publishNode(newNode);
 
-    // update best IG and node if applicable
+    // Update best IG and node if applicable
     if (newNode->gain_ > bestGain_) {
       bestGain_ = newNode->gain_;
       bestNode_ = newNode;
@@ -229,10 +252,9 @@ void nbvInspection::RrtTree::iterate(int iterations)
 
 void nbvInspection::RrtTree::initialize()
 {
-
+  // This function is to initialize the tree, including insertion of remainder of previous best branch.
   g_ID_ = 0;
-  manager_->publishAll();
-
+  // Remove last segment from segment list (multi agent only)
   int i;
   for (i = 0; i < agentNames_.size(); i++) {
     if (agentNames_[i].compare(params_.navigationFrame_) == 0) {
@@ -242,7 +264,7 @@ void nbvInspection::RrtTree::initialize()
   if (i < agentNames_.size()) {
     segments_[i]->clear();
   }
-
+  // Initialize kd-tree with root node and prepare log file
   kdTree_ = kd_create(3);
 
   if (params_.log_) {
@@ -262,6 +284,8 @@ void nbvInspection::RrtTree::initialize()
 
   kd_insert3(kdTree_, root_.x(), root_.y(), root_.z(), rootNode_);
 
+  // Insert all nodes of the remainder of the previous best branch, checking for collisions and
+  // recomputing the gain.
   for (typename std::vector<StateVec>::reverse_iterator iter = bestBranchMemory_.rbegin();
       iter != bestBranchMemory_.rend(); ++iter) {
     StateVec newState = *iter;
@@ -274,7 +298,7 @@ void nbvInspection::RrtTree::initialize()
         nearest);
     kd_res_free(nearest);
 
-    // check for collision
+    // Check for collision
     Eigen::Vector3d origin(newParent->state_[0], newParent->state_[1], newParent->state_[2]);
     Eigen::Vector3d direction(newState[0] - origin[0], newState[1] - origin[1],
                               newState[2] - origin[2]);
@@ -290,7 +314,7 @@ void nbvInspection::RrtTree::initialize()
             params_.boundingBox_)
         && !multiagent::isInCollision(newParent->state_, newState, params_.boundingBox_,
                                       segments_)) {
-      // create new node and insert into tree
+      // Create new node and insert into tree
       nbvInspection::Node<StateVec> * newNode = new nbvInspection::Node<StateVec>;
       newNode->state_ = newState;
       newNode->parent_ = newParent;
@@ -301,10 +325,10 @@ void nbvInspection::RrtTree::initialize()
 
       kd_insert3(kdTree_, newState.x(), newState.y(), newState.z(), newNode);
 
-      // display new node
+      // Display new node
       publishNode(newNode);
 
-      // update best IG and node if applicable
+      // Update best IG and node if applicable
       if (newNode->gain_ > bestGain_) {
         bestGain_ = newNode->gain_;
         bestNode_ = newNode;
@@ -322,9 +346,9 @@ void nbvInspection::RrtTree::initialize()
   p.ns = "workspace";
   p.type = visualization_msgs::Marker::CUBE;
   p.action = visualization_msgs::Marker::ADD;
-  p.pose.position.x = (params_.minX_ + params_.maxX_) / 2.0;
-  p.pose.position.y = (params_.minY_ + params_.maxY_) / 2.0;
-  p.pose.position.z = (params_.minZ_ + params_.maxZ_) / 2.0;
+  p.pose.position.x = 0.5 * (params_.minX_ + params_.maxX_);
+  p.pose.position.y = 0.5 * (params_.minY_ + params_.maxY_);
+  p.pose.position.z = 0.5 * (params_.minZ_ + params_.maxZ_);
   tf::Quaternion quat;
   quat.setEuler(0.0, 0.0, 0.0);
   p.pose.orientation.x = quat.x();
@@ -345,6 +369,7 @@ void nbvInspection::RrtTree::initialize()
 
 std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::getBestEdge(std::string targetFrame)
 {
+  // This function returns the first edge of the best branch
   std::vector<geometry_msgs::Pose> ret;
   nbvInspection::Node<StateVec> * current = bestNode_;
   if (current->parent_ != NULL) {
@@ -359,11 +384,13 @@ std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::getBestEdge(std::string
 
 double nbvInspection::RrtTree::gain(StateVec state)
 {
+  // This function computes the gain
   double gain = 0.0;
   const double disc = manager_->getResolution();
   Eigen::Vector3d origin(state[0], state[1], state[2]);
   Eigen::Vector3d vec;
   double rangeSq = pow(params_.gainRange_, 2.0);
+  // Iterate over all nodes within the allowed distance
   for (vec[0] = std::max(state[0] - params_.gainRange_, params_.minX_);
       vec[0] < std::min(state[0] + params_.gainRange_, params_.maxX_); vec[0] += disc) {
     for (vec[1] = std::max(state[1] - params_.gainRange_, params_.minY_);
@@ -371,10 +398,12 @@ double nbvInspection::RrtTree::gain(StateVec state)
       for (vec[2] = std::max(state[2] - params_.gainRange_, params_.minZ_);
           vec[2] < std::min(state[2] + params_.gainRange_, params_.maxZ_); vec[2] += disc) {
         Eigen::Vector3d dir = vec - origin;
+        // Skip if distance is too large
         if (dir.norm() > rangeSq) {
           continue;
         }
         bool bbreak = false;
+        // Check that voxel center is inside the field of view.
         for (typename std::vector<Eigen::Vector3d>::iterator itCBN =
             params_.camBoundNormals_.begin(); itCBN != params_.camBoundNormals_.end(); itCBN++) {
           Eigen::Vector3d normal = Eigen::AngleAxisd(state[3], Eigen::Vector3d::UnitZ()) * (*itCBN);
@@ -387,6 +416,7 @@ double nbvInspection::RrtTree::gain(StateVec state)
         if (bbreak) {
           continue;
         }
+        // Check cell status and add to the gain considering the corresponding factor.
         double probability;
         volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellProbabilityPoint(
             vec, &probability);
@@ -418,8 +448,9 @@ double nbvInspection::RrtTree::gain(StateVec state)
       }
     }
   }
+  // Scale with volume
   gain *= pow(disc, 3.0);
-
+  // Check the gain added by inspectable surface
   if (mesh_) {
     tf::Transform transform;
     transform.setOrigin(tf::Vector3(state.x(), state.y(), state.z()));
@@ -467,7 +498,6 @@ void nbvInspection::RrtTree::clear()
 
 void nbvInspection::RrtTree::publishNode(Node<StateVec> * node)
 {
-  // TODO: logging
   visualization_msgs::Marker p;
   p.header.stamp = ros::Time::now();
   p.header.seq = g_ID_;
