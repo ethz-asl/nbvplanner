@@ -119,7 +119,7 @@ mesh::StlMesh::StlMesh(std::fstream& file)
       assert(line = (char * ) realloc(line, MaxLine));
       file.getline(line, MaxLine);
     }
-    newNode->normal_ = ((newNode->x3_ - newNode->x2_).cross(newNode->x1_ - newNode->x2_) / 2.0);
+    newNode->normal_ = (newNode->x3_ - newNode->x2_).cross(newNode->x1_ - newNode->x2_) / 2.0;
     children_.push_back(newNode);
     k++;
   }
@@ -130,6 +130,12 @@ mesh::StlMesh::StlMesh(std::fstream& file)
   ROS_INFO(
       "STL file read. Contains %i elements located inside (%2.2f,%2.2f)x(%2.2f,%2.2f)x(%2.2f,%2.2f)",
       k, minX, maxX, minY, maxY, minZ, maxZ);
+  // Load additional parameters for peer to peer occlusion detection. These are used to check the
+  // field of view for occlusions by peer agents.
+  if (ros::param::get("peer_vehicle_tf_frames", peer_vehicle_tf_frames_)) {
+    if (!ros::param::get("this_vehicle_tf_frame", this_vehicle_tf_frame_))
+      ROS_ERROR("Peer vehicle tf frames specified but no indication of THIS VEHICLE's tf frame!");
+  }
 }
 
 mesh::StlMesh::~StlMesh()
@@ -166,7 +172,14 @@ void mesh::StlMesh::setCameraParams(double cameraPitch, double cameraHorizontalF
   camBoundNormals_.push_back(tf::Vector3(leftR.x(), leftR.y(), leftR.z()));
 }
 
-void mesh::StlMesh::incoorporateViewFromPoseMsg(const geometry_msgs::Pose& pose)
+void mesh::StlMesh::setPeerToPeerOclusionParams(std::vector<std::string> peer_vehicle_tf_frames,
+                                                std::string this_vehicle_tf_frame)
+{
+  peer_vehicle_tf_frames_ = peer_vehicle_tf_frames;
+  this_vehicle_tf_frame_ = this_vehicle_tf_frame;
+}
+
+void mesh::StlMesh::incorporateViewFromPoseMsg(const geometry_msgs::Pose& pose)
 {
   tf::Transform transform;
   tf::Point point;
@@ -175,7 +188,38 @@ void mesh::StlMesh::incoorporateViewFromPoseMsg(const geometry_msgs::Pose& pose)
   tf::Quaternion quaternion;
   tf::quaternionMsgToTF(pose.orientation, quaternion);
   transform.setRotation(quaternion);
-  incoorporateViewFromTf(transform);
+  // Check that no peer is within the field of view (multi agent only). Find transforms
+  // for all specified vehicles by their tf frames and then check for interference.
+  static tf::TransformListener tf_listener;
+  for (typename std::vector<std::string>::iterator it = peer_vehicle_tf_frames_.begin();
+      it != peer_vehicle_tf_frames_.end(); it++) {
+    tf::StampedTransform tf_transform;
+    ros::Time time_to_lookup = ros::Time::now();
+    if (!tf_listener.canTransform(this_vehicle_tf_frame_, *it, time_to_lookup)) {
+      time_to_lookup = ros::Time(0);
+      ROS_WARN("Using latest TF transform instead of timestamp match.");
+    }
+    try {
+      tf_listener.lookupTransform(this_vehicle_tf_frame_, *it, time_to_lookup, tf_transform);
+    } catch (tf::TransformException& ex) {
+      ROS_ERROR_STREAM("Error getting TF transform from sensor data: " << ex.what());
+      return;
+    }
+    tf::Vector3 agent = tf_transform.getOrigin();
+    bool inFoV = true;
+    for (std::vector<tf::Vector3>::iterator itCBN = camBoundNormals_.begin();
+        itCBN != camBoundNormals_.end(); itCBN++) {
+      if (itCBN->dot(agent) < 0.0) {
+        inFoV = false;
+        break;
+      }
+    }
+    if (inFoV) {
+      return;
+    }
+  }
+  // No interference, can incorporate the data.
+  incorporateViewFromTf(transform);
   collapse();
 }
 
@@ -237,7 +281,7 @@ void mesh::StlMesh::assembleMarkerArray(visualization_msgs::Marker& inspected,
   }
 }
 
-void mesh::StlMesh::incoorporateViewFromTf(const tf::Transform& transform)
+void mesh::StlMesh::incorporateViewFromTf(const tf::Transform& transform)
 {
   for (typename std::vector<mesh::StlMesh*>::iterator it = children_.begin(); it != children_.end();
       it++) {
@@ -245,7 +289,7 @@ void mesh::StlMesh::incoorporateViewFromTf(const tf::Transform& transform)
     if (currentNode->isInspected_)
       continue;
     bool partialVisibility = false;
-    if (currentNode->getVisibility(transform.inverse(), partialVisibility, false)) {
+    if (currentNode->getVisibility(transform, partialVisibility, true)) {
       currentNode->isInspected_ = true;
       if (!currentNode->isLeaf_) {
         for (typename std::vector<mesh::StlMesh*>::iterator currentChild = currentNode->children_
@@ -258,7 +302,7 @@ void mesh::StlMesh::incoorporateViewFromTf(const tf::Transform& transform)
       if (currentNode->isLeaf_ && currentNode->normal_.norm() > 0.25 * resolution_) {
         currentNode->split();
       }
-      currentNode->incoorporateViewFromTf(transform);
+      currentNode->incorporateViewFromTf(transform);
     }
   }
 }
@@ -269,7 +313,7 @@ double mesh::StlMesh::computeInspectableArea(const tf::Transform& transform)
     if (isInspected_)
       return 0.0;
     bool partiallyVisible;
-    if (getVisibility(transform.inverse(), partiallyVisible, false)) {
+    if (getVisibility(transform, partiallyVisible, false)) {
       return normal_.norm();
     } else if (partiallyVisible) {
       if (normal_.norm() < 0.25 * resolution_)
@@ -334,13 +378,13 @@ bool mesh::StlMesh::collapse()
   bool collapsible = true;
   if (isLeaf_)
     return true;
-  // check if children are all collapsible
+  // Check if children are all collapsible
   for (typename std::vector<StlMesh*>::iterator it = children_.begin(); it != children_.end();
       it++) {
     if (!(*it)->collapse())
       collapsible = false;
   }
-  // collapse if all children have same state
+  // Collapse if all children have same state
   if (collapsible) {
     bool state = true;  // children_.front()->isInspected_;
     for (typename std::vector<StlMesh*>::iterator it = children_.begin(); it != children_.end();
@@ -366,19 +410,22 @@ bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialV
   bool ret = true;
   partialVisibility = false;
   // #1
-  double yaw = -tf::getYaw(transform.getRotation());
+  double yaw = tf::getYaw(transform.getRotation());
   tf::Vector3 origin(0.0, 0.0, 0.0);
-  tf::Vector3 transformedNormal = tf::Vector3(normal_.x() * cos(yaw) + normal_.y() * sin(yaw),
-                                              -normal_.x() * sin(yaw) + normal_.y() * cos(yaw),
+  tf::Vector3 originTransf = transform.getOrigin();
+  tf::Vector3 transformedNormal = tf::Vector3(normal_.x() * cos(yaw) - normal_.y() * sin(yaw),
+                                              normal_.x() * sin(yaw) + normal_.y() * cos(yaw),
                                               normal_.z());
-  tf::Vector3 transformedX1 = transform * tf::Vector3(x1_.x(), x1_.y(), x1_.z());
+  tf::Vector3 transformedX1 = transform.inverse() * tf::Vector3(x1_.x(), x1_.y(), x1_.z());
+  // Check that the facet is visible from the right side.
   if (transformedNormal.dot(transformedX1) >= 0.0)
     return false;
+  // Check that corner 1 is within the allowed distance and has free line of sight.
   if (transformedX1.length() > maxDist_
       || manager_->getVisibility(
-          Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
-          Eigen::Vector3d(transformedX1.x(), transformedX1.y(), transformedX1.z()),
-          stop_at_unknown_cell) != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
+          Eigen::Vector3d(originTransf.x(), originTransf.y(), originTransf.z()),
+          Eigen::Vector3d(x1_.x(), x1_.y(), x1_.z()), stop_at_unknown_cell)
+          != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
     ret = false;
   } else {
     bool visibility1 = true;
@@ -391,19 +438,18 @@ bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialV
     }
     if (visibility1) {
       partialVisibility = true;
-      if (stop_at_unknown_cell)
-        ROS_INFO("visible1");
     } else {
       ret = false;
     }
   }
   // #2
-  tf::Vector3 transformedX2 = transform * tf::Vector3(x2_.x(), x2_.y(), x2_.z());
+  tf::Vector3 transformedX2 = transform.inverse() * tf::Vector3(x2_.x(), x2_.y(), x2_.z());
+  // Check that corner 2 is within the allowed distance and has free line of sight.
   if (transformedX2.length() > maxDist_
       || manager_->getVisibility(
-          Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
-          Eigen::Vector3d(transformedX2.x(), transformedX2.y(), transformedX2.z()),
-          stop_at_unknown_cell) != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
+          Eigen::Vector3d(originTransf.x(), originTransf.y(), originTransf.z()),
+          Eigen::Vector3d(x2_.x(), x2_.y(), x2_.z()), stop_at_unknown_cell)
+          != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
     ret = false;
   } else {
     bool visibility2 = true;
@@ -416,8 +462,6 @@ bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialV
     }
     if (visibility2) {
       partialVisibility = true;
-      if (stop_at_unknown_cell)
-        ROS_INFO("visible2");
     } else {
       ret = false;
     }
@@ -425,12 +469,13 @@ bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialV
   if (partialVisibility && !ret)
     return ret;
   // #3
-  tf::Vector3 transformedX3 = transform * tf::Vector3(x3_.x(), x3_.y(), x3_.z());
+  tf::Vector3 transformedX3 = transform.inverse() * tf::Vector3(x3_.x(), x3_.y(), x3_.z());
+  // Check that corner 3 is within the allowed distance and has free line of sight.
   if (transformedX3.length() > maxDist_
       || manager_->getVisibility(
-          Eigen::Vector3d(origin.x(), origin.y(), origin.z()),
-          Eigen::Vector3d(transformedX3.x(), transformedX3.y(), transformedX3.z()),
-          stop_at_unknown_cell) != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
+          Eigen::Vector3d(originTransf.x(), originTransf.y(), originTransf.z()),
+          Eigen::Vector3d(x3_.x(), x3_.y(), x3_.z()), stop_at_unknown_cell)
+          != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
     ret = false;
   } else {
     bool visibility3 = true;
@@ -443,8 +488,6 @@ bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialV
     }
     if (visibility3) {
       partialVisibility = true;
-      if (stop_at_unknown_cell)
-        ROS_INFO("visible3");
     } else {
       ret = false;
     }
@@ -459,5 +502,7 @@ double mesh::StlMesh::cameraVerticalFoV_ = 60.0;
 double mesh::StlMesh::maxDist_ = 5;
 std::vector<tf::Vector3> mesh::StlMesh::camBoundNormals_ = { };
 volumetric_mapping::OctomapManager * mesh::StlMesh::manager_ = NULL;
+std::vector<std::string> mesh::StlMesh::peer_vehicle_tf_frames_ = { };
+std::string mesh::StlMesh::this_vehicle_tf_frame_ = "";
 
 #endif // _MESH_STRUCTURE_CPP_

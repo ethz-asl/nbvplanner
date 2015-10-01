@@ -351,6 +351,18 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
         "No throttle time constant for the point cloud insertion specified. Looking for %s. Default is 0.0.",
         (ns + "/pcl_throttle").c_str());
   }
+  params_.inspection_throttle_ = 0.0;
+  if (!ros::param::get(ns + "/inspection_throttle", params_.inspection_throttle_)) {
+    ROS_WARN(
+        "No throttle time constant for the inspection view insertion specified. Looking for %s. Default is 0.0.",
+        (ns + "/inspection_throttle").c_str());
+  }
+  params_.exact_root_ = true;
+  if (!ros::param::get(ns + "/nbvp/tree/exact_root", params_.exact_root_)) {
+    ROS_WARN(
+        "No option for exact root selection specified. Looking for %s. Default is true.",
+        (ns + "/nbvp/tree/exact_root").c_str());
+  }
   return ret;
 }
 

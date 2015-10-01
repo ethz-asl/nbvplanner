@@ -46,6 +46,7 @@ struct Params
   double dyaw_max_;
   double dOvershoot_;
   double extensionRange_;
+  bool exact_root_;
   int initIterations_;
   int cuttoffIterations_;
   double dt_;
@@ -67,6 +68,7 @@ struct Params
   bool log_;
   double log_throttle_;
   double pcl_throttle_;
+  double inspection_throttle_;
 };
 
 template<typename stateVec>
@@ -94,6 +96,7 @@ class TreeBase
   mesh::StlMesh * mesh_;
   volumetric_mapping::OctomapManager * manager_;
   stateVec root_;
+  stateVec exact_root_;
   std::vector<std::vector<Eigen::Vector3d>*> segments_;
   std::vector<std::string> agentNames_;
  public:

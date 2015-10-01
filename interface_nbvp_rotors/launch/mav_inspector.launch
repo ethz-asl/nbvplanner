@@ -48,6 +48,7 @@
       <param name="sensor_max_range" type="double" value="$(arg sensor_max_range)" />
       <param name="stl_file_path" type="string" value="$(arg stl_file_path)" />
       <param name="mesh_resolution" type="double" value="$(arg mesh_resolution)" />
+      <param name="map_publish_frequency" type="double" value="1.0" />
       <remap from="cam0/camera_info" to="/$(arg mav_name)$(arg subscript)/vi_sensor/left/camera_info"/>
       <remap from="cam1/camera_info" to="/$(arg mav_name)$(arg subscript)/vi_sensor/right/camera_info"/>
       <remap from="pointcloud_throttled" to="$(arg pcl_topic)"/>

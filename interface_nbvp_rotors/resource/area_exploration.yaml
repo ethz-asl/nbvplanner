@@ -17,6 +17,7 @@ nbvp/gain/range: 5.0
 nbvp/gain/zero: 0.0
 nbvp/gain/degressive_coeff: 0.5
 nbvp/tree/extension_range: 1.0
+nbvp/tree/exact_root: true
 nbvp/tree/initial_iterations: 30
 nbvp/tree/cuttoff_iterations: 200
 nbvp/dt: 0.1
@@ -35,3 +36,4 @@ bbx/maxZ: 3.0
 bbx/softBounds: true
 
 pcl_throttle: 0.5
+inspection_throttle: 0.5

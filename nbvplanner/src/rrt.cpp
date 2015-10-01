@@ -30,6 +30,7 @@ nbvInspection::RrtTree::RrtTree()
 
   // If logging is required, set up files here
   bool ifLog = false;
+  std::string ns = ros::this_node::getName();
   ros::param::get(ns + "/nbvp/log/on", ifLog);
   if (ifLog) {
     time_t rawtime;
@@ -56,6 +57,7 @@ nbvInspection::RrtTree::RrtTree(mesh::StlMesh * mesh, volumetric_mapping::Octoma
 
   // If logging is required, set up files here
   bool ifLog = false;
+  std::string ns = ros::this_node::getName();
   ros::param::get(ns + "/nbvp/log/on", ifLog);
   if (ifLog) {
     time_t rawtime;
@@ -113,19 +115,23 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(
   root_[3] = tf::getYaw(quat);
 
   // Log the vehicle response in the planning frame
-  static double throttleTime = ros::Time::now().toSec();
+  static double logThrottleTime = ros::Time::now().toSec();
   // TODO: (birchera) have different throttle parameter for this
-  if (ros::Time::now().toSec() - throttleTime > params_.log_throttle_) {
-    throttleTime += params_.log_throttle_;
+  if (ros::Time::now().toSec() - logThrottleTime > params_.log_throttle_) {
+    logThrottleTime += params_.log_throttle_;
     if (params_.log_) {
       for (int i = 0; i < root_.size() - 1; i++) {
         fileResponse_ << root_[i] << ",";
       }
       fileResponse_ << root_[root_.size() - 1] << "\n";
     }
-    // Update the inspected parts of the mesh using the current position
+  }
+  // Update the inspected parts of the mesh using the current position
+  static double inspectionThrottleTime = ros::Time::now().toSec();
+  if (ros::Time::now().toSec() - inspectionThrottleTime > params_.inspection_throttle_) {
+    inspectionThrottleTime += params_.inspection_throttle_;
     if (mesh_) {
-      mesh_->incoorporateViewFromPoseMsg(pose.pose.pose);
+      mesh_->incorporateViewFromPoseMsg(pose.pose.pose);
       // Publish the mesh marker for visualization in rviz
       visualization_msgs::Marker inspected;
       inspected.ns = "meshInspected";
@@ -277,12 +283,17 @@ void nbvInspection::RrtTree::initialize()
   iterationCount_++;
 
   rootNode_ = new Node<StateVec>;
-  rootNode_->state_ = root_;
   rootNode_->distance_ = 0.0;
   rootNode_->gain_ = params_.zero_gain_;
   rootNode_->parent_ = NULL;
 
-  kd_insert3(kdTree_, root_.x(), root_.y(), root_.z(), rootNode_);
+  if (params_.exact_root_ && iterationCount_ > 1) {
+    rootNode_->state_ = exact_root_;
+    kd_insert3(kdTree_, exact_root_.x(), exact_root_.y(), exact_root_.z(), rootNode_);
+  } else {
+    rootNode_->state_ = root_;
+    kd_insert3(kdTree_, root_.x(), root_.y(), root_.z(), rootNode_);
+  }
 
   // Insert all nodes of the remainder of the previous best branch, checking for collisions and
   // recomputing the gain.
@@ -378,6 +389,7 @@ std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::getBestEdge(std::string
     }
     ret = samplePath(current->parent_->state_, current->state_, targetFrame);
     history_.push(current->parent_->state_);
+    exact_root_ = current->state_;
   }
   return ret;
 }

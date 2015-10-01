@@ -34,19 +34,20 @@ class StlMesh {
   StlMesh(const Eigen::Vector3d x1, const Eigen::Vector3d x2, const Eigen::Vector3d x3);
   ~StlMesh();
   static void setCameraParams(double cameraPitch, double cameraHorizontalFoV, double cameraVerticalFoV, double maxDist);
+  static void setPeerToPeerOclusionParams(std::vector<std::string> peer_vehicle_tf_frames, std::string this_vehicle_tf_frame);
   static void setResolution(double resolution) {
     resolution_ = resolution;
   }
   static void setOctomapManager(volumetric_mapping::OctomapManager * manager) {
     manager_ = manager;
   }
-  void incoorporateViewFromPoseMsg(const geometry_msgs::Pose& pose);
+  void incorporateViewFromPoseMsg(const geometry_msgs::Pose& pose);
   double computeInspectableArea(const tf::Transform& transform);
   void assembleMarkerArray(visualization_msgs::Marker& inspected,
                            visualization_msgs::Marker& uninspected) const;
   
  private:
-  void incoorporateViewFromTf(const tf::Transform& transform);
+  void incorporateViewFromTf(const tf::Transform& transform);
   void split();
   bool collapse();
   bool getVisibility(const tf::Transform& transform, bool& partialVisibility, bool stop_at_unknown_cell) const;
@@ -67,6 +68,8 @@ class StlMesh {
   static double maxDist_;
   static std::vector<tf::Vector3> camBoundNormals_;
   static volumetric_mapping::OctomapManager * manager_;
+  static std::vector<std::string> peer_vehicle_tf_frames_;
+  static std::string this_vehicle_tf_frame_;
 };
 }
 
