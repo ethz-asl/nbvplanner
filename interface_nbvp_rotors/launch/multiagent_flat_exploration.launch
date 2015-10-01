@@ -1,0 +1,87 @@
+<launch>
+  <arg name="mav_name" default="firefly" />
+  <arg name="enable_logging" default="false" />
+  <arg name="enable_ground_truth" default="true" />
+  <arg name="log_file" default="$(arg mav_name)" />
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find interface_nbvp_rotors)/worlds/flat.world" />
+    <arg name="paused" value="true"/>
+    <arg name="gui" value="true"/>
+  </include>
+  <node pkg="tf" type="static_transform_publisher" name="tf_nav1" args="0 0 0 0 0 0 world navigation1 100" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_nav2" args="0 0 0 0 0 0 world navigation2 100" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_nav3" args="0 0 0 0 0 0 world navigation3 100" />
+
+  <include file="$(find interface_nbvp_rotors)/launch/mav_inspector.launch">
+    <arg name="mav_name" value="$(arg mav_name)" />
+    <arg name="waypoint_x" value="0.0" />
+    <arg name="waypoint_y" value="-2.0" />
+    <arg name="waypoint_z" value="1.0" />
+    <arg name="subscript" value="1" />
+    <arg name="param_file" value="$(find interface_nbvp_rotors)/resource/exploration.yaml" />
+    <arg name="enable_logging" value="$(arg enable_logging)" />
+    <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
+    <arg name="log_file" value="$(arg log_file)" />
+    <arg name="tf_frame" value="navigation1" />
+    <arg name="resolution" value="0.4" />
+    <arg name="visualize_max_z" value="2.5" />
+    <arg name="sensor_max_range" value="5.0" />
+  </include>
+
+  <include file="$(find interface_nbvp_rotors)/launch/mav_inspector.launch">
+    <arg name="mav_name" value="$(arg mav_name)" />
+    <arg name="waypoint_x" value="0.0" />
+    <arg name="waypoint_y" value="-1.0" />
+    <arg name="waypoint_z" value="1.0" />
+    <arg name="subscript" value="2" />
+    <arg name="param_file" value="$(find interface_nbvp_rotors)/resource/exploration.yaml" />
+    <arg name="enable_logging" value="$(arg enable_logging)" />
+    <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
+    <arg name="log_file" value="$(arg log_file)" />
+    <arg name="tf_frame" value="navigation2" />
+    <arg name="resolution" value="0.3" />
+    <arg name="visualize_max_z" value="2.5" />
+    <arg name="sensor_max_range" value="5.0" />
+  </include>
+
+  <include file="$(find interface_nbvp_rotors)/launch/mav_inspector.launch">
+    <arg name="mav_name" value="$(arg mav_name)" />
+    <arg name="waypoint_x" value="0.0" />
+    <arg name="waypoint_y" value="0.0" />
+    <arg name="waypoint_z" value="1.0" />
+    <arg name="subscript" value="3" />
+    <arg name="param_file" value="$(find interface_nbvp_rotors)/resource/exploration.yaml" />
+    <arg name="enable_logging" value="$(arg enable_logging)" />
+    <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
+    <arg name="log_file" value="$(arg log_file)" />
+    <arg name="tf_frame" value="navigation3" />
+    <arg name="resolution" value="0.35" />
+    <arg name="visualize_max_z" value="2.5" />
+    <arg name="sensor_max_range" value="5.0" />
+  </include>
+  
+  <include file="$(find prune_pointcloud)/launch/prune_pointcloud.launch">
+    <arg name="mav_name" value="$(arg mav_name)1"/>
+    <arg name="max_dist" value="1.0"/>
+    <arg name="vehicle_tf_frames" value="[/firefly2/ground_truth, /firefly3/ground_truth]"/>
+    <arg name="pointcloud_in" value="/$(arg mav_name)1/vi_sensor/camera_depth/depth/points"/>
+    <arg name="pointcloud_out" value="/pointcloudOut"/>
+  </include>
+  
+  <include file="$(find prune_pointcloud)/launch/prune_pointcloud.launch">
+    <arg name="mav_name" value="$(arg mav_name)2"/>
+    <arg name="max_dist" value="1.0"/>
+    <arg name="vehicle_tf_frames" value="[/firefly1/ground_truth, /firefly3/ground_truth]"/>
+    <arg name="pointcloud_in" value="/$(arg mav_name)2/vi_sensor/camera_depth/depth/points"/>
+    <arg name="pointcloud_out" value="/pointcloudOut"/>
+  </include>
+  
+  <include file="$(find prune_pointcloud)/launch/prune_pointcloud.launch">
+    <arg name="mav_name" value="$(arg mav_name)3"/>
+    <arg name="max_dist" value="1.0"/>
+    <arg name="vehicle_tf_frames" value="[/firefly1/ground_truth, /firefly2/ground_truth]"/>
+    <arg name="pointcloud_in" value="/$(arg mav_name)3/vi_sensor/camera_depth/depth/points"/>
+    <arg name="pointcloud_out" value="/pointcloudOut"/>
+  </include>
+</launch>

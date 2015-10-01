@@ -220,6 +220,8 @@ void mesh::StlMesh::incorporateViewFromPoseMsg(const geometry_msgs::Pose& pose)
   }
   // No interference, can incorporate the data.
   incorporateViewFromTf(transform);
+  // TODO: Incorporate views of peers at this point. Could be done using tfs but on the other
+  // hand with the real systems this may not be available and their pose msg could be used instead.
   collapse();
 }
 

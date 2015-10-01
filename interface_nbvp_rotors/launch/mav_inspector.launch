@@ -15,6 +15,8 @@
   <arg name="resolution" default="0.4" />
   <arg name="visualize_max_z" default="999" />
   <arg name="sensor_max_range" default="5.0" />
+  <arg name="this_vehicle_tf_frame" default="/$(arg mav_name)$(arg subscript)/ground_truth"/>
+  <arg name="peer_vehicle_tf_frames" default="" />
   
   <node pkg="tf" type="static_transform_publisher" name="tf_1$(arg subscript)" args="0 0 0 0 0 0 $(arg mav_name)$(arg subscript)/vi_sensor/ground_truth fcu$(arg subscript) 1" />
   <node pkg="tf" type="static_transform_publisher" name="tf_2$(arg subscript)" args="0.015 0.055 0.0065 -1.57 0.1 -1.57 fcu$(arg subscript) $(arg mav_name)$(arg subscript)/vi_sensor/camera_depth_optical_center_link 1" />
@@ -49,6 +51,8 @@
       <param name="stl_file_path" type="string" value="$(arg stl_file_path)" />
       <param name="mesh_resolution" type="double" value="$(arg mesh_resolution)" />
       <param name="map_publish_frequency" type="double" value="1.0" />
+      <param name="this_vehicle_tf_frame" type="string" value="$(arg this_vehicle_tf_frame)" />
+      <rosparam param="peer_vehicle_tf_frames" subst_value="True">$(arg peer_vehicle_tf_frames)</rosparam>
       <remap from="cam0/camera_info" to="/$(arg mav_name)$(arg subscript)/vi_sensor/left/camera_info"/>
       <remap from="cam1/camera_info" to="/$(arg mav_name)$(arg subscript)/vi_sensor/right/camera_info"/>
       <remap from="pointcloud_throttled" to="$(arg pcl_topic)"/>

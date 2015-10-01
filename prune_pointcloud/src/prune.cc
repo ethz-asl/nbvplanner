@@ -58,6 +58,7 @@ void PointcloudPruning::Prune::pointcloud(const sensor_msgs::PointCloud2::ConstP
       return;
     }
     agents.push_back(tf_transform.getOrigin());
+    //ROS_INFO("Agents: %2.2f, %2.2f, %2.2f", agents.back().x(), agents.back().y(), agents.back().z());
   }
   // Prepare pointcloud.
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
@@ -65,10 +66,11 @@ void PointcloudPruning::Prune::pointcloud(const sensor_msgs::PointCloud2::ConstP
   // Remove NaN values, if any.
   std::vector<int> indices;
   pcl::removeNaNFromPointCloud(*cloud, *cloud, indices);
-  // Iterate through pointcloud and remove all points that are close than squared threshold maxDist2_
+  // Iterate through pointcloud and remove all points that are closer than squared threshold maxDist2_
   for (pcl::PointCloud<pcl::PointXYZ>::iterator it = cloud->begin(); it != cloud->end(); ++it) {
     for (typename std::vector<tf::Vector3>::iterator itPose = agents.begin();
         itPose != agents.end(); itPose++) {
+      //ROS_INFO("point: %2.2f, %2.2f, %2.2f", it->x, it->y, it->z);
       if (SQ(it->x - itPose->x()) + SQ(it->y - itPose->y()) + SQ(it->z - itPose->z()) < maxDist2_) {
         cloud->erase(it);
       }
@@ -82,11 +84,9 @@ void PointcloudPruning::Prune::pointcloud(const sensor_msgs::PointCloud2::ConstP
 
 void PointcloudPruning::Prune::loadParams()
 {
-
-  n_.param("max_dist", maxDist2_, 0.5);
-  n_.getParam("vehicle_tf_frames", vehicle_tf_frames_);
-  vehicle_tf_frames_.push_back("firefly1/ground_truth");
-  vehicle_tf_frames_.push_back("firefly2/ground_truth");
-  vehicle_tf_frames_.push_back("firefly3/ground_truth");
+  std::string ns = ros::this_node::getName();
+  n_.param(ns + "/max_dist", maxDist2_, 0.5);
+  n_.getParam(ns + "/vehicle_tf_frames", vehicle_tf_frames_);
   maxDist2_ = pow(maxDist2_, 2.0);
+  ROS_ERROR("size of vehicle frame list: %i, (max dist)^2: %2.2f", vehicle_tf_frames_.size(), maxDist2_);
 }

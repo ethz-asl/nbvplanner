@@ -89,6 +89,12 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
           mesh_->setOctomapManager(manager_);
           mesh_->setCameraParams(params_.camPitch_, params_.camHorizontal_, params_.camVertical_,
                                  params_.gainRange_);
+          std::vector<std::string> peer_vehicle_tf_frames;
+          ros::param::get(ns + "/peer_vehicle_tf_frames", peer_vehicle_tf_frames);
+          std::string this_vehicle_tf_frame;
+          ros::param::get(ns + "/this_vehicle_tf_frame", this_vehicle_tf_frame);
+          ROS_ERROR("peer_vehicle_tf_frames size: %i", peer_vehicle_tf_frames.size());
+          mesh_->setPeerToPeerOclusionParams(peer_vehicle_tf_frames, this_vehicle_tf_frame);
         } else {
           ROS_WARN("Unable to open STL file");
         }

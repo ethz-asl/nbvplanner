@@ -280,20 +280,23 @@ void nbvInspection::RrtTree::initialize()
     fileTree_.open((logFilePath_ + "tree" + std::to_string(iterationCount_) + ".txt").c_str(),
                    std::ios::out);
   }
-  iterationCount_++;
 
   rootNode_ = new Node<StateVec>;
   rootNode_->distance_ = 0.0;
   rootNode_->gain_ = params_.zero_gain_;
   rootNode_->parent_ = NULL;
 
-  if (params_.exact_root_ && iterationCount_ > 1) {
+  if (params_.exact_root_) {
+    if (iterationCount_ == 0) {
+      exact_root_ = root_;
+    }
     rootNode_->state_ = exact_root_;
     kd_insert3(kdTree_, exact_root_.x(), exact_root_.y(), exact_root_.z(), rootNode_);
   } else {
     rootNode_->state_ = root_;
     kd_insert3(kdTree_, root_.x(), root_.y(), root_.z(), rootNode_);
   }
+  iterationCount_++;
 
   // Insert all nodes of the remainder of the previous best branch, checking for collisions and
   // recomputing the gain.

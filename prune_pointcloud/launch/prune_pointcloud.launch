@@ -1,12 +1,12 @@
 <launch>
   <arg name="mav_name" default="firefly"/>
-  <arg name="maxDist" default="0.5"/>
-  <arg name="vehicle_tf_frames_file" default="$(find prune_pointcloud)/launch/tf_frames.yaml"/>
+  <arg name="max_dist" default="0.5"/>
+  <arg name="vehicle_tf_frames" default=""/>
   <arg name="pointcloud_in" default="$(arg mav_name)/pointcloudIn"/>
   <arg name="pointcloud_out" default="$(arg mav_name)/pointcloudOut"/>
-  <node name="pcpruner_$(arg mav_name)" pkg="prune_pointcloud" type="prune_node" output="screen">
-    <param name="max_dist" type="double" value="$(arg maxDist)"/>
-    <rosparam file="$(arg vehicle_tf_frames_file)"/>
+  <node name="pcpruner_$(arg mav_name)" pkg="prune_pointcloud" type="prune_node">
+    <param name="max_dist" type="double" value="$(arg max_dist)"/>
+    <rosparam param="vehicle_tf_frames" subst_value="True">$(arg vehicle_tf_frames)</rosparam>
     <remap from="pointcloudIn" to="$(arg pointcloud_in)"/>
     <remap from="pointcloudOut" to="$(arg pointcloud_out)"/>
   </node>
