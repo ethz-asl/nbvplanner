@@ -35,7 +35,7 @@ For a simulation demo launch
 roslaunch interface_nbvp_rotors flat_exploration.launch
 ```
 
-Further instructions for the visualization of the exploration progress, as well as descriptions of the parameters can be found in the [wiki](https://github.com/ethz-asl/nbvp_planning/wiki).
+Further instructions for the visualization of the exploration progress, as well as more demo scenarios and descriptions of the parameters can be found in the [wiki](https://github.com/ethz-asl/nbvp_planning/wiki).
 
 # Credits
 

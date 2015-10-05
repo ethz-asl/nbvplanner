@@ -15,7 +15,7 @@
 
   <include file="$(find interface_nbvp_rotors)/launch/mav_inspector.launch">
     <arg name="mav_name" value="$(arg mav_name)" />
-    <arg name="waypoint_x" value="0.0" />
+    <arg name="waypoint_x" value="4.0" />
     <arg name="waypoint_y" value="-2.0" />
     <arg name="waypoint_z" value="1.0" />
     <arg name="subscript" value="1" />
@@ -32,7 +32,7 @@
   <include file="$(find interface_nbvp_rotors)/launch/mav_inspector.launch">
     <arg name="mav_name" value="$(arg mav_name)" />
     <arg name="waypoint_x" value="0.0" />
-    <arg name="waypoint_y" value="-1.0" />
+    <arg name="waypoint_y" value="-2.0" />
     <arg name="waypoint_z" value="1.0" />
     <arg name="subscript" value="2" />
     <arg name="param_file" value="$(find interface_nbvp_rotors)/resource/exploration.yaml" />
@@ -47,8 +47,8 @@
 
   <include file="$(find interface_nbvp_rotors)/launch/mav_inspector.launch">
     <arg name="mav_name" value="$(arg mav_name)" />
-    <arg name="waypoint_x" value="0.0" />
-    <arg name="waypoint_y" value="0.0" />
+    <arg name="waypoint_x" value="4.0" />
+    <arg name="waypoint_y" value="4.0" />
     <arg name="waypoint_z" value="1.0" />
     <arg name="subscript" value="3" />
     <arg name="param_file" value="$(find interface_nbvp_rotors)/resource/exploration.yaml" />
