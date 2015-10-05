@@ -42,6 +42,9 @@ class nbvPlanner
   ros::NodeHandle nh_private_;
 
   ros::Subscriber posClient_;
+  ros::Subscriber peerPosClient1_;
+  ros::Subscriber peerPosClient2_;
+  ros::Subscriber peerPosClient3_;
   ros::Subscriber evadeClient_;
   ros::Publisher evadePub_;
   ros::ServiceServer plannerService_;

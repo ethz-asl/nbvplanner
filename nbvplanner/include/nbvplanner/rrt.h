@@ -40,6 +40,7 @@ class RrtTree : public TreeBase<Eigen::Vector4d>
   RrtTree(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager);
   ~RrtTree();
   virtual void setStateFromPoseMsg(const geometry_msgs::PoseWithCovarianceStamped& pose);
+  virtual void setPeerStateFromPoseMsg(const geometry_msgs::PoseWithCovarianceStamped& pose, int n_peer);
   virtual void initialize();
   virtual void iterate(int iterations);
   virtual std::vector<geometry_msgs::Pose> getBestEdge(std::string targetFrame);
@@ -60,6 +61,7 @@ class RrtTree : public TreeBase<Eigen::Vector4d>
   std::fstream filePath_;
   std::fstream fileResponse_;
   std::string logFilePath_;
+  double inspectionThrottleTime_[4];
 };
 }
 

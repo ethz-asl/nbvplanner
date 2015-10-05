@@ -64,6 +64,27 @@ nbvInspection::TreeBase<stateVec>::~TreeBase()
 }
 
 template<typename stateVec>
+void nbvInspection::TreeBase<stateVec>::setPeerStateFromPoseMsg1(
+    const geometry_msgs::PoseWithCovarianceStamped& pose)
+{
+  setPeerStateFromPoseMsg(pose, 1);
+}
+
+template<typename stateVec>
+void nbvInspection::TreeBase<stateVec>::setPeerStateFromPoseMsg2(
+    const geometry_msgs::PoseWithCovarianceStamped& pose)
+{
+  setPeerStateFromPoseMsg(pose, 2);
+}
+
+template<typename stateVec>
+void nbvInspection::TreeBase<stateVec>::setPeerStateFromPoseMsg3(
+    const geometry_msgs::PoseWithCovarianceStamped& pose)
+{
+  setPeerStateFromPoseMsg(pose, 3);
+}
+
+template<typename stateVec>
 void nbvInspection::TreeBase<stateVec>::setParams(Params params)
 {
   params_ = params;

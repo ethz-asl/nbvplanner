@@ -130,12 +130,6 @@ mesh::StlMesh::StlMesh(std::fstream& file)
   ROS_INFO(
       "STL file read. Contains %i elements located inside (%2.2f,%2.2f)x(%2.2f,%2.2f)x(%2.2f,%2.2f)",
       k, minX, maxX, minY, maxY, minZ, maxZ);
-  // Load additional parameters for peer to peer occlusion detection. These are used to check the
-  // field of view for occlusions by peer agents.
-  if (ros::param::get("peer_vehicle_tf_frames", peer_vehicle_tf_frames_)) {
-    if (!ros::param::get("this_vehicle_tf_frame", this_vehicle_tf_frame_))
-      ROS_ERROR("Peer vehicle tf frames specified but no indication of THIS VEHICLE's tf frame!");
-  }
 }
 
 mesh::StlMesh::~StlMesh()
@@ -172,14 +166,18 @@ void mesh::StlMesh::setCameraParams(double cameraPitch, double cameraHorizontalF
   camBoundNormals_.push_back(tf::Vector3(leftR.x(), leftR.y(), leftR.z()));
 }
 
-void mesh::StlMesh::setPeerToPeerOclusionParams(std::vector<std::string> peer_vehicle_tf_frames,
-                                                std::string this_vehicle_tf_frame)
+void mesh::StlMesh::setPeerPose(const geometry_msgs::Pose& pose, int n_peer)
 {
-  peer_vehicle_tf_frames_ = peer_vehicle_tf_frames;
-  this_vehicle_tf_frame_ = this_vehicle_tf_frame;
+  if (peer_vehicles_.size() > n_peer) {
+    peer_vehicles_[n_peer] = tf::Vector3(pose.position.x, pose.position.y, pose.position.z);
+    return;
+  }
+  while (peer_vehicles_.size() <= n_peer) {
+    peer_vehicles_.push_back(tf::Vector3(pose.position.x, pose.position.y, pose.position.z));
+  }
 }
 
-void mesh::StlMesh::incorporateViewFromPoseMsg(const geometry_msgs::Pose& pose)
+void mesh::StlMesh::incorporateViewFromPoseMsg(const geometry_msgs::Pose& pose, int n_peer)
 {
   tf::Transform transform;
   tf::Point point;
@@ -190,26 +188,16 @@ void mesh::StlMesh::incorporateViewFromPoseMsg(const geometry_msgs::Pose& pose)
   transform.setRotation(quaternion);
   // Check that no peer is within the field of view (multi agent only). Find transforms
   // for all specified vehicles by their tf frames and then check for interference.
-  static tf::TransformListener tf_listener;
-  for (typename std::vector<std::string>::iterator it = peer_vehicle_tf_frames_.begin();
-      it != peer_vehicle_tf_frames_.end(); it++) {
-    tf::StampedTransform tf_transform;
-    ros::Time time_to_lookup = ros::Time::now();
-    if (!tf_listener.canTransform(this_vehicle_tf_frame_, *it, time_to_lookup)) {
-      time_to_lookup = ros::Time(0);
-      ROS_WARN("Using latest TF transform instead of timestamp match.");
+  for (int it = 0; it < peer_vehicles_.size(); it++) {
+    if (it == n_peer) {
+      continue;
     }
-    try {
-      tf_listener.lookupTransform(this_vehicle_tf_frame_, *it, time_to_lookup, tf_transform);
-    } catch (tf::TransformException& ex) {
-      ROS_ERROR_STREAM("Error getting TF transform from sensor data: " << ex.what());
-      return;
-    }
-    tf::Vector3 agent = tf_transform.getOrigin();
+    tf::Vector3 viewDirection = peer_vehicles_[it] - tf::Vector3(pose.position.x, pose.position.y, pose.position.z);
+    viewDirection.rotate(tf::Vector3(0, 0, 1), tf::getYaw(pose.orientation));
     bool inFoV = true;
     for (std::vector<tf::Vector3>::iterator itCBN = camBoundNormals_.begin();
         itCBN != camBoundNormals_.end(); itCBN++) {
-      if (itCBN->dot(agent) < 0.0) {
+      if (itCBN->dot(viewDirection) < 0.0) {
         inFoV = false;
         break;
       }
@@ -220,8 +208,6 @@ void mesh::StlMesh::incorporateViewFromPoseMsg(const geometry_msgs::Pose& pose)
   }
   // No interference, can incorporate the data.
   incorporateViewFromTf(transform);
-  // TODO: Incorporate views of peers at this point. Could be done using tfs but on the other
-  // hand with the real systems this may not be available and their pose msg could be used instead.
   collapse();
 }
 
@@ -504,7 +490,6 @@ double mesh::StlMesh::cameraVerticalFoV_ = 60.0;
 double mesh::StlMesh::maxDist_ = 5;
 std::vector<tf::Vector3> mesh::StlMesh::camBoundNormals_ = { };
 volumetric_mapping::OctomapManager * mesh::StlMesh::manager_ = NULL;
-std::vector<std::string> mesh::StlMesh::peer_vehicle_tf_frames_ = { };
-std::string mesh::StlMesh::this_vehicle_tf_frame_ = "";
+std::vector<tf::Vector3> mesh::StlMesh::peer_vehicles_ = { };
 
 #endif // _MESH_STRUCTURE_CPP_

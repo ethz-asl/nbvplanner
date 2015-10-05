@@ -18,7 +18,7 @@ nbvp/gain/zero: 0.0
 nbvp/gain/degressive_coeff: 1.0
 nbvp/tree/extension_range: 1.0
 nbvp/tree/exact_root: true
-nbvp/tree/initial_iterations: 30
+nbvp/tree/initial_iterations: 15
 nbvp/tree/cuttoff_iterations: 200
 nbvp/dt: 0.1
 
