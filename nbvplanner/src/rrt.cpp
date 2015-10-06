@@ -132,8 +132,10 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(
   if (ros::Time::now().toSec() - inspectionThrottleTime_[0] > params_.inspection_throttle_) {
     inspectionThrottleTime_[0] += params_.inspection_throttle_;
     if (mesh_) {
-      mesh_->setPeerPose(pose.pose.pose, 0);
-      mesh_->incorporateViewFromPoseMsg(pose.pose.pose, 0);
+      geometry_msgs::Pose poseTransformed;
+      tf::poseTFToMsg(transform*poseTF, poseTransformed);
+      mesh_->setPeerPose(poseTransformed, 0);
+      mesh_->incorporateViewFromPoseMsg(poseTransformed, 0);
       // Publish the mesh marker for visualization in rviz
       visualization_msgs::Marker inspected;
       inspected.ns = "meshInspected";
@@ -182,13 +184,16 @@ void nbvInspection::RrtTree::setPeerStateFromPoseMsg(
     ROS_ERROR("%s", ex.what());
     return;
   }
-
+  tf::Pose poseTF;
+  tf::poseMsgToTF(pose.pose.pose, poseTF);
+  geometry_msgs::Pose poseTransformed;
+  tf::poseTFToMsg(transform*poseTF, poseTransformed);
   // Update the inspected parts of the mesh using the current position
   if (ros::Time::now().toSec() - inspectionThrottleTime_[n_peer] > params_.inspection_throttle_) {
     inspectionThrottleTime_[n_peer] += params_.inspection_throttle_;
     if (mesh_) {
-      mesh_->setPeerPose(pose.pose.pose, n_peer);
-      mesh_->incorporateViewFromPoseMsg(pose.pose.pose, n_peer);
+      mesh_->setPeerPose(poseTransformed, n_peer);
+      mesh_->incorporateViewFromPoseMsg(poseTransformed, n_peer);
     }
   }
 }

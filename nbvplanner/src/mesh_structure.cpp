@@ -181,18 +181,15 @@ void mesh::StlMesh::incorporateViewFromPoseMsg(const geometry_msgs::Pose& pose, 
 {
   tf::Transform transform;
   tf::Point point;
-  tf::pointMsgToTF(pose.position, point);
-  transform.setOrigin(point);
-  tf::Quaternion quaternion;
-  tf::quaternionMsgToTF(pose.orientation, quaternion);
-  transform.setRotation(quaternion);
+  tf::poseMsgToTF(pose, transform);
   // Check that no peer is within the field of view (multi agent only). Find transforms
   // for all specified vehicles by their tf frames and then check for interference.
   for (int it = 0; it < peer_vehicles_.size(); it++) {
     if (it == n_peer) {
       continue;
     }
-    tf::Vector3 viewDirection = peer_vehicles_[it] - tf::Vector3(pose.position.x, pose.position.y, pose.position.z);
+    tf::Vector3 viewDirection = peer_vehicles_[it]
+        - tf::Vector3(pose.position.x, pose.position.y, pose.position.z);
     viewDirection.rotate(tf::Vector3(0, 0, 1), tf::getYaw(pose.orientation));
     bool inFoV = true;
     for (std::vector<tf::Vector3>::iterator itCBN = camBoundNormals_.begin();
@@ -399,15 +396,11 @@ bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialV
   partialVisibility = false;
   // #1
   double yaw = tf::getYaw(transform.getRotation());
-  tf::Vector3 origin(0.0, 0.0, 0.0);
   tf::Vector3 originTransf = transform.getOrigin();
-  tf::Vector3 transformedNormal = tf::Vector3(normal_.x() * cos(yaw) - normal_.y() * sin(yaw),
-                                              normal_.x() * sin(yaw) + normal_.y() * cos(yaw),
-                                              normal_.z());
-  tf::Vector3 transformedX1 = transform.inverse() * tf::Vector3(x1_.x(), x1_.y(), x1_.z());
   // Check that the facet is visible from the right side.
-  if (transformedNormal.dot(transformedX1) >= 0.0)
+  if (normal_.dot(x1_-Eigen::Vector3d(originTransf.x(), originTransf.y(), originTransf.z())) >= 0.0)
     return false;
+  tf::Vector3 transformedX1 = transform.inverse() * tf::Vector3(x1_.x(), x1_.y(), x1_.z());
   // Check that corner 1 is within the allowed distance and has free line of sight.
   if (transformedX1.length() > maxDist_
       || manager_->getVisibility(
