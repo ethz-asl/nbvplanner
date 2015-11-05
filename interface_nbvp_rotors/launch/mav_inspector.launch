@@ -19,7 +19,7 @@
   <arg name="peer_vehicle_pose_topic_2" default="peer_pose_2" />
   <arg name="peer_vehicle_pose_topic_3" default="peer_pose_3" />
   
-  <node pkg="tf" type="static_transform_publisher" name="tf_1$(arg subscript)" args="0 0 0 0 0 0 $(arg mav_name)$(arg subscript)/vi_sensor/ground_truth fcu$(arg subscript) 1" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_1$(arg subscript)" args="0 0 0 0 0 0 $(arg mav_name)$(arg subscript)/vi_sensor/base_link fcu$(arg subscript) 1" />
   <node pkg="tf" type="static_transform_publisher" name="tf_2$(arg subscript)" args="0.015 0.055 0.0065 -1.57 0.1 -1.57 fcu$(arg subscript) $(arg mav_name)$(arg subscript)/vi_sensor/camera_depth_optical_center_link 1" />
   <node pkg="tf" type="static_transform_publisher" name="tf_3$(arg subscript)" args="0.015 0.055 0.0065 -1.57 0.1 -1.57 fcu$(arg subscript) $(arg mav_name)$(arg subscript)/vi_sensor/camera_left_link 1" />
   <node pkg="tf" type="static_transform_publisher" name="tf_4$(arg subscript)" args="0.015 -0.055 0.0065 -1.57 0.1 -1.57 fcu$(arg subscript) $(arg mav_name)$(arg subscript)/vi_sensor/camera_right_link 1" />
