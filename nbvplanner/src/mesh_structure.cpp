@@ -318,6 +318,7 @@ double mesh::StlMesh::computeInspectableArea(const tf::Transform& transform)
 
 void mesh::StlMesh::split()
 {
+  // Split in four equally sized triangular facets
   assert(!isInspected_);
   isLeaf_ = false;
   // #1

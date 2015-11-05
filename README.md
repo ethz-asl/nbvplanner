@@ -11,6 +11,7 @@ To run the current version, compile the package nbvplanner, as well as additiona
 ```sh
 git clone https://github.com/ethz-asl/nbv_planning.git
 git clone https://github.com/ethz-asl/catkin_simple.git
+git clone https://github.com/ethz-asl/eigen_catkin.git
 git clone https://github.com/ethz-asl/volumetric_mapping.git
 git clone https://github.com/ethz-asl/gflags_catkin.git
 git clone https://github.com/ethz-asl/glog_catkin.git
