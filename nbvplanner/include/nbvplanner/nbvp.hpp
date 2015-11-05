@@ -348,16 +348,16 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
     ROS_WARN("No navigation frame specified. Looking for %s. Default is 'world'.",
              (ns + "/tf_frame").c_str());
   }
-  params_.pcl_throttle_ = 0.0;
+  params_.pcl_throttle_ = 0.333;
   if (!ros::param::get(ns + "/pcl_throttle", params_.pcl_throttle_)) {
     ROS_WARN(
-        "No throttle time constant for the point cloud insertion specified. Looking for %s. Default is 0.0.",
+        "No throttle time constant for the point cloud insertion specified. Looking for %s. Default is 0.333.",
         (ns + "/pcl_throttle").c_str());
   }
-  params_.inspection_throttle_ = 0.0;
+  params_.inspection_throttle_ = 0.25;
   if (!ros::param::get(ns + "/inspection_throttle", params_.inspection_throttle_)) {
     ROS_WARN(
-        "No throttle time constant for the inspection view insertion specified. Looking for %s. Default is 0.0.",
+        "No throttle time constant for the inspection view insertion specified. Looking for %s. Default is 0.1.",
         (ns + "/inspection_throttle").c_str());
   }
   params_.exact_root_ = true;
