@@ -64,7 +64,7 @@
   <include file="$(find prune_pointcloud)/launch/prune_pointcloud.launch">
     <arg name="mav_name" value="$(arg mav_name)1"/>
     <arg name="max_dist" value="1.0"/>
-    <arg name="vehicle_tf_frames" value="[/firefly2/ground_truth, /firefly3/ground_truth]"/>
+    <arg name="vehicle_tf_frames" value="[/firefly2/base_link, /firefly3/base_link]"/>
     <arg name="pointcloud_in" value="/$(arg mav_name)1/vi_sensor/camera_depth/depth/points"/>
     <arg name="pointcloud_out" value="/pointcloudOut"/>
   </include>
@@ -72,7 +72,7 @@
   <include file="$(find prune_pointcloud)/launch/prune_pointcloud.launch">
     <arg name="mav_name" value="$(arg mav_name)2"/>
     <arg name="max_dist" value="1.0"/>
-    <arg name="vehicle_tf_frames" value="[/firefly1/ground_truth, /firefly3/ground_truth]"/>
+    <arg name="vehicle_tf_frames" value="[/firefly1/base_link, /firefly3/base_link]"/>
     <arg name="pointcloud_in" value="/$(arg mav_name)2/vi_sensor/camera_depth/depth/points"/>
     <arg name="pointcloud_out" value="/pointcloudOut"/>
   </include>
@@ -80,7 +80,7 @@
   <include file="$(find prune_pointcloud)/launch/prune_pointcloud.launch">
     <arg name="mav_name" value="$(arg mav_name)3"/>
     <arg name="max_dist" value="1.0"/>
-    <arg name="vehicle_tf_frames" value="[/firefly1/ground_truth, /firefly2/ground_truth]"/>
+    <arg name="vehicle_tf_frames" value="[/firefly1/base_link, /firefly2/base_link]"/>
     <arg name="pointcloud_in" value="/$(arg mav_name)3/vi_sensor/camera_depth/depth/points"/>
     <arg name="pointcloud_out" value="/pointcloudOut"/>
   </include>
