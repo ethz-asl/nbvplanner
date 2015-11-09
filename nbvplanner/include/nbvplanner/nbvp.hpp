@@ -62,23 +62,27 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
 
   // Precompute the camera field of view boundaries. The normals of the separating hyperplanes are
   // stored
-  double pitch = M_PI * params_.camPitch_ / 180.0;
-  double camTop = M_PI * (pitch - params_.camVertical_ / 2.0) / 180.0 + M_PI / 2.0;
-  double camBottom = M_PI * (pitch + params_.camVertical_ / 2.0) / 180.0 - M_PI / 2.0;
-  double side = M_PI * (params_.camHorizontal_) / 360.0 - M_PI / 2.0;
-  Vector3d bottom(cos(camBottom), 0.0, -sin(camBottom));
-  Vector3d top(cos(camTop), 0.0, -sin(camTop));
-  Vector3d right(cos(side), sin(side), 0.0);
-  Vector3d left(cos(side), -sin(side), 0.0);
-  AngleAxisd m = AngleAxisd(pitch, Vector3d::UnitY());
-  Vector3d rightR = m * right;
-  Vector3d leftR = m * left;
-  rightR.normalize();
-  leftR.normalize();
-  params_.camBoundNormals_.push_back(bottom);
-  params_.camBoundNormals_.push_back(top);
-  params_.camBoundNormals_.push_back(rightR);
-  params_.camBoundNormals_.push_back(leftR);
+  for(int i = 0; i < params_.camPitch_.size(); i++) {
+    double pitch = M_PI * params_.camPitch_[i] / 180.0;
+    double camTop = M_PI * (pitch - params_.camVertical_[i] / 2.0) / 180.0 + M_PI / 2.0;
+    double camBottom = M_PI * (pitch + params_.camVertical_[i] / 2.0) / 180.0 - M_PI / 2.0;
+    double side = M_PI * (params_.camHorizontal_[i]) / 360.0 - M_PI / 2.0;
+    Vector3d bottom(cos(camBottom), 0.0, -sin(camBottom));
+    Vector3d top(cos(camTop), 0.0, -sin(camTop));
+    Vector3d right(cos(side), sin(side), 0.0);
+    Vector3d left(cos(side), -sin(side), 0.0);
+    AngleAxisd m = AngleAxisd(pitch, Vector3d::UnitY());
+    Vector3d rightR = m * right;
+    Vector3d leftR = m * left;
+    rightR.normalize();
+    leftR.normalize();
+    std::vector<Eigen::Vector3d> camBoundNormals;
+    camBoundNormals.push_back(bottom);
+    camBoundNormals.push_back(top);
+    camBoundNormals.push_back(rightR);
+    camBoundNormals.push_back(leftR);
+    params_.camBoundNormals_.push_back(camBoundNormals);
+  }
 
   // Load mesh from STL file if provided.
   std::string ns = ros::this_node::getName();
@@ -212,17 +216,17 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
     ROS_WARN("No maximal yaw speed specified. Looking for %s. Default is 0.5.",
              (ns + "/system/yaw_max").c_str());
   }
-  params_.camPitch_ = 15;
+  params_.camPitch_ = {15};
   if (!ros::param::get(ns + "/system/camera/pitch", params_.camPitch_)) {
     ROS_WARN("No camera pitch specified. Looking for %s. Default is 15deg.",
              (ns + "/system/camera/pitch").c_str());
   }
-  params_.camHorizontal_ = 90;
+  params_.camHorizontal_ = {90};
   if (!ros::param::get(ns + "/system/camera/horizontal", params_.camHorizontal_)) {
     ROS_WARN("No camera horizontal opening specified. Looking for %s. Default is 90deg.",
              (ns + "/system/camera/horizontal").c_str());
   }
-  params_.camVertical_ = 60;
+  params_.camVertical_ = {60};
   if (!ros::param::get(ns + "/system/camera/vertical", params_.camVertical_)) {
     ROS_WARN("No camera vertical opening specified. Looking for %s. Default is 60.",
              (ns + "/system/camera/vertical").c_str());

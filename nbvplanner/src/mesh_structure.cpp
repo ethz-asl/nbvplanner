@@ -138,32 +138,37 @@ mesh::StlMesh::~StlMesh()
     delete (*it);
 }
 
-void mesh::StlMesh::setCameraParams(double cameraPitch, double cameraHorizontalFoV,
-                                    double cameraVerticalFoV, double maxDist)
+void mesh::StlMesh::setCameraParams(std::vector<double> cameraPitch,
+                                    std::vector<double> cameraHorizontalFoV,
+                                    std::vector<double> cameraVerticalFoV, double maxDist)
 {
   // Precompute the normals of the separating hyperplanes that constrain the field of view.
   cameraPitch_ = cameraPitch;
   cameraHorizontalFoV_ = cameraHorizontalFoV;
   cameraVerticalFoV_ = cameraVerticalFoV;
   maxDist_ = maxDist;
-  double pitch = M_PI * cameraPitch_ / 180.0;
-  double camTop = M_PI * (pitch - cameraVerticalFoV_ / 2.0) / 180.0 + M_PI / 2.0;
-  double camBottom = M_PI * (pitch + cameraVerticalFoV_ / 2.0) / 180.0 - M_PI / 2.0;
-  double side = M_PI * (cameraHorizontalFoV_) / 360.0 - M_PI / 2.0;
-  Eigen::Vector3d bottom(cos(camBottom), 0.0, -sin(camBottom));
-  Eigen::Vector3d top(cos(camTop), 0.0, -sin(camTop));
-  Eigen::Vector3d right(cos(side), sin(side), 0.0);
-  Eigen::Vector3d left(cos(side), -sin(side), 0.0);
-  Eigen::AngleAxisd m = Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY());
-  Eigen::Vector3d rightR = m * right;
-  Eigen::Vector3d leftR = m * left;
-  rightR.normalize();
-  leftR.normalize();
   camBoundNormals_.clear();
-  camBoundNormals_.push_back(tf::Vector3(bottom.x(), bottom.y(), bottom.z()));
-  camBoundNormals_.push_back(tf::Vector3(top.x(), top.y(), top.z()));
-  camBoundNormals_.push_back(tf::Vector3(rightR.x(), rightR.y(), rightR.z()));
-  camBoundNormals_.push_back(tf::Vector3(leftR.x(), leftR.y(), leftR.z()));
+  for (int i = 0; i < cameraPitch_.size(); i++) {
+    double pitch = M_PI * cameraPitch_[i] / 180.0;
+    double camTop = M_PI * (pitch - cameraVerticalFoV_[i] / 2.0) / 180.0 + M_PI / 2.0;
+    double camBottom = M_PI * (pitch + cameraVerticalFoV_[i] / 2.0) / 180.0 - M_PI / 2.0;
+    double side = M_PI * (cameraHorizontalFoV_[i]) / 360.0 - M_PI / 2.0;
+    Eigen::Vector3d bottom(cos(camBottom), 0.0, -sin(camBottom));
+    Eigen::Vector3d top(cos(camTop), 0.0, -sin(camTop));
+    Eigen::Vector3d right(cos(side), sin(side), 0.0);
+    Eigen::Vector3d left(cos(side), -sin(side), 0.0);
+    Eigen::AngleAxisd m = Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY());
+    Eigen::Vector3d rightR = m * right;
+    Eigen::Vector3d leftR = m * left;
+    rightR.normalize();
+    leftR.normalize();
+    std::vector<tf::Vector3> camBoundNormals;
+    camBoundNormals.push_back(tf::Vector3(bottom.x(), bottom.y(), bottom.z()));
+    camBoundNormals.push_back(tf::Vector3(top.x(), top.y(), top.z()));
+    camBoundNormals.push_back(tf::Vector3(rightR.x(), rightR.y(), rightR.z()));
+    camBoundNormals.push_back(tf::Vector3(leftR.x(), leftR.y(), leftR.z()));
+    camBoundNormals_.push_back(camBoundNormals);
+  }
 }
 
 void mesh::StlMesh::setPeerPose(const geometry_msgs::Pose& pose, int n_peer)
@@ -184,27 +189,33 @@ void mesh::StlMesh::incorporateViewFromPoseMsg(const geometry_msgs::Pose& pose, 
   tf::poseMsgToTF(pose, transform);
   // Check that no peer is within the field of view (multi agent only). Find transforms
   // for all specified vehicles by their tf frames and then check for interference.
-  for (int it = 0; it < peer_vehicles_.size(); it++) {
-    if (it == n_peer) {
-      continue;
-    }
-    tf::Vector3 viewDirection = peer_vehicles_[it]
-        - tf::Vector3(pose.position.x, pose.position.y, pose.position.z);
-    viewDirection.rotate(tf::Vector3(0, 0, 1), tf::getYaw(pose.orientation));
-    bool inFoV = true;
-    for (std::vector<tf::Vector3>::iterator itCBN = camBoundNormals_.begin();
-        itCBN != camBoundNormals_.end(); itCBN++) {
-      if (itCBN->dot(viewDirection) < 0.0) {
-        inFoV = false;
-        break;
+  bool inAllFoV = true;
+  std::vector<bool> unobstructed;
+  for (typename std::vector<std::vector<tf::Vector3>>::iterator itCBN = camBoundNormals_.begin();
+      itCBN != camBoundNormals_.end(); itCBN++) {
+    for (int it = 0; it < peer_vehicles_.size(); it++) {
+      if (it == n_peer) {
+        continue;
       }
-    }
-    if (inFoV) {
-      return;
+      tf::Vector3 viewDirection = peer_vehicles_[it]
+          - tf::Vector3(pose.position.x, pose.position.y, pose.position.z);
+      viewDirection.rotate(tf::Vector3(0, 0, 1), tf::getYaw(pose.orientation));
+      bool inFoV = true;
+      for (std::vector<tf::Vector3>::iterator itFoVCBN = itCBN->begin(); itFoVCBN != itCBN->end();
+          itFoVCBN++) {
+        if (itFoVCBN->dot(viewDirection) < 0.0) {
+          inFoV = false;
+          break;
+        }
+      }
+      unobstructed.push_back(!inFoV);
+      inAllFoV &= !inFoV;
     }
   }
-  // No interference, can incorporate the data.
-  incorporateViewFromTf(transform);
+  if (!inAllFoV) {
+    // No total interference, can incorporate the data.
+    incorporateViewFromTf(transform, unobstructed);
+  }
   collapse();
 }
 
@@ -266,7 +277,8 @@ void mesh::StlMesh::assembleMarkerArray(visualization_msgs::Marker& inspected,
   }
 }
 
-void mesh::StlMesh::incorporateViewFromTf(const tf::Transform& transform)
+void mesh::StlMesh::incorporateViewFromTf(const tf::Transform& transform,
+                                          const std::vector<bool>& unobstructed)
 {
   for (typename std::vector<mesh::StlMesh*>::iterator it = children_.begin(); it != children_.end();
       it++) {
@@ -274,7 +286,7 @@ void mesh::StlMesh::incorporateViewFromTf(const tf::Transform& transform)
     if (currentNode->isInspected_)
       continue;
     bool partialVisibility = false;
-    if (currentNode->getVisibility(transform, partialVisibility, true)) {
+    if (currentNode->getVisibility(transform, partialVisibility, true, unobstructed)) {
       currentNode->isInspected_ = true;
       if (!currentNode->isLeaf_) {
         for (typename std::vector<mesh::StlMesh*>::iterator currentChild = currentNode->children_
@@ -287,7 +299,7 @@ void mesh::StlMesh::incorporateViewFromTf(const tf::Transform& transform)
       if (currentNode->isLeaf_ && currentNode->normal_.norm() > 0.25 * resolution_) {
         currentNode->split();
       }
-      currentNode->incorporateViewFromTf(transform);
+      currentNode->incorporateViewFromTf(transform, unobstructed);
     }
   }
 }
@@ -391,7 +403,7 @@ bool mesh::StlMesh::collapse()
 }
 
 bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialVisibility,
-                                  bool stop_at_unknown_cell) const
+                                  bool stop_at_unknown_cell, const std::vector<bool>& unobstructed) const
 {
   bool ret = true;
   partialVisibility = false;
@@ -399,90 +411,103 @@ bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialV
   double yaw = tf::getYaw(transform.getRotation());
   tf::Vector3 originTransf = transform.getOrigin();
   // Check that the facet is visible from the right side.
-  if (normal_.dot(x1_-Eigen::Vector3d(originTransf.x(), originTransf.y(), originTransf.z())) >= 0.0)
+  if (normal_.dot(x1_ - Eigen::Vector3d(originTransf.x(), originTransf.y(), originTransf.z()))
+      >= 0.0)
     return false;
-  tf::Vector3 transformedX1 = transform.inverse() * tf::Vector3(x1_.x(), x1_.y(), x1_.z());
-  // Check that corner 1 is within the allowed distance and has free line of sight.
-  if (transformedX1.length() > maxDist_
-      || manager_->getVisibility(
-          Eigen::Vector3d(originTransf.x(), originTransf.y(), originTransf.z()),
-          Eigen::Vector3d(x1_.x(), x1_.y(), x1_.z()), stop_at_unknown_cell)
-          != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
-    ret = false;
-  } else {
-    bool visibility1 = true;
-    for (typename std::vector<tf::Vector3>::iterator it = camBoundNormals_.begin();
-        it != camBoundNormals_.end(); it++) {
-      if (it->dot(transformedX1) < 0.0) {
-        visibility1 = false;
-        break;
+  for (int i = 0; i < camBoundNormals_.size(); i++) {
+    if (unobstructed.size() > 0 && !unobstructed[i]) {
+      continue;
+    }
+    tf::Vector3 transformedX1 = transform.inverse() * tf::Vector3(x1_.x(), x1_.y(), x1_.z());
+    // Check that corner 1 is within the allowed distance and has free line of sight.
+    if (transformedX1.length() > maxDist_
+        || manager_->getVisibility(
+            Eigen::Vector3d(originTransf.x(), originTransf.y(), originTransf.z()),
+            Eigen::Vector3d(x1_.x(), x1_.y(), x1_.z()), stop_at_unknown_cell)
+            != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
+      return false;
+    } else {
+      bool visibility1 = true;
+      for (typename std::vector<tf::Vector3>::iterator it = camBoundNormals_[i].begin();
+          it != camBoundNormals_[i].end(); it++) {
+        if (it->dot(transformedX1) < 0.0) {
+          visibility1 = false;
+          break;
+        }
+      }
+      if (visibility1) {
+        partialVisibility = true;
+      } else {
+        ret = false;
       }
     }
-    if (visibility1) {
-      partialVisibility = true;
-    } else {
+    // #2
+    tf::Vector3 transformedX2 = transform.inverse() * tf::Vector3(x2_.x(), x2_.y(), x2_.z());
+    // Check that corner 2 is within the allowed distance and has free line of sight.
+    if (transformedX2.length() > maxDist_
+        || manager_->getVisibility(
+            Eigen::Vector3d(originTransf.x(), originTransf.y(), originTransf.z()),
+            Eigen::Vector3d(x2_.x(), x2_.y(), x2_.z()), stop_at_unknown_cell)
+            != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
       ret = false;
-    }
-  }
-  // #2
-  tf::Vector3 transformedX2 = transform.inverse() * tf::Vector3(x2_.x(), x2_.y(), x2_.z());
-  // Check that corner 2 is within the allowed distance and has free line of sight.
-  if (transformedX2.length() > maxDist_
-      || manager_->getVisibility(
-          Eigen::Vector3d(originTransf.x(), originTransf.y(), originTransf.z()),
-          Eigen::Vector3d(x2_.x(), x2_.y(), x2_.z()), stop_at_unknown_cell)
-          != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
-    ret = false;
-  } else {
-    bool visibility2 = true;
-    for (typename std::vector<tf::Vector3>::iterator it = camBoundNormals_.begin();
-        it != camBoundNormals_.end(); it++) {
-      if (it->dot(transformedX2) < 0.0) {
-        visibility2 = false;
-        break;
+    } else {
+      bool visibility2 = true;
+      for (typename std::vector<tf::Vector3>::iterator it = camBoundNormals_[i].begin();
+          it != camBoundNormals_[i].end(); it++) {
+        if (it->dot(transformedX2) < 0.0) {
+          visibility2 = false;
+          break;
+        }
+      }
+      if (visibility2) {
+        partialVisibility = true;
+      } else {
+        ret = false;
       }
     }
-    if (visibility2) {
-      partialVisibility = true;
-    } else {
-      ret = false;
+    if (partialVisibility && !ret) {
+      ret = true;
+      continue;
     }
-  }
-  if (partialVisibility && !ret)
-    return ret;
-  // #3
-  tf::Vector3 transformedX3 = transform.inverse() * tf::Vector3(x3_.x(), x3_.y(), x3_.z());
-  // Check that corner 3 is within the allowed distance and has free line of sight.
-  if (transformedX3.length() > maxDist_
-      || manager_->getVisibility(
-          Eigen::Vector3d(originTransf.x(), originTransf.y(), originTransf.z()),
-          Eigen::Vector3d(x3_.x(), x3_.y(), x3_.z()), stop_at_unknown_cell)
-          != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
-    ret = false;
-  } else {
-    bool visibility3 = true;
-    for (typename std::vector<tf::Vector3>::iterator it = camBoundNormals_.begin();
-        it != camBoundNormals_.end(); it++) {
-      if (it->dot(transformedX3) < 0.0) {
-        visibility3 = false;
-        break;
+    // #3
+    tf::Vector3 transformedX3 = transform.inverse() * tf::Vector3(x3_.x(), x3_.y(), x3_.z());
+    // Check that corner 3 is within the allowed distance and has free line of sight.
+    if (transformedX3.length() > maxDist_
+        || manager_->getVisibility(
+            Eigen::Vector3d(originTransf.x(), originTransf.y(), originTransf.z()),
+            Eigen::Vector3d(x3_.x(), x3_.y(), x3_.z()), stop_at_unknown_cell)
+            != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
+      ret = false;
+    } else {
+      bool visibility3 = true;
+      for (typename std::vector<tf::Vector3>::iterator it = camBoundNormals_[i].begin();
+          it != camBoundNormals_[i].end(); it++) {
+        if (it->dot(transformedX3) < 0.0) {
+          visibility3 = false;
+          break;
+        }
+      }
+      if (visibility3) {
+        partialVisibility = true;
+      } else {
+        ret = false;
       }
     }
-    if (visibility3) {
-      partialVisibility = true;
+    if (ret) {
+      return true;
     } else {
-      ret = false;
+      ret = true;
     }
   }
-  return ret;
+  return false;
 }
 
 double mesh::StlMesh::resolution_ = 0.001;
-double mesh::StlMesh::cameraPitch_ = 15.0;
-double mesh::StlMesh::cameraHorizontalFoV_ = 90.0;
-double mesh::StlMesh::cameraVerticalFoV_ = 60.0;
+std::vector<double> mesh::StlMesh::cameraPitch_ = { };
+std::vector<double> mesh::StlMesh::cameraHorizontalFoV_ = { };
+std::vector<double> mesh::StlMesh::cameraVerticalFoV_ = { };
 double mesh::StlMesh::maxDist_ = 5;
-std::vector<tf::Vector3> mesh::StlMesh::camBoundNormals_ = { };
+std::vector<std::vector<tf::Vector3> > mesh::StlMesh::camBoundNormals_ = { };
 volumetric_mapping::OctomapManager * mesh::StlMesh::manager_ = NULL;
 std::vector<tf::Vector3> mesh::StlMesh::peer_vehicles_ = { };
 

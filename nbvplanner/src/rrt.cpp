@@ -133,7 +133,7 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(
     inspectionThrottleTime_[0] += params_.inspection_throttle_;
     if (mesh_) {
       geometry_msgs::Pose poseTransformed;
-      tf::poseTFToMsg(transform*poseTF, poseTransformed);
+      tf::poseTFToMsg(transform * poseTF, poseTransformed);
       mesh_->setPeerPose(poseTransformed, 0);
       mesh_->incorporateViewFromPoseMsg(poseTransformed, 0);
       // Publish the mesh marker for visualization in rviz
@@ -187,7 +187,7 @@ void nbvInspection::RrtTree::setPeerStateFromPoseMsg(
   tf::Pose poseTF;
   tf::poseMsgToTF(pose.pose.pose, poseTF);
   geometry_msgs::Pose poseTransformed;
-  tf::poseTFToMsg(transform*poseTF, poseTransformed);
+  tf::poseTFToMsg(transform * poseTF, poseTransformed);
   // Update the inspected parts of the mesh using the current position
   if (ros::Time::now().toSec() - inspectionThrottleTime_[n_peer] > params_.inspection_throttle_) {
     inspectionThrottleTime_[n_peer] += params_.inspection_throttle_;
@@ -449,12 +449,21 @@ double nbvInspection::RrtTree::gain(StateVec state)
           continue;
         }
         bool bbreak = false;
-        // Check that voxel center is inside the field of view.
-        for (typename std::vector<Eigen::Vector3d>::iterator itCBN =
-            params_.camBoundNormals_.begin(); itCBN != params_.camBoundNormals_.end(); itCBN++) {
-          Eigen::Vector3d normal = Eigen::AngleAxisd(state[3], Eigen::Vector3d::UnitZ()) * (*itCBN);
-          double val = dir.dot(normal.normalized());
-          if (val < SQRT2 * disc) {
+        // Check that voxel center is inside one of the fields of view.
+        for (typename std::vector<std::vector<Eigen::Vector3d>>::iterator itCBN = params_
+            .camBoundNormals_.begin(); itCBN != params_.camBoundNormals_.end(); itCBN++) {
+          bool inFoV = true;
+          for (typename std::vector<Eigen::Vector3d>::iterator itSingleCBN = itCBN->begin();
+              itSingleCBN != itCBN->end(); itSingleCBN++) {
+            Eigen::Vector3d normal = Eigen::AngleAxisd(state[3], Eigen::Vector3d::UnitZ())
+                * (*itSingleCBN);
+            double val = dir.dot(normal.normalized());
+            if (val < SQRT2 * disc) {
+              inFoV = false;
+              break;
+            }
+          }
+          if (inFoV) {
             bbreak = true;
             break;
           }

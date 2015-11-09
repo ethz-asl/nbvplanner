@@ -27,31 +27,37 @@
 
 namespace mesh {
 
-class StlMesh {
+class StlMesh
+{
  public:
   StlMesh();
   StlMesh(std::fstream& file);
   StlMesh(const Eigen::Vector3d x1, const Eigen::Vector3d x2, const Eigen::Vector3d x3);
   ~StlMesh();
-  static void setCameraParams(double cameraPitch, double cameraHorizontalFoV, double cameraVerticalFoV, double maxDist);
+  static void setCameraParams(std::vector<double> cameraPitch,
+                              std::vector<double> cameraHorizontalFoV,
+                              std::vector<double> cameraVerticalFoV, double maxDist);
   static void setPeerPose(const geometry_msgs::Pose& pose, int n_peer);
-  static void setResolution(double resolution) {
+  static void setResolution(double resolution)
+  {
     resolution_ = resolution;
   }
-  static void setOctomapManager(volumetric_mapping::OctomapManager * manager) {
+  static void setOctomapManager(volumetric_mapping::OctomapManager * manager)
+  {
     manager_ = manager;
   }
   void incorporateViewFromPoseMsg(const geometry_msgs::Pose& pose, int n_peer);
   double computeInspectableArea(const tf::Transform& transform);
   void assembleMarkerArray(visualization_msgs::Marker& inspected,
                            visualization_msgs::Marker& uninspected) const;
-  
+
  private:
-  void incorporateViewFromTf(const tf::Transform& transform);
+  void incorporateViewFromTf(const tf::Transform& transform, const std::vector<bool>& unobstructed);
   void split();
   bool collapse();
-  bool getVisibility(const tf::Transform& transform, bool& partialVisibility, bool stop_at_unknown_cell) const;
-  
+  bool getVisibility(const tf::Transform& transform, bool& partialVisibility,
+                     bool stop_at_unknown_cell, const std::vector<bool>& unobstructed = { }) const;
+
   bool isLeaf_;
   bool isHead_;
   bool isInspected_;
@@ -62,11 +68,11 @@ class StlMesh {
   Eigen::Vector3d normal_;
 
   static double resolution_;
-  static double cameraPitch_;
-  static double cameraHorizontalFoV_;
-  static double cameraVerticalFoV_;
+  static std::vector<double> cameraPitch_;
+  static std::vector<double> cameraHorizontalFoV_;
+  static std::vector<double> cameraVerticalFoV_;
   static double maxDist_;
-  static std::vector<tf::Vector3> camBoundNormals_;
+  static std::vector<std::vector<tf::Vector3> > camBoundNormals_;
   static volumetric_mapping::OctomapManager * manager_;
   static std::vector<tf::Vector3> peer_vehicles_;
 };

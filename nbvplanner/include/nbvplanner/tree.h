@@ -28,10 +28,10 @@ namespace nbvInspection {
 
 struct Params
 {
-  double camPitch_;
-  double camHorizontal_;
-  double camVertical_;
-  std::vector<Eigen::Vector3d> camBoundNormals_;
+  std::vector<double> camPitch_;
+  std::vector<double> camHorizontal_;
+  std::vector<double> camVertical_;
+  std::vector<std::vector<Eigen::Vector3d> > camBoundNormals_;
 
   double igProbabilistic_;
   double igFree_;
