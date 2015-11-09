@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="rosbag" type="play" name="rosbag" args="-d 2 $(find interface_nbvp_firefly)/nbvp_experiment_2015-09-02-21-59-28.bag -r 0.4"/>
+  <node name="extract" pkg="image_view" type="extract_images" respawn="false" output="screen" cwd="ROS_HOME">
+    <remap from="image" to="/bluebird/cam0/image_raw"/>
+  </node>
+</launch>

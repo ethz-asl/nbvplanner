@@ -49,6 +49,8 @@ class nbvPlanner
   ros::Publisher evadePub_;
   ros::ServiceServer plannerService_;
   ros::Subscriber pointcloud_sub_;
+  ros::Subscriber pointcloud_sub_cam_up_;
+  ros::Subscriber pointcloud_sub_cam_down_;
 
   Params params_;
   mesh::StlMesh * mesh_;
@@ -67,6 +69,8 @@ class nbvPlanner
   void posCallback(const geometry_msgs::PoseWithCovarianceStamped& pose);
   bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::Response& res);
   void insertPointcloudWithTf(const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
+  void insertPointcloudWithTfCamUp(const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
+  void insertPointcloudWithTfCamDown(const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
   void evasionCallback(const multiagent_collision_check::Segment& segmentMsg);
 };
 }

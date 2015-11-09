@@ -46,8 +46,14 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
                                          this);
   posClient_ = nh_.subscribe("pose", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback, this);
 
-  pointcloud_sub_ = nh_.subscribe("pointcloud_throttled", 40,
+  pointcloud_sub_ = nh_.subscribe("pointcloud_throttled", 1,
                                   &nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTf,
+                                  this);
+  pointcloud_sub_cam_up_ = nh_.subscribe("pointcloud_throttled_up", 1,
+                                  &nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTfCamUp,
+                                  this);
+  pointcloud_sub_cam_down_ = nh_.subscribe("pointcloud_throttled_down", 1,
+                                  &nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTfCamDown,
                                   this);
 
   if (!setParams()) {
@@ -371,6 +377,28 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
 
 template<typename stateVec>
 void nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTf(
+    const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
+{
+  static double last = ros::Time::now().toSec();
+  if (last + params_.pcl_throttle_ < ros::Time::now().toSec()) {
+    tree_->insertPointcloudWithTf(pointcloud);
+    last += params_.pcl_throttle_;
+  }
+}
+
+template<typename stateVec>
+void nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTfCamUp(
+    const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
+{
+  static double last = ros::Time::now().toSec();
+  if (last + params_.pcl_throttle_ < ros::Time::now().toSec()) {
+    tree_->insertPointcloudWithTf(pointcloud);
+    last += params_.pcl_throttle_;
+  }
+}
+
+template<typename stateVec>
+void nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTfCamDown(
     const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
 {
   static double last = ros::Time::now().toSec();

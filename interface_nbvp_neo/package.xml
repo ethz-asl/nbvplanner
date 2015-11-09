@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package>
+  <name>interface_nbvp_neo</name>
+  <version>0.0.0</version>
+  <description>The package to interface the nbvplanner with the neo robot</description>
+  
+  <maintainer email="andreas.bircher@mavt.ethz.ch">Andreas Bircher</maintainer>
+
+  <license>ASL 2.0</license>
+
+  <author>Andreas Bircher</author>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+</package>
