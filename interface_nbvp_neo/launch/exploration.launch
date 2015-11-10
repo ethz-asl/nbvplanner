@@ -18,7 +18,7 @@
     <remap from="pointcloud_throttled" to="stereo_dense_reconstruction/pcl"/>
     <remap from="pose" to="msf_core/pose"/>
     <remap from="nbvplanner" to="nbvplanner"/>
-    <rosparam command="load" file="$(find interface_nbvp_firefly)/resource/exploration.yaml" />
+    <rosparam command="load" file="$(find interface_nbvp_neo)/resource/exploration.yaml" />
   </node>
  <!--/group-->
 </launch>

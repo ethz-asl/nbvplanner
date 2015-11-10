@@ -64,7 +64,6 @@ class nbvPlanner
 
   nbvPlanner(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   ~nbvPlanner();
-  vector_t buildTree(nbvPlanner<stateVec>& instance, int I, stateVec s, double& Iout, int agentID);
   bool setParams();
   void posCallback(const geometry_msgs::PoseWithCovarianceStamped& pose);
   bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::Response& res);
