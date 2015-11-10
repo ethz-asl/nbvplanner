@@ -37,8 +37,7 @@ using namespace std;
 
 ros::Publisher sample_pub_;
 
-bool PlanExplorationPath(std_srvs::Empty::Request& request,
-                                            std_srvs::Empty::Response& response)
+bool PlanExplorationPath(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
   ROS_INFO("Starting planning");
   ros::NodeHandle nh("");
@@ -94,8 +93,8 @@ bool PlanExplorationPath(std_srvs::Empty::Request& request,
     }
     for (int index = 0; index < planSrv.response.path.size(); index++) {
       tf::Vector3 point = tf::Vector3(planSrv.response.path[index].position.x,
-                        planSrv.response.path[index].position.y,
-                        planSrv.response.path[index].position.z);
+                                      planSrv.response.path[index].position.y,
+                                      planSrv.response.path[index].position.z);
       mav_msgs::EigenTrajectoryPoint trajectory_point;
       trajectory_msgs::MultiDOFJointTrajectoryPoint trajectory_point_msg;
       trajectory_point.position_W.x() = point.x();
@@ -103,7 +102,8 @@ bool PlanExplorationPath(std_srvs::Empty::Request& request,
       trajectory_point.position_W.z() = point.z();
       tf::Pose pose;
       tf::poseMsgToTF(planSrv.response.path[index], pose);
-      tf::Quaternion quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), tf::getYaw(pose.getRotation()));
+      tf::Quaternion quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0),
+                                           tf::getYaw(pose.getRotation()));
       trajectory_point.setFromYaw(tf::getYaw(quat));
 
       file << point.x() << ", " << point.y() << ", " << point.z() << ", " << tf::getYaw(quat)
@@ -137,12 +137,12 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "interface_nbvp");
   ros::NodeHandle nh;
-  
+
   sample_pub_ = nh.advertise < trajectory_msgs::MultiDOFJointTrajectory
       > (mav_msgs::default_topics::COMMAND_TRAJECTORY, 5);
   ros::ServiceServer start_planning_srv_ = nh.advertiseService("start_planning",
-                                   PlanExplorationPath);
-  
+                                                               PlanExplorationPath);
+
   ROS_INFO("Planner ready");
   ros::spin();
 }
