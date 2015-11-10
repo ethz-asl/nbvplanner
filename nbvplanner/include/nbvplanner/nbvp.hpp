@@ -238,6 +238,15 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
     ROS_WARN("No camera vertical opening specified. Looking for %s. Default is 60deg.",
              (ns + "/system/camera/vertical").c_str());
   }
+  if(params_.camPitch_.size() != params_.camHorizontal_.size() ||params_.camPitch_.size() != params_.camVertical_.size() ){
+    ROS_WARN("Specified camera fields of view unclear: Not all parameter vectors have same length! Setting to default.");
+    params_.camPitch_.clear();
+    params_.camPitch_ = {15.0};
+    params_.camHorizontal_.clear();
+    params_.camHorizontal_ = {90.0};
+    params_.camVertical_.clear();
+    params_.camVertical_ = {60.0};
+  }
   params_.igProbabilistic_ = 0.0;
   if (!ros::param::get(ns + "/nbvp/gain/probabilistic", params_.igProbabilistic_)) {
     ROS_WARN(
