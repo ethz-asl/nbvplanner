@@ -1,8 +1,8 @@
 system/v_max: 0.2
 system/dyaw_max: 0.5
-system/camera/pitch: [15.0 90.0 -90.0]
-system/camera/horizontal: [90.0 120.0 120.0]
-system/camera/vertical: [60.0 120.0 120.0]
+system/camera/pitch: [15.0, 90.0, -90.0]
+system/camera/horizontal: [90.0, 120.0, 120.0]
+system/camera/vertical: [60.0, 120.0, 120.0]
 system/bbx/x: 1.2
 system/bbx/y: 1.2
 system/bbx/z: 0.5

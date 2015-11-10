@@ -49,23 +49,22 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   pointcloud_sub_ = nh_.subscribe("pointcloud_throttled", 1,
                                   &nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTf,
                                   this);
-  pointcloud_sub_cam_up_ = nh_.subscribe("pointcloud_throttled_up", 1,
-                                  &nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTfCamUp,
-                                  this);
-  pointcloud_sub_cam_down_ = nh_.subscribe("pointcloud_throttled_down", 1,
-                                  &nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTfCamDown,
-                                  this);
+  pointcloud_sub_cam_up_ = nh_.subscribe(
+      "pointcloud_throttled_up", 1,
+      &nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTfCamUp, this);
+  pointcloud_sub_cam_down_ = nh_.subscribe(
+      "pointcloud_throttled_down", 1,
+      &nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTfCamDown, this);
 
   if (!setParams()) {
     ROS_ERROR("Could not start the planner. Parameters missing!");
   }
 
-  // Precompute the camera field of view boundaries. The normals of the separating hyperplanes are
-  // stored
-  for(int i = 0; i < params_.camPitch_.size(); i++) {
+  // Precompute the camera field of view boundaries. The normals of the separating hyperplanes are stored
+  for (int i = 0; i < params_.camPitch_.size(); i++) {
     double pitch = M_PI * params_.camPitch_[i] / 180.0;
-    double camTop = M_PI * (pitch - params_.camVertical_[i] / 2.0) / 180.0 + M_PI / 2.0;
-    double camBottom = M_PI * (pitch + params_.camVertical_[i] / 2.0) / 180.0 - M_PI / 2.0;
+    double camTop = (pitch - M_PI * params_.camVertical_[i] / 360.0) + M_PI / 2.0;
+    double camBottom = (pitch + M_PI * params_.camVertical_[i] / 360.0) - M_PI / 2.0;
     double side = M_PI * (params_.camHorizontal_[i]) / 360.0 - M_PI / 2.0;
     Vector3d bottom(cos(camBottom), 0.0, -sin(camBottom));
     Vector3d top(cos(camTop), 0.0, -sin(camTop));
@@ -78,9 +77,13 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
     leftR.normalize();
     std::vector<Eigen::Vector3d> camBoundNormals;
     camBoundNormals.push_back(bottom);
+    ROS_INFO("bottom: (%2.2f, %2.2f, %2.2f)", bottom[0], bottom[1], bottom[2]);
     camBoundNormals.push_back(top);
+    ROS_INFO("top: (%2.2f, %2.2f, %2.2f)", top[0], top[1], top[2]);
     camBoundNormals.push_back(rightR);
+    ROS_INFO("rightR: (%2.2f, %2.2f, %2.2f)", rightR[0], rightR[1], rightR[2]);
     camBoundNormals.push_back(leftR);
+    ROS_INFO("leftR: (%2.2f, %2.2f, %2.2f)", leftR[0], leftR[1], leftR[2]);
     params_.camBoundNormals_.push_back(camBoundNormals);
   }
 
@@ -110,12 +113,15 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   // Initialize the tree instance.
   tree_ = new RrtTree(mesh_, manager_);
   tree_->setParams(params_);
-  peerPosClient1_ = nh_.subscribe("peer_pose_1", 10, &nbvInspection::RrtTree::setPeerStateFromPoseMsg1, tree_);
-  peerPosClient2_ = nh_.subscribe("peer_pose_2", 10, &nbvInspection::RrtTree::setPeerStateFromPoseMsg2, tree_);
-  peerPosClient3_ = nh_.subscribe("peer_pose_3", 10, &nbvInspection::RrtTree::setPeerStateFromPoseMsg3, tree_);
+  peerPosClient1_ = nh_.subscribe("peer_pose_1", 10,
+                                  &nbvInspection::RrtTree::setPeerStateFromPoseMsg1, tree_);
+  peerPosClient2_ = nh_.subscribe("peer_pose_2", 10,
+                                  &nbvInspection::RrtTree::setPeerStateFromPoseMsg2, tree_);
+  peerPosClient3_ = nh_.subscribe("peer_pose_3", 10,
+                                  &nbvInspection::RrtTree::setPeerStateFromPoseMsg3, tree_);
   // Subscribe to topic used for the collaborative collision avoidance (don't hit your peer).
   evadeClient_ = nh_.subscribe("/evasionSegment", 10, &nbvInspection::TreeBase<stateVec>::evade,
-                              tree_);
+                               tree_);
   // Not yet ready. Needs a position message first.
   ready_ = false;
 }
@@ -132,7 +138,8 @@ nbvInspection::nbvPlanner<stateVec>::~nbvPlanner()
 }
 
 template<typename stateVec>
-void nbvInspection::nbvPlanner<stateVec>::posCallback(const geometry_msgs::PoseWithCovarianceStamped& pose)
+void nbvInspection::nbvPlanner<stateVec>::posCallback(
+    const geometry_msgs::PoseWithCovarianceStamped& pose)
 {
   tree_->setStateFromPoseMsg(pose);
   // Planner is now ready to plan.
@@ -216,19 +223,19 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
     ROS_WARN("No maximal yaw speed specified. Looking for %s. Default is 0.5.",
              (ns + "/system/yaw_max").c_str());
   }
-  params_.camPitch_ = {15};
+  params_.camPitch_ = {15.0};
   if (!ros::param::get(ns + "/system/camera/pitch", params_.camPitch_)) {
     ROS_WARN("No camera pitch specified. Looking for %s. Default is 15deg.",
              (ns + "/system/camera/pitch").c_str());
   }
-  params_.camHorizontal_ = {90};
+  params_.camHorizontal_ = {90.0};
   if (!ros::param::get(ns + "/system/camera/horizontal", params_.camHorizontal_)) {
     ROS_WARN("No camera horizontal opening specified. Looking for %s. Default is 90deg.",
              (ns + "/system/camera/horizontal").c_str());
   }
-  params_.camVertical_ = {60};
+  params_.camVertical_ = {60.0};
   if (!ros::param::get(ns + "/system/camera/vertical", params_.camVertical_)) {
-    ROS_WARN("No camera vertical opening specified. Looking for %s. Default is 60.",
+    ROS_WARN("No camera vertical opening specified. Looking for %s. Default is 60deg.",
              (ns + "/system/camera/vertical").c_str());
   }
   params_.igProbabilistic_ = 0.0;
@@ -372,9 +379,8 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
   }
   params_.exact_root_ = true;
   if (!ros::param::get(ns + "/nbvp/tree/exact_root", params_.exact_root_)) {
-    ROS_WARN(
-        "No option for exact root selection specified. Looking for %s. Default is true.",
-        (ns + "/nbvp/tree/exact_root").c_str());
+    ROS_WARN("No option for exact root selection specified. Looking for %s. Default is true.",
+             (ns + "/nbvp/tree/exact_root").c_str());
   }
   return ret;
 }

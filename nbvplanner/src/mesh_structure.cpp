@@ -150,8 +150,8 @@ void mesh::StlMesh::setCameraParams(std::vector<double> cameraPitch,
   camBoundNormals_.clear();
   for (int i = 0; i < cameraPitch_.size(); i++) {
     double pitch = M_PI * cameraPitch_[i] / 180.0;
-    double camTop = M_PI * (pitch - cameraVerticalFoV_[i] / 2.0) / 180.0 + M_PI / 2.0;
-    double camBottom = M_PI * (pitch + cameraVerticalFoV_[i] / 2.0) / 180.0 - M_PI / 2.0;
+    double camTop = (pitch - M_PI * cameraVerticalFoV_[i] / 360.0) + M_PI / 2.0;
+    double camBottom = (pitch + M_PI * cameraVerticalFoV_[i] / 360.0) - M_PI / 2.0;
     double side = M_PI * (cameraHorizontalFoV_[i]) / 360.0 - M_PI / 2.0;
     Eigen::Vector3d bottom(cos(camBottom), 0.0, -sin(camBottom));
     Eigen::Vector3d top(cos(camTop), 0.0, -sin(camTop));
@@ -184,6 +184,7 @@ void mesh::StlMesh::setPeerPose(const geometry_msgs::Pose& pose, int n_peer)
 
 void mesh::StlMesh::incorporateViewFromPoseMsg(const geometry_msgs::Pose& pose, int n_peer)
 {
+  ROS_INFO("@incorporateViewFromPoseMsg");
   tf::Transform transform;
   tf::Point point;
   tf::poseMsgToTF(pose, transform);
@@ -193,14 +194,15 @@ void mesh::StlMesh::incorporateViewFromPoseMsg(const geometry_msgs::Pose& pose, 
   std::vector<bool> unobstructed;
   for (typename std::vector<std::vector<tf::Vector3>>::iterator itCBN = camBoundNormals_.begin();
       itCBN != camBoundNormals_.end(); itCBN++) {
+    bool anyInFoV = false;
     for (int it = 0; it < peer_vehicles_.size(); it++) {
       if (it == n_peer) {
         continue;
       }
+      bool inFoV = true;
       tf::Vector3 viewDirection = peer_vehicles_[it]
           - tf::Vector3(pose.position.x, pose.position.y, pose.position.z);
       viewDirection.rotate(tf::Vector3(0, 0, 1), tf::getYaw(pose.orientation));
-      bool inFoV = true;
       for (std::vector<tf::Vector3>::iterator itFoVCBN = itCBN->begin(); itFoVCBN != itCBN->end();
           itFoVCBN++) {
         if (itFoVCBN->dot(viewDirection) < 0.0) {
@@ -208,11 +210,16 @@ void mesh::StlMesh::incorporateViewFromPoseMsg(const geometry_msgs::Pose& pose, 
           break;
         }
       }
-      unobstructed.push_back(!inFoV);
-      inAllFoV &= !inFoV;
+      if (inFoV) {
+        anyInFoV = true;
+        break;
+      }
     }
+    unobstructed.push_back(!anyInFoV);
+    inAllFoV &= anyInFoV;
   }
   if (!inAllFoV) {
+    ROS_INFO("incorporating view from pose msg");
     // No total interference, can incorporate the data.
     incorporateViewFromTf(transform, unobstructed);
   }
@@ -403,7 +410,8 @@ bool mesh::StlMesh::collapse()
 }
 
 bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialVisibility,
-                                  bool stop_at_unknown_cell, const std::vector<bool>& unobstructed) const
+                                  bool stop_at_unknown_cell,
+                                  const std::vector<bool>& unobstructed) const
 {
   bool ret = true;
   partialVisibility = false;
