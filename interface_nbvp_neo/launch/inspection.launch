@@ -1,5 +1,5 @@
 <launch>
-  <arg name="mav_name" default="bluebird" />
+  <arg name="mav_name" default="euroc6" />
   <arg name="enable_logging" default="false" />
   <arg name="resolution" default="0.3" />
   <arg name="visualize_max_z" default="3.0" />
@@ -18,6 +18,8 @@
     <remap from="cam0/camera_info" to="cam0/camera_info"/>
     <remap from="cam1/camera_info" to="cam1/camera_info"/>
     <remap from="pointcloud_throttled" to="stereo_dense_reconstruction/pcl"/>
+    <remap from="pointcloud_throttled_up" to="mono_dense_reconstruction_up/pcl"/>
+    <remap from="pointcloud_throttled_down" to="mono_dense_reconstruction_down/pcl"/>
     <remap from="pose" to="msf_core/pose"/>
     <remap from="nbvplanner" to="nbvplanner"/>
     <rosparam command="load" file="$(find interface_nbvp_neo)/resource/inspection.yaml" />
