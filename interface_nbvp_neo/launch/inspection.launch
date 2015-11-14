@@ -18,8 +18,8 @@
     <remap from="cam0/camera_info" to="cam0/camera_info"/>
     <remap from="cam1/camera_info" to="cam1/camera_info"/>
     <remap from="pointcloud_throttled" to="stereo_dense_reconstruction/pcl"/>
-    <remap from="pointcloud_throttled_up" to="mono_dense_reconstruction_up/pcl"/>
-    <remap from="pointcloud_throttled_down" to="mono_dense_reconstruction_down/pcl"/>
+    <remap from="pointcloud_throttled_up" to="cam1/mono_dense_reconstruction_up/pcl"/>
+    <!--remap from="pointcloud_throttled_down" to="cam3/mono_dense_reconstruction_down/pcl"/-->
     <remap from="pose" to="msf_core/pose"/>
     <remap from="nbvplanner" to="nbvplanner"/>
     <rosparam command="load" file="$(find interface_nbvp_neo)/resource/inspection.yaml" />
