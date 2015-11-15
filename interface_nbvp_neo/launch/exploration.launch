@@ -6,21 +6,26 @@
   <arg name="sensor_max_range" default="5.0" />
   <arg name="tf_planning_frame" default="world" />
 
-<!--group ns="$(arg mav_name)" -->
-  <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
-    <param name="tf_frame" type="string" value="$(arg tf_planning_frame)" />
-    <param name="resolution" type="double" value="$(arg resolution)" />
-    <param name="visualize_max_z" type="double" value="$(arg visualize_max_z)" />
-    <param name="sensor_max_range" type="double" value="$(arg sensor_max_range)" />
-    <param name="map_publish_frequency" type="double" value="1.0" />
-    <remap from="cam0/camera_info" to="cam0/camera_info"/>
-    <remap from="cam1/camera_info" to="cam1/camera_info"/>
-    <remap from="pointcloud_throttled" to="stereo_dense_reconstruction/pcl"/>
-    <remap from="pointcloud_throttled_up" to="cam1/mono_dense_reconstruction_up/pcl"/>
-    <!--remap from="pointcloud_throttled_down" to="cam3/mono_dense_reconstruction_down/pcl"/-->
-    <remap from="pose" to="msf_core/pose"/>
-    <remap from="nbvplanner" to="nbvplanner"/>
-    <rosparam command="load" file="$(find interface_nbvp_neo)/resource/exploration.yaml" />
-  </node>
- <!--/group-->
+  <group ns="$(arg mav_name)">
+    <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
+      <param name="tf_frame" type="string" value="$(arg tf_planning_frame)" />
+      <param name="resolution" type="double" value="$(arg resolution)" />
+      <param name="visualize_max_z" type="double" value="$(arg visualize_max_z)" />
+      <param name="sensor_max_range" type="double" value="$(arg sensor_max_range)" />
+      <param name="map_publish_frequency" type="double" value="1.0" />
+      <remap from="cam0/camera_info" to="cam0/camera_info"/>
+      <remap from="cam1/camera_info" to="cam1/camera_info"/>
+      <remap from="pointcloud_throttled" to="stereo_dense_reconstruction/pcl"/>
+      <remap from="pointcloud_throttled_up" to="cam1/mono_dense_reconstruction/pcl"/>
+      <!--remap from="pointcloud_throttled_down" to="cam3/mono_dense_reconstruction/pcl"/-->
+      <remap from="odometry" to="rovio/odometry"/>
+      <remap from="nbvplanner" to="nbvplanner"/>
+      <rosparam command="load" file="$(find interface_nbvp_neo)/resource/exploration.yaml" />
+      <param name="capability_group" value="NBVP Planning" />
+    </node>
+    <node name="planner_interface" pkg="interface_nbvp_neo" type="interface" output="screen" >
+      <rosparam command="load" file="$(find interface_nbvp_neo)/resource/exploration.yaml" />
+      <param name="capability_group" value="NBVP Planning" />
+    </node>
+  </group>
 </launch>

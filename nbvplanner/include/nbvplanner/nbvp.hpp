@@ -77,13 +77,13 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
     leftR.normalize();
     std::vector<Eigen::Vector3d> camBoundNormals;
     camBoundNormals.push_back(bottom);
-    ROS_INFO("bottom: (%2.2f, %2.2f, %2.2f)", bottom[0], bottom[1], bottom[2]);
+    // ROS_INFO("bottom: (%2.2f, %2.2f, %2.2f)", bottom[0], bottom[1], bottom[2]);
     camBoundNormals.push_back(top);
-    ROS_INFO("top: (%2.2f, %2.2f, %2.2f)", top[0], top[1], top[2]);
+    // ROS_INFO("top: (%2.2f, %2.2f, %2.2f)", top[0], top[1], top[2]);
     camBoundNormals.push_back(rightR);
-    ROS_INFO("rightR: (%2.2f, %2.2f, %2.2f)", rightR[0], rightR[1], rightR[2]);
+    // ROS_INFO("rightR: (%2.2f, %2.2f, %2.2f)", rightR[0], rightR[1], rightR[2]);
     camBoundNormals.push_back(leftR);
-    ROS_INFO("leftR: (%2.2f, %2.2f, %2.2f)", leftR[0], leftR[1], leftR[2]);
+    // ROS_INFO("leftR: (%2.2f, %2.2f, %2.2f)", leftR[0], leftR[1], leftR[2]);
     params_.camBoundNormals_.push_back(camBoundNormals);
   }
 
