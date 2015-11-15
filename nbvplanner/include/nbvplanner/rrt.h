@@ -22,6 +22,7 @@
 #include <sstream>
 #include <eigen3/Eigen/Dense>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <nav_msgs/Odometry.h>
 #include <kdtree/kdtree.h>
 #include <nbvplanner/tree.h>
 #include <nbvplanner/mesh_structure.h>
@@ -40,6 +41,7 @@ class RrtTree : public TreeBase<Eigen::Vector4d>
   RrtTree(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager);
   ~RrtTree();
   virtual void setStateFromPoseMsg(const geometry_msgs::PoseWithCovarianceStamped& pose);
+  virtual void setStateFromOdometryMsg(const nav_msgs::Odometry& pose);
   virtual void setPeerStateFromPoseMsg(const geometry_msgs::PoseWithCovarianceStamped& pose, int n_peer);
   virtual void initialize();
   virtual void iterate(int iterations);
