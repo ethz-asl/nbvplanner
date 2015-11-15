@@ -171,6 +171,84 @@ void nbvInspection::RrtTree::setStateFromPoseMsg(
   }
 }
 
+void nbvInspection::RrtTree::setStateFromOdometryMsg(
+    const nav_msgs::Odometry& pose)
+{
+  // Get latest transform to the planning frame and transform the pose
+  static tf::TransformListener listener;
+  tf::StampedTransform transform;
+  try {
+    listener.lookupTransform(params_.navigationFrame_, pose.header.frame_id, pose.header.stamp,
+                             transform);
+  } catch (tf::TransformException ex) {
+    ROS_ERROR("%s", ex.what());
+    return;
+  }
+  tf::Pose poseTF;
+  tf::poseMsgToTF(pose.pose.pose, poseTF);
+  tf::Vector3 position = poseTF.getOrigin();
+  position = transform * position;
+  tf::Quaternion quat = poseTF.getRotation();
+  quat = transform * quat;
+  root_[0] = position.x();
+  root_[1] = position.y();
+  root_[2] = position.z();
+  root_[3] = tf::getYaw(quat);
+
+  // Log the vehicle response in the planning frame
+  static double logThrottleTime = ros::Time::now().toSec();
+  if (ros::Time::now().toSec() - logThrottleTime > params_.log_throttle_) {
+    logThrottleTime += params_.log_throttle_;
+    if (params_.log_) {
+      for (int i = 0; i < root_.size() - 1; i++) {
+        fileResponse_ << root_[i] << ",";
+      }
+      fileResponse_ << root_[root_.size() - 1] << "\n";
+    }
+  }
+  // Update the inspected parts of the mesh using the current position
+  if (ros::Time::now().toSec() - inspectionThrottleTime_[0] > params_.inspection_throttle_) {
+    inspectionThrottleTime_[0] += params_.inspection_throttle_;
+    if (mesh_) {
+      geometry_msgs::Pose poseTransformed;
+      tf::poseTFToMsg(transform * poseTF, poseTransformed);
+      mesh_->setPeerPose(poseTransformed, 0);
+      mesh_->incorporateViewFromPoseMsg(poseTransformed, 0);
+      // Publish the mesh marker for visualization in rviz
+      visualization_msgs::Marker inspected;
+      inspected.ns = "meshInspected";
+      inspected.id = 0;
+      inspected.header.seq = inspected.id;
+      inspected.header.stamp = pose.header.stamp;
+      inspected.header.frame_id = params_.navigationFrame_;
+      inspected.type = visualization_msgs::Marker::TRIANGLE_LIST;
+      inspected.lifetime = ros::Duration(10);
+      inspected.action = visualization_msgs::Marker::ADD;
+      inspected.pose.position.x = 0.0;
+      inspected.pose.position.y = 0.0;
+      inspected.pose.position.z = 0.0;
+      inspected.pose.orientation.x = 0.0;
+      inspected.pose.orientation.y = 0.0;
+      inspected.pose.orientation.z = 0.0;
+      inspected.pose.orientation.w = 1.0;
+      inspected.scale.x = 1.0;
+      inspected.scale.y = 1.0;
+      inspected.scale.z = 1.0;
+      visualization_msgs::Marker uninspected = inspected;
+      uninspected.header.seq++;
+      uninspected.id++;
+      uninspected.ns = "meshUninspected";
+      mesh_->assembleMarkerArray(inspected, uninspected);
+      if (inspected.points.size() > 0) {
+        params_.inspectionPath_.publish(inspected);
+      }
+      if (uninspected.points.size() > 0) {
+        params_.inspectionPath_.publish(uninspected);
+      }
+    }
+  }
+}
+
 void nbvInspection::RrtTree::setPeerStateFromPoseMsg(
     const geometry_msgs::PoseWithCovarianceStamped& pose, int n_peer)
 {

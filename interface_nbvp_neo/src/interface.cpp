@@ -74,6 +74,7 @@ bool PlanExplorationPath(std_srvs::Empty::Request& request, std_srvs::Empty::Res
   while (exploring && ros::ok()) {
     ros::Time now = ros::Time::now();
 
+    ROS_INFO("NBV Planner iterate");
     samples_array.header.seq = n_seq;
     samples_array.header.stamp = ros::Time::now();
     samples_array.points.clear();

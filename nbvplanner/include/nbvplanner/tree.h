@@ -20,6 +20,7 @@
 #include <vector>
 #include <eigen3/Eigen/Dense>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <nav_msgs/Odometry.h>
 #include <octomap_world/octomap_manager.h>
 #include <multiagent_collision_check/Segment.h>
 #include <nbvplanner/mesh_structure.h>
@@ -104,6 +105,7 @@ class TreeBase
   TreeBase(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager);
   ~TreeBase();
   virtual void setStateFromPoseMsg(const geometry_msgs::PoseWithCovarianceStamped& pose) = 0;
+  virtual void setStateFromOdometryMsg(const nav_msgs::Odometry& pose) = 0;
   virtual void setPeerStateFromPoseMsg(const geometry_msgs::PoseWithCovarianceStamped& pose, int n_peer) = 0;
   void setPeerStateFromPoseMsg1(const geometry_msgs::PoseWithCovarianceStamped& pose);
   void setPeerStateFromPoseMsg2(const geometry_msgs::PoseWithCovarianceStamped& pose);
