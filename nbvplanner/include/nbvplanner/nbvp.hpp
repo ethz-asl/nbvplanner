@@ -190,7 +190,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   while ((!tree_->gainFound() || tree_->getCounter() < params_.initIterations_) && ros::ok()) {
     if (tree_->getCounter() > params_.cuttoffIterations_) {
       ROS_INFO("No gain found, shutting down");
-      ros::shutdown();
+      // ros::shutdown();
       return true;
     }
     if (loopCount > 1000 * (tree_->getCounter() + 1)) {
