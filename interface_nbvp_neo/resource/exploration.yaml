@@ -16,7 +16,7 @@ nbvp/gain/probabilistic: 0.0
 nbvp/gain/range: 1.5
 nbvp/gain/zero: 0.0
 nbvp/gain/degressive_coeff: 0.5
-nbvp/tree/extension_range: 0.5
+nbvp/tree/extension_range: 1.5
 nbvp/tree/exact_root: false
 nbvp/tree/initial_iterations: 20
 nbvp/tree/cuttoff_iterations: 200
