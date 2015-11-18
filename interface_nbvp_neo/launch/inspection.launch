@@ -1,8 +1,8 @@
 <launch>
   <arg name="mav_name" default="euroc6" />
   <arg name="enable_logging" default="false" />
-  <arg name="resolution" default="0.3" />
-  <arg name="visualize_max_z" default="3.0" />
+  <arg name="resolution" default="0.2" />
+  <arg name="visualize_max_z" default="2.5" />
   <arg name="sensor_max_range" default="5.0" />
   <arg name="tf_planning_frame" default="world" />
 
@@ -14,7 +14,7 @@
       <param name="sensor_max_range" type="double" value="$(arg sensor_max_range)" />
       <param name="map_publish_frequency" type="double" value="1.0" />
       <param name="stl_file_path" type="string" value="$(find interface_nbvp_neo)/mesh/structure.stl" />
-      <param name="mesh_resolution" type="double" value="0.5" />
+      <param name="mesh_resolution" type="double" value="0.01" />
       <remap from="cam0/camera_info" to="cam0/camera_info"/>
       <remap from="cam1/camera_info" to="cam1/camera_info"/>
       <remap from="pointcloud_throttled" to="stereo_dense_reconstruction/pcl"/>
