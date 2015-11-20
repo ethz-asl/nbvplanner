@@ -1,6 +1,47 @@
 <launch>
-  <node pkg="rosbag" type="play" name="rosbag" args="-d 2 $(find interface_nbvp_neo)/bags/nbvp_experiment_2015-09-02-21-59-28.bag -r 0.4"/>
-  <node name="extract" pkg="image_view" type="extract_images" respawn="false" output="screen" cwd="ROS_HOME">
+  <node pkg="rosbag" type="play" name="rosbag0" args="-d 2 /home/hitzg/exploration_leo/experiment2/run1/nbvp_experiment_2015-11-17-19-28-16_0.bag -r 0.4"/>
+  <node name="extract0" pkg="image_view" type="extract_images" respawn="false" output="screen" cwd="ROS_HOME">
+    <param name="filename_format" type="string" value="frame0%04i.jpg" />
     <remap from="image" to="/euroc6/cam0/image_raw"/>
   </node>
+  <!--node pkg="rosbag" type="play" name="rosbag1" args="-d 2 /home/hitzg/exploration_leo/experiment2/run1/nbvp_experiment_2015-11-17-19-29-13_1.bag -r 0.4"/>
+  <node name="extract1" pkg="image_view" type="extract_images" respawn="false" output="screen" cwd="ROS_HOME">
+    <param name="filename_format" type="string" value="frame1%04i.jpg" />
+    <remap from="image" to="/euroc6/cam0/image_raw"/>
+  </node>
+  <node pkg="rosbag" type="play" name="rosbag2" args="-d 2 /home/hitzg/exploration_leo/experiment2/run1/nbvp_experiment_2015-11-17-19-30-01_2.bag -r 0.4"/>
+  <node name="extract2" pkg="image_view" type="extract_images" respawn="false" output="screen" cwd="ROS_HOME">
+    <param name="filename_format" type="string" value="frame2%04i.jpg" />
+    <remap from="image" to="/euroc6/cam0/image_raw"/>
+  </node>
+  <node pkg="rosbag" type="play" name="rosbag3" args="-d 2 /home/hitzg/exploration_leo/experiment2/run1/nbvp_experiment_2015-11-17-19-30-40_3.bag -r 0.4"/>
+  <node name="extract3" pkg="image_view" type="extract_images" respawn="false" output="screen" cwd="ROS_HOME">
+    <param name="filename_format" type="string" value="frame3%04i.jpg" />
+    <remap from="image" to="/euroc6/cam0/image_raw"/>
+  </node>
+  <node pkg="rosbag" type="play" name="rosbag4" args="-d 2 /home/hitzg/exploration_leo/experiment2/run1/nbvp_experiment_2015-11-17-19-31-15_4.bag -r 0.4"/>
+  <node name="extract4" pkg="image_view" type="extract_images" respawn="false" output="screen" cwd="ROS_HOME">
+    <param name="filename_format" type="string" value="frame4%04i.jpg" />
+    <remap from="image" to="/euroc6/cam0/image_raw"/>
+  </node>
+  <node pkg="rosbag" type="play" name="rosbag5" args="-d 2 /home/hitzg/exploration_leo/experiment2/run1/nbvp_experiment_2015-11-17-19-31-48_5.bag -r 0.4"/>
+  <node name="extract5" pkg="image_view" type="extract_images" respawn="false" output="screen" cwd="ROS_HOME">
+    <param name="filename_format" type="string" value="frame5%04i.jpg" />
+    <remap from="image" to="/euroc6/cam0/image_raw"/>
+  </node>
+  <node pkg="rosbag" type="play" name="rosbag6" args="-d 2 /home/hitzg/exploration_leo/experiment2/run1/nbvp_experiment_2015-11-17-19-32-22_6.bag -r 0.4"/>
+  <node name="extract6" pkg="image_view" type="extract_images" respawn="false" output="screen" cwd="ROS_HOME">
+    <param name="filename_format" type="string" value="frame6%04i.jpg" />
+    <remap from="image" to="/euroc6/cam0/image_raw"/>
+  </node>
+  <node pkg="rosbag" type="play" name="rosbag7" args="-d 2 /home/hitzg/exploration_leo/experiment2/run1/nbvp_experiment_2015-11-17-19-32-55_7.bag -r 0.4"/>
+  <node name="extract7" pkg="image_view" type="extract_images" respawn="false" output="screen" cwd="ROS_HOME">
+    <param name="filename_format" type="string" value="frame7%04i.jpg" />
+    <remap from="image" to="/euroc6/cam0/image_raw"/>
+  </node>
+  <node pkg="rosbag" type="play" name="rosbag8" args="-d 2 /home/hitzg/exploration_leo/experiment2/run1/nbvp_experiment_2015-11-17-19-33-26_8.bag -r 0.4"/>
+  <node name="extract8" pkg="image_view" type="extract_images" respawn="false" output="screen" cwd="ROS_HOME">
+    <param name="filename_format" type="string" value="frame8%04i.jpg" />
+    <remap from="image" to="/euroc6/cam0/image_raw"/>
+  </node-->
 </launch>
