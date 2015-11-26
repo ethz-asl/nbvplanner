@@ -184,7 +184,6 @@ void mesh::StlMesh::setPeerPose(const geometry_msgs::Pose& pose, int n_peer)
 
 void mesh::StlMesh::incorporateViewFromPoseMsg(const geometry_msgs::Pose& pose, int n_peer)
 {
-  ROS_INFO("@incorporateViewFromPoseMsg");
   tf::Transform transform;
   tf::Point point;
   tf::poseMsgToTF(pose, transform);
@@ -219,7 +218,6 @@ void mesh::StlMesh::incorporateViewFromPoseMsg(const geometry_msgs::Pose& pose, 
     inAllFoV &= anyInFoV;
   }
   if (!inAllFoV) {
-    ROS_INFO("incorporating view from pose msg");
     // No total interference, can incorporate the data.
     incorporateViewFromTf(transform, unobstructed);
   }

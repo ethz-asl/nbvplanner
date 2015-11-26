@@ -1,13 +1,13 @@
 <launch>
   <arg name="mav_name" default="euroc6" />
   <arg name="enable_logging" default="false" />
-  <arg name="resolution" default="0.3" />
+  <arg name="resolution" default="0.2" />
   <arg name="visualize_max_z" default="2.5" />
   <arg name="sensor_max_range" default="5.0" />
   <arg name="tf_planning_frame" default="world" />
 
   <group ns="$(arg mav_name)">
-    <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
+    <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen" clear_params="true">
       <param name="tf_frame" type="string" value="$(arg tf_planning_frame)" />
       <param name="resolution" type="double" value="$(arg resolution)" />
       <param name="visualize_max_z" type="double" value="$(arg visualize_max_z)" />
