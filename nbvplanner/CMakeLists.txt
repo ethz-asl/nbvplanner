@@ -17,8 +17,6 @@ find_package(cmake_modules REQUIRED)
 find_package(Eigen REQUIRED)
 find_package(octomap REQUIRED)
 
-set(CMAKE_BUILD_TYPE Debug)
-
 add_service_files(
   FILES
   nbvp_srv.srv
