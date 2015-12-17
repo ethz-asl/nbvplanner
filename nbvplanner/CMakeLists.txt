@@ -44,6 +44,7 @@ include_directories(
 
 add_library(nbvPlannerLib src/mesh_structure.cpp src/nbvp.cpp src/rrt.cpp src/tree.cpp)
 add_executable(nbvPlanner src/nbv_planner_node.cpp src/mesh_structure.cpp src/nbvp.cpp src/rrt.cpp src/tree.cpp)
+add_dependencies(nbvPlannerLib ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 target_link_libraries(nbvPlannerLib
   ${catkin_LIBRARIES}
