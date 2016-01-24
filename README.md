@@ -9,7 +9,7 @@ This README gives a short overview. For more information refer to the [wiki](htt
 To run the current version, compile the package nbvplanner, as well as additionally required packages. To get these:
 
 ```sh
-git clone https://github.com/ethz-asl/nbv_planning.git
+git clone https://github.com/ethz-asl/nbvplanner.git
 git clone https://github.com/ethz-asl/catkin_simple.git
 git clone https://github.com/ethz-asl/eigen_catkin.git
 git clone https://github.com/ethz-asl/volumetric_mapping.git
@@ -37,6 +37,19 @@ roslaunch interface_nbvp_rotors flat_exploration.launch
 ```
 
 Further instructions for the visualization of the exploration progress, as well as more demo scenarios and descriptions of the parameters can be found in the [wiki](https://github.com/ethz-asl/nbvp_planning/wiki).
+
+
+If you use this software in a scientific publication, please cite the following paper:
+```
+@INPROCEEDINGS{bircher2016receding, 
+author = "{A. Bircher, M. Kamel, K. Alexis, H. Oleynikova and R. Siegwart}",
+booktitle = {Robotics and Automation (ICRA), 2016 IEEE International Conference on}, 
+title={Receding Horizon "Next-Best-View" Planner for 3D Exploration},
+year={2016}, 
+month={May}, 
+note={(accepted)}, 
+}
+```
 
 # Credits
 
