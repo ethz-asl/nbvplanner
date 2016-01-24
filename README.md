@@ -2,7 +2,7 @@
 
 The next best view planner is a real-time capable exploration path planner. From the current pose it expands a tree to find a next pose that gives a high exploration gain. This gain reflects the exploration of space that is not yet (sufficiently) known. As the vehicle proceeds on the path, the tree is recomputed, taking into account the new information from the sensor.
 
-This README gives a short overview. For more information refer to the [wiki](https://github.com/ethz-asl/nbvp_planning/wiki).
+This README gives a short overview. For more information refer to the [wiki](https://github.com/ethz-asl/nbvplanner/wiki).
 
 # Planner installation and execution
 
@@ -36,7 +36,7 @@ For a simulation demo launch
 roslaunch interface_nbvp_rotors flat_exploration.launch
 ```
 
-Further instructions for the visualization of the exploration progress, as well as more demo scenarios and descriptions of the parameters can be found in the [wiki](https://github.com/ethz-asl/nbvp_planning/wiki).
+Further instructions for the visualization of the exploration progress, as well as more demo scenarios and descriptions of the parameters can be found in the [wiki](https://github.com/ethz-asl/nbvplanner/wiki).
 
 
 If you use this software in a scientific publication, please cite the following paper:
