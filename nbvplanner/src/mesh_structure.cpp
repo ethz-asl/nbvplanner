@@ -57,13 +57,13 @@ mesh::StlMesh::StlMesh(std::fstream& file)
   double minX = DBL_MAX;
   double minY = DBL_MAX;
   double minZ = DBL_MAX;
-  assert(line = (char * ) malloc(MaxLine = 80));
+  line = (char * ) malloc(MaxLine = 80);
   file.getline(line, MaxLine);
   if (0 != strcmp(strtok(line, " "), "solid")) {
     ROS_ERROR("Invalid mesh file! Make sure the STL file is given in ascii-format.");
     return;
   }
-  assert(line = (char * ) realloc(line, MaxLine));
+  line = (char * ) realloc(line, MaxLine);
   file.getline(line, MaxLine);
   int k = 0;
   while (0 != strcmp(strtok(line, " "), "endsolid") && !ros::isShuttingDown()) {
@@ -116,7 +116,7 @@ mesh::StlMesh::StlMesh(std::fstream& file)
 
         vertexCount++;
       }
-      assert(line = (char * ) realloc(line, MaxLine));
+      line = (char * ) realloc(line, MaxLine);
       file.getline(line, MaxLine);
     }
     newNode->normal_ = (newNode->x3_ - newNode->x2_).cross(newNode->x1_ - newNode->x2_) / 2.0;
