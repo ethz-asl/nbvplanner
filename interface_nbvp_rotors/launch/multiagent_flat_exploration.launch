@@ -9,9 +9,6 @@
     <arg name="paused" value="true"/>
     <arg name="gui" value="true"/>
   </include>
-  <node pkg="tf" type="static_transform_publisher" name="tf_nav1" args="0 0 0 0 0 0 world navigation1 100" />
-  <node pkg="tf" type="static_transform_publisher" name="tf_nav2" args="0 0 0 0 0 0 world navigation2 100" />
-  <node pkg="tf" type="static_transform_publisher" name="tf_nav3" args="0 0 0 0 0 0 world navigation3 100" />
 
   <include file="$(find interface_nbvp_rotors)/launch/mav_inspector.launch">
     <arg name="mav_name" value="$(arg mav_name)" />
@@ -23,7 +20,7 @@
     <arg name="enable_logging" value="$(arg enable_logging)" />
     <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
     <arg name="log_file" value="$(arg log_file)" />
-    <arg name="tf_frame" value="navigation1" />
+    <arg name="tf_frame" value="world" />
     <arg name="resolution" value="0.4" />
     <arg name="visualize_max_z" value="2.5" />
     <arg name="sensor_max_range" value="5.0" />
@@ -39,7 +36,7 @@
     <arg name="enable_logging" value="$(arg enable_logging)" />
     <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
     <arg name="log_file" value="$(arg log_file)" />
-    <arg name="tf_frame" value="navigation2" />
+    <arg name="tf_frame" value="world" />
     <arg name="resolution" value="0.3" />
     <arg name="visualize_max_z" value="2.5" />
     <arg name="sensor_max_range" value="5.0" />
@@ -55,7 +52,7 @@
     <arg name="enable_logging" value="$(arg enable_logging)" />
     <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
     <arg name="log_file" value="$(arg log_file)" />
-    <arg name="tf_frame" value="navigation3" />
+    <arg name="tf_frame" value="world" />
     <arg name="resolution" value="0.35" />
     <arg name="visualize_max_z" value="2.5" />
     <arg name="sensor_max_range" value="5.0" />
