@@ -63,7 +63,7 @@ class RrtTree : public TreeBase<Eigen::Vector4d>
   std::fstream filePath_;
   std::fstream fileResponse_;
   std::string logFilePath_;
-  double inspectionThrottleTime_[4];
+  std::vector<double> inspectionThrottleTime_;
 };
 }
 

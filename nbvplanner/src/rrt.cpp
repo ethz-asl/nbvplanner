@@ -28,7 +28,7 @@ nbvInspection::RrtTree::RrtTree()
   kdTree_ = kd_create(3);
   iterationCount_ = 0;
   for (int i = 0; i < 4; i++) {
-    inspectionThrottleTime_[i] = ros::Time::now().toSec();
+    inspectionThrottleTime_.push_back(ros::Time::now().toSec());
   }
 
   // If logging is required, set up files here
@@ -57,6 +57,9 @@ nbvInspection::RrtTree::RrtTree(mesh::StlMesh * mesh, volumetric_mapping::Octoma
   manager_ = manager;
   kdTree_ = kd_create(3);
   iterationCount_ = 0;
+  for (int i = 0; i < 4; i++) {
+    inspectionThrottleTime_.push_back(ros::Time::now().toSec());
+  }
 
   // If logging is required, set up files here
   bool ifLog = false;
