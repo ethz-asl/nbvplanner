@@ -3,8 +3,6 @@ project(prune_pointcloud)
 
 add_definitions(-std=c++11)
 
-set(CMAKE_BUILD_TYPE Debug)
-
 find_package(catkin REQUIRED COMPONENTS
   tf
   sensor_msgs

@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 2.8.3)
 project(multiagent_collision_check)
 
 add_definitions(-std=c++11)
-#set(CMAKE_BUILD_TYPE Debug)
 
 find_package(catkin REQUIRED COMPONENTS
   octomap_world
