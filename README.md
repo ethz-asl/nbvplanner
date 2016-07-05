@@ -6,28 +6,22 @@ This README gives a short overview. For more information refer to the [wiki](htt
 
 # Planner installation and execution
 
-To run the current version, compile the package nbvplanner, as well as additionally required packages. To get these:
+To run the current version, compile the package nbvplanner. To get it navigate to the source folder of your ros workspace:
 
 ```sh
 git clone https://github.com/ethz-asl/nbvplanner.git
-git clone https://github.com/ethz-asl/catkin_simple.git
-git clone https://github.com/ethz-asl/eigen_catkin.git
-git clone https://github.com/ethz-asl/volumetric_mapping.git
-git clone https://github.com/ethz-asl/gflags_catkin.git
-git clone https://github.com/ethz-asl/glog_catkin.git
-git clone https://github.com/ethz-asl/minkindr.git
-git clone https://github.com/ethz-asl/minkindr_ros.git
-git clone https://github.com/ethz-asl/mav_comm.git
+cd nbvplanner
+git submodule init --
+git submodule sync --recursive
+git submodule update --recursive
+cd ..
 ```
 
-Moreover, make sure you have all the necessary octomap libraries:
+Moreover, make sure you have all the necessary libraries:
 ```sh
 apt-get install ros-<distro>-octomap-*
-```
-
-To be able to run the planner in the simulation environment, also clone the rotors repo:
-```sh
-git clone https://github.com/ethz-asl/rotors.git
+apt-get install python-catkin-tools
+catkin build
 ```
 
 For a simulation demo launch
