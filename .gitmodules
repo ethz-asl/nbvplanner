@@ -1,0 +1,27 @@
+[submodule "rotors"]
+	path = rotors
+	url = https://github.com/ethz-asl/rotors
+[submodule "volumetric_mapping"]
+	path = volumetric_mapping
+	url = https://github.com/ethz-asl/volumetric_mapping
+[submodule "minkindr_ros"]
+	path = minkindr_ros
+	url = https://github.com/ethz-asl/minkindr_ros
+[submodule "minkindr"]
+	path = minkindr
+	url = https://github.com/ethz-asl/minkindr
+[submodule "mav_comm"]
+	path = mav_comm
+	url = https://github.com/ethz-asl/mav_comm
+[submodule "glog_catkin"]
+	path = glog_catkin
+	url = https://github.com/ethz-asl/glog_catkin
+[submodule "gflags_catkin"]
+	path = gflags_catkin
+	url = https://github.com/ethz-asl/gflags_catkin
+[submodule "eigen_catkin"]
+	path = eigen_catkin
+	url = https://github.com/ethz-asl/eigen_catkin
+[submodule "catkin_simple"]
+	path = catkin_simple
+	url = https://github.com/ethz-asl/catkin_simple
