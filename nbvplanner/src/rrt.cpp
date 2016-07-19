@@ -544,7 +544,7 @@ double nbvInspection::RrtTree::gain(StateVec state)
               break;
             }
           }
-          if (inFoV) {
+          if (!inFoV) {
             bbreak = true;
             break;
           }
