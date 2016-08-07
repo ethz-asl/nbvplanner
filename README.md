@@ -37,13 +37,13 @@ Further instructions for the visualization of the exploration progress, as well 
 
 If you use this software in a scientific publication, please cite the following paper:
 ```
-@INPROCEEDINGS{bircher2016receding, 
-author = "{A. Bircher, M. Kamel, K. Alexis, H. Oleynikova and R. Siegwart}",
-booktitle = {Robotics and Automation (ICRA), 2016 IEEE International Conference on}, 
-title={Receding Horizon "Next-Best-View" Planner for 3D Exploration},
-year={2016}, 
-month={May}, 
-note={(accepted)}, 
+@inproceedings{bircher2016receding,
+  title={Receding horizon "next-best-view" planner for 3D exploration},
+  author={Bircher, Andreas and Kamel, Mina and Alexis, Kostas and Oleynikova, Helen and Siegwart, Roland},
+  booktitle={2016 IEEE International Conference on Robotics and Automation (ICRA)},
+  pages={1462--1468},
+  year={2016},
+  organization={IEEE}
 }
 ```
 
