@@ -526,30 +526,30 @@ double nbvInspection::RrtTree::gain(StateVec state)
           vec[2] < std::min(state[2] + params_.gainRange_, params_.maxZ_); vec[2] += disc) {
         Eigen::Vector3d dir = vec - origin;
         // Skip if distance is too large
-        if (dir.norm() > rangeSq) {
+        if (dir.transpose().dot(dir) > rangeSq) {
           continue;
         }
-        bool bbreak = false;
+        bool insideAFieldOfView = false;
         // Check that voxel center is inside one of the fields of view.
         for (typename std::vector<std::vector<Eigen::Vector3d>>::iterator itCBN = params_
             .camBoundNormals_.begin(); itCBN != params_.camBoundNormals_.end(); itCBN++) {
-          bool inFoV = true;
+          bool inThisFieldOfView = true;
           for (typename std::vector<Eigen::Vector3d>::iterator itSingleCBN = itCBN->begin();
               itSingleCBN != itCBN->end(); itSingleCBN++) {
             Eigen::Vector3d normal = Eigen::AngleAxisd(state[3], Eigen::Vector3d::UnitZ())
                 * (*itSingleCBN);
             double val = dir.dot(normal.normalized());
             if (val < SQRT2 * disc) {
-              inFoV = false;
+              inThisFieldOfView = false;
               break;
             }
           }
-          if (!inFoV) {
-            bbreak = true;
+          if (inThisFieldOfView) {
+            insideAFieldOfView = true;
             break;
           }
         }
-        if (bbreak) {
+        if (!insideAFieldOfView) {
           continue;
         }
         // Check cell status and add to the gain considering the corresponding factor.
