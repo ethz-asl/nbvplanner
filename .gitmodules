@@ -22,9 +22,9 @@
 [submodule "eigen_catkin"]
 	path = eigen_catkin
 	url = https://github.com/ethz-asl/eigen_catkin
-[submodule "catkin_simple"]
-	path = catkin_simple
-	url = https://github.com/ethz-asl/catkin_simple
 [submodule "eigen_checks"]
 	path = eigen_checks
 	url = https://github.com/ethz-asl/eigen_checks
+[submodule "catkin_simple"]
+	path = catkin_simple
+	url = https://github.com/catkin/catkin_simple.git
