@@ -11,7 +11,7 @@
   <author>Andreas Bircher</author>
 
   <buildtool_depend>catkin</buildtool_depend>
-  
+
   <build_depend>roscpp</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>message_generation</build_depend>
@@ -20,7 +20,8 @@
   <build_depend>octomap_world</build_depend>
   <build_depend>kdtree</build_depend>
   <build_depend>multiagent_collision_check</build_depend>
-  
+  <build_depend>voxblox_ros</build_depend>
+
   <run_depend>roscpp</run_depend>
   <run_depend>tf</run_depend>
   <run_depend>message_runtime</run_depend>
@@ -29,4 +30,5 @@
   <run_depend>octomap_world</run_depend>
   <run_depend>kdtree</run_depend>
   <run_depend>multiagent_collision_check</run_depend>
+  <run_depend>voxblox_ros</run_depend>
 </package>
