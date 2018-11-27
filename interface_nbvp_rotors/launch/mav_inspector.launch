@@ -66,12 +66,14 @@
       <rosparam command="load" file="$(arg param_file)" />
 
       <!-- settings for voxblox -->
+      <param name="tsdf_voxel_size" value="$(arg resolution)" />
       <param name="method" value="fast" />
       <param name="max_ray_length_m" value="10.0" />
       <param name="update_mesh_every_n_sec" value="1.0" />
       <param name="use_tf_transforms" value="true" />
       <param name="voxel_carving_enabled" value="true" />
       <param name="min_time_between_msgs_sec" value="0.10" />
+      <param name="verbose" value="false" />
       <remap from="pointcloud" to="$(arg pcl_topic)"/>
     </node>
     <node name="exploration" pkg="interface_nbvp_rotors" type="exploration" output="screen">
