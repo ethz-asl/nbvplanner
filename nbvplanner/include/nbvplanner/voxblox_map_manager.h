@@ -19,20 +19,22 @@ class VoxbloxMapManager {
 
   VoxelStatus getVisibility(const Eigen::Vector3d& view_point,
                             const Eigen::Vector3d& voxel_to_test,
-                            bool stop_at_unknown_cell) const;
+                            bool stop_at_unknown_voxel) const;
 
   VoxelStatus getVoxelStatus(const Eigen::Vector3d& position) const;
 
   // Project an axis-aligned bounding box along a line.
   VoxelStatus getLineStatusBoundingBox(
       const Eigen::Vector3d& start, const Eigen::Vector3d& end,
-      const Eigen::Vector3d& bounding_box_size) const;
+      const Eigen::Vector3d& bounding_box_size,
+      bool stop_at_unknown_voxel) const;
 
   // Get the voxel status of an axis-aligned bounding box centered at the given
   // position.
   VoxelStatus getBoundingBoxStatus(
       const Eigen::Vector3d& center,
-      const Eigen::Vector3d& bounding_box_size) const;
+      const Eigen::Vector3d& bounding_box_size,
+      bool stop_at_unknown_voxel) const;
 
  private:
   ros::NodeHandle nh_;
