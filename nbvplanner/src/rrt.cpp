@@ -51,7 +51,7 @@ nbvInspection::RrtTree::RrtTree()
   }
 }
 
-nbvInspection::RrtTree::RrtTree(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager)
+nbvInspection::RrtTree::RrtTree(mesh::StlMesh * mesh, nbvInspection::VoxbloxMapManager * manager)
 {
   mesh_ = mesh;
   manager_ = manager;
@@ -338,10 +338,10 @@ void nbvInspection::RrtTree::iterate(int iterations)
   newState[0] = origin[0] + direction[0];
   newState[1] = origin[1] + direction[1];
   newState[2] = origin[2] + direction[2];
-  if (volumetric_mapping::OctomapManager::CellStatus::kFree
+  if (nbvInspection::VoxbloxMapManager::kFree
       == manager_->getLineStatusBoundingBox(
           origin, direction + origin + direction.normalized() * params_.dOvershoot_,
-          params_.boundingBox_)
+          params_.boundingBox_, true)
       && !multiagent::isInCollision(newParent->state_, newState, params_.boundingBox_, segments_)) {
     // Sample the new orientation
     newState[3] = 2.0 * M_PI * (((double) rand()) / ((double) RAND_MAX) - 0.5);
@@ -434,10 +434,10 @@ void nbvInspection::RrtTree::initialize()
     newState[0] = origin[0] + direction[0];
     newState[1] = origin[1] + direction[1];
     newState[2] = origin[2] + direction[2];
-    if (volumetric_mapping::OctomapManager::CellStatus::kFree
+    if (nbvInspection::VoxbloxMapManager::kFree
         == manager_->getLineStatusBoundingBox(
             origin, direction + origin + direction.normalized() * params_.dOvershoot_,
-            params_.boundingBox_)
+            params_.boundingBox_, true)
         && !multiagent::isInCollision(newParent->state_, newState, params_.boundingBox_,
                                       segments_)) {
       // Create new node and insert into tree
@@ -554,19 +554,19 @@ double nbvInspection::RrtTree::gain(StateVec state)
         }
         // Check cell status and add to the gain considering the corresponding factor.
         double probability;
-        volumetric_mapping::OctomapManager::CellStatus node = manager_->getCellProbabilityPoint(
-            vec, &probability);
-        if (node == volumetric_mapping::OctomapManager::CellStatus::kUnknown) {
+        nbvInspection::VoxbloxMapManager::VoxelStatus node = manager_->getVoxelStatus(
+            vec);
+        if (node == VoxbloxMapManager::kUnknown) {
           // Rayshooting to evaluate inspectability of cell
-          if (volumetric_mapping::OctomapManager::CellStatus::kOccupied
+          if (nbvInspection::VoxbloxMapManager::kOccupied
               != this->manager_->getVisibility(origin, vec, false)) {
             gain += params_.igUnmapped_;
             // TODO: Add probabilistic gain
             // gain += params_.igProbabilistic_ * PROBABILISTIC_MODEL(probability);
           }
-        } else if (node == volumetric_mapping::OctomapManager::CellStatus::kOccupied) {
+        } else if (node == nbvInspection::VoxbloxMapManager::kOccupied) {
           // Rayshooting to evaluate inspectability of cell
-          if (volumetric_mapping::OctomapManager::CellStatus::kOccupied
+          if (VoxbloxMapManager::kOccupied
               != this->manager_->getVisibility(origin, vec, false)) {
             gain += params_.igOccupied_;
             // TODO: Add probabilistic gain
@@ -574,7 +574,7 @@ double nbvInspection::RrtTree::gain(StateVec state)
           }
         } else {
           // Rayshooting to evaluate inspectability of cell
-          if (volumetric_mapping::OctomapManager::CellStatus::kOccupied
+          if (VoxbloxMapManager::kOccupied
               != this->manager_->getVisibility(origin, vec, false)) {
             gain += params_.igFree_;
             // TODO: Add probabilistic gain

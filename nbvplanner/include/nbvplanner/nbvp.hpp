@@ -36,7 +36,7 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
       nh_private_(nh_private)
 {
 
-  manager_ = new volumetric_mapping::OctomapManager(nh_, nh_private_);
+  manager_ = new nbvInspection::VoxbloxMapManager(nh_, nh_private_);
 
   // Set up the topics and services
   params_.inspectionPath_ = nh_.advertise<visualization_msgs::Marker>("inspectionPath", 1000);
@@ -100,7 +100,7 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
         if (stlFile.is_open()) {
           mesh_ = new mesh::StlMesh(stlFile);
           mesh_->setResolution(params_.meshResolution_);
-          mesh_->setOctomapManager(manager_);
+          mesh_->setVoxbloxManager(manager_);
           mesh_->setCameraParams(params_.camPitch_, params_.camHorizontal_, params_.camVertical_,
                                  params_.gainRange_);
         } else {
@@ -175,7 +175,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
     ROS_ERROR_THROTTLE(1, "Planner not set up: No octomap available!");
     return true;
   }
-  if (manager_->getMapSize().norm() <= 0.0) {
+  if (manager_->isEmpty()) {
     ROS_ERROR_THROTTLE(1, "Planner not set up: Octomap is empty!");
     return true;
   }

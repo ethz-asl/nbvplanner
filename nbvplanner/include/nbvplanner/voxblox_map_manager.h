@@ -35,6 +35,12 @@ class VoxbloxMapManager {
                                    const Eigen::Vector3d& bounding_box_size,
                                    bool stop_at_unknown_voxel) const;
 
+  double getResolution() const { return tsdf_layer_->voxel_size(); }
+
+  bool isEmpty() const {
+    return tsdf_layer_->getNumberOfAllocatedBlocks() == 0;
+  }
+
  private:
   VoxelStatus getBoundingBoxStatusInVoxels(
       const voxblox::LongIndex& bounding_box_center,
