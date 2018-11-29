@@ -29,6 +29,7 @@
 #include <nbvplanner/mesh_structure.h>
 #include <nbvplanner/tree.hpp>
 #include <nbvplanner/rrt.h>
+#include <nbvplanner/voxblox_map_manager.h>
 
 #define SQ(x) ((x)*(x))
 #define SQRT2 0.70711
@@ -56,7 +57,7 @@ class nbvPlanner
 
   Params params_;
   mesh::StlMesh * mesh_;
-  volumetric_mapping::OctomapManager * manager_;
+  nbvInspection::VoxbloxMapManager * manager_;
 
   bool ready_;
 

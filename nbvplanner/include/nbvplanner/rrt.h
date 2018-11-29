@@ -38,7 +38,7 @@ class RrtTree : public TreeBase<Eigen::Vector4d>
   typedef Eigen::Vector4d StateVec;
 
   RrtTree();
-  RrtTree(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager);
+  RrtTree(mesh::StlMesh * mesh, VoxbloxMapManager * manager);
   ~RrtTree();
   virtual void setStateFromPoseMsg(const geometry_msgs::PoseWithCovarianceStamped& pose);
   virtual void setStateFromOdometryMsg(const nav_msgs::Odometry& pose);

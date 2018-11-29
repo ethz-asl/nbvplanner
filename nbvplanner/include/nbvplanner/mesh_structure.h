@@ -23,7 +23,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
 #include <tf/transform_datatypes.h>
-#include <octomap_world/octomap_manager.h>
+#include "nbvplanner/voxblox_map_manager.h"
 
 namespace mesh {
 
@@ -42,7 +42,7 @@ class StlMesh
   {
     resolution_ = resolution;
   }
-  static void setOctomapManager(volumetric_mapping::OctomapManager * manager)
+  static void setVoxbloxManager(nbvInspection::VoxbloxMapManager * manager)
   {
     manager_ = manager;
   }
@@ -73,7 +73,7 @@ class StlMesh
   static std::vector<double> cameraVerticalFoV_;
   static double maxDist_;
   static std::vector<std::vector<tf::Vector3> > camBoundNormals_;
-  static volumetric_mapping::OctomapManager * manager_;
+  static nbvInspection::VoxbloxMapManager * manager_;
   static std::vector<tf::Vector3> peer_vehicles_;
 };
 }

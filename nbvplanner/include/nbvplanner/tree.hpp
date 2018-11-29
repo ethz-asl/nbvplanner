@@ -48,7 +48,7 @@ nbvInspection::TreeBase<stateVec>::TreeBase()
 
 template<typename stateVec>
 nbvInspection::TreeBase<stateVec>::TreeBase(mesh::StlMesh * mesh,
-                                            volumetric_mapping::OctomapManager * manager)
+                                            nbvInspection::VoxbloxMapManager * manager)
 {
   mesh_ = mesh;
   manager_ = manager;
@@ -106,7 +106,7 @@ template<typename stateVec>
 void nbvInspection::TreeBase<stateVec>::insertPointcloudWithTf(
     const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
 {
-  manager_->insertPointcloudWithTf(pointcloud);
+ // manager_->insertPointcloudWithTf(pointcloud);
 }
 
 template<typename stateVec>

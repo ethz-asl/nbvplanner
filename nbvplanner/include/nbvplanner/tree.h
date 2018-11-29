@@ -24,6 +24,7 @@
 #include <octomap_world/octomap_manager.h>
 #include <multiagent_collision_check/Segment.h>
 #include <nbvplanner/mesh_structure.h>
+#include <nbvplanner/voxblox_map_manager.h>
 
 namespace nbvInspection {
 
@@ -95,14 +96,14 @@ class TreeBase
   Node<stateVec> * bestNode_;
   Node<stateVec> * rootNode_;
   mesh::StlMesh * mesh_;
-  volumetric_mapping::OctomapManager * manager_;
+  nbvInspection::VoxbloxMapManager * manager_;
   stateVec root_;
   stateVec exact_root_;
   std::vector<std::vector<Eigen::Vector3d>*> segments_;
   std::vector<std::string> agentNames_;
  public:
   TreeBase();
-  TreeBase(mesh::StlMesh * mesh, volumetric_mapping::OctomapManager * manager);
+  TreeBase(mesh::StlMesh * mesh, nbvInspection::VoxbloxMapManager * manager);
   ~TreeBase();
   virtual void setStateFromPoseMsg(const geometry_msgs::PoseWithCovarianceStamped& pose) = 0;
   virtual void setStateFromOdometryMsg(const nav_msgs::Odometry& pose) = 0;

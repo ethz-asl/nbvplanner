@@ -430,7 +430,7 @@ bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialV
         || manager_->getVisibility(
             Eigen::Vector3d(originTransf.x(), originTransf.y(), originTransf.z()),
             Eigen::Vector3d(x1_.x(), x1_.y(), x1_.z()), stop_at_unknown_cell)
-            != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
+            != nbvInspection::VoxbloxMapManager::kFree) {
       return false;
     } else {
       bool visibility1 = true;
@@ -454,7 +454,7 @@ bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialV
         || manager_->getVisibility(
             Eigen::Vector3d(originTransf.x(), originTransf.y(), originTransf.z()),
             Eigen::Vector3d(x2_.x(), x2_.y(), x2_.z()), stop_at_unknown_cell)
-            != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
+            != nbvInspection::VoxbloxMapManager::kFree) {
       ret = false;
     } else {
       bool visibility2 = true;
@@ -482,7 +482,7 @@ bool mesh::StlMesh::getVisibility(const tf::Transform& transform, bool& partialV
         || manager_->getVisibility(
             Eigen::Vector3d(originTransf.x(), originTransf.y(), originTransf.z()),
             Eigen::Vector3d(x3_.x(), x3_.y(), x3_.z()), stop_at_unknown_cell)
-            != volumetric_mapping::OctomapWorld::CellStatus::kFree) {
+            != nbvInspection::VoxbloxMapManager::kFree) {
       ret = false;
     } else {
       bool visibility3 = true;
@@ -514,7 +514,7 @@ std::vector<double> mesh::StlMesh::cameraHorizontalFoV_ = { };
 std::vector<double> mesh::StlMesh::cameraVerticalFoV_ = { };
 double mesh::StlMesh::maxDist_ = 5;
 std::vector<std::vector<tf::Vector3> > mesh::StlMesh::camBoundNormals_ = { };
-volumetric_mapping::OctomapManager * mesh::StlMesh::manager_ = NULL;
+nbvInspection::VoxbloxMapManager* mesh::StlMesh::manager_ = NULL;
 std::vector<tf::Vector3> mesh::StlMesh::peer_vehicles_ = { };
 
 #endif // _MESH_STRUCTURE_CPP_
