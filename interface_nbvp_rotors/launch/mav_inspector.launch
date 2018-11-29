@@ -68,6 +68,7 @@
       <!-- settings for voxblox -->
       <param name="tsdf_voxel_size" value="$(arg resolution)" />
       <param name="method" value="fast" />
+      <param name="color_mode" value="normals" />
       <param name="max_ray_length_m" value="10.0" />
       <param name="update_mesh_every_n_sec" value="1.0" />
       <param name="use_tf_transforms" value="true" />
