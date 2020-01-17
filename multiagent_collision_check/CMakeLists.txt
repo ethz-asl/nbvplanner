@@ -21,7 +21,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES multiagent_collision_check_lib ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES}
+  LIBRARIES multiagent_collision_check_lib
 )
 add_library(multiagent_collision_check_lib src/multiagent_collision_checker.cpp)
 
