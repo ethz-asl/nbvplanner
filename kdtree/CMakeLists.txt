@@ -14,7 +14,7 @@ cs_add_library(${PROJECT_NAME}
 include_directories(include ${catkin_INCLUDE_DIRS})
 
 catkin_package(
-  INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
+  INCLUDE_DIRS include
 )
 
 ##########
